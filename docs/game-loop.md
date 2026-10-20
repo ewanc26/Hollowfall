@@ -1,0 +1,95 @@
+# Game loop
+
+VoxelGame is a procedural voxel dungeon crawler built around a fast, aggressive combat loop in the
+tradition of ULTRAKILL and DOOM (2016): you are never safe standing still, your health comes from hurting
+things, and a style meter rewards you for doing it with flair. This page records what we learned from those
+games, what we are taking from them, and how it maps onto this codebase. The numbers in the tables are
+starting values to be playtested, and live in code (`VoxelGame.Core.Combat`) so tests can pin them.
+
+## What the reference games do
+
+Facts below come from the ULTRAKILL wiki and design write-ups listed under [Sources](#sources).
+
+**Health comes from aggression, not from hiding.** ULTRAKILL has no health packs or regeneration. Hits at
+close range heal you (a punch 10 to 30 depending on where it lands, a head hit with a hitscan gun 30, a
+point-blank shotgun pellet 3), a melee gib heals 120, and a successful parry refills health completely. Taking
+damage also creates "hard damage" (35% of the hit), a temporary ceiling on health that drains away after a
+short delay, so being hit is costly but recoverable by playing well. DOOM (2016) arrives at the same place
+by another route: enemies are walking health and ammo packs, staggered enemies can be finished with a glory
+kill that showers health, and id cut anything that made the player retreat from the fight. They call it
+push-forward combat.
+
+**Style is a second, visible score that also feeds survival.** ULTRAKILL's meter has eight named ranks from
+Destructive up to ULTRAKILL, each needing more points (200 for the first, 1500 for the last) and each draining
+faster when idle (15 per second up to 120). Kills, double and triple kills, headshots, air shots, ground and air
+slams, parries and trick shots all add points. Multipliers reward movement (up to 3x while sliding or in the
+air) and weapon variety, since a weapon you keep using goes "stale" and earns less, down to nothing. Taking
+damage drops you one rank. Higher style ranks also speed up hard damage recovery, which is why style and
+health reinforce each other.
+
+**Parry is the risk and reward move.** Attacks flash yellow when they can be parried and blue when they cannot.
+A good parry refills health, restores stamina, redirects projectiles with more speed and damage, and earns
+a large style bonus (100 points, 400 for sending an enemy's own attack back).
+
+**Levels are arenas, scored three ways.** Each level gets a letter (D to S) for time, for kills and for style,
+worth 1 to 5 points each. The final rank is the sum minus one point per checkpoint restart: 14 is S, and a P
+rank needs S in all three with no restarts. Thresholds are set per level.
+
+**Movement is the skill ceiling.** Sliding, dashing, wall-jumping and slamming keep you moving, and standing
+still is dangerous. The game was designed around fast pace, constant action and player expression.
+
+## What we take, and what we change
+
+| Idea | In VoxelGame |
+|---|---|
+| Push forward | No regeneration, no pickups to retreat for. Health comes from blood. |
+| Blood heals | Hits within about 4 blocks heal, more for headshots and limbs, a lot for melee finishers. Distance matters: standing back to snipe heals nothing. |
+| Hard damage | 35% of each hit becomes a temporary cap on health that drains after a delay. |
+| Style meter | Eight ranks with passive decay, bonuses, movement and freshness multipliers, damage knocks you down a rank. |
+| Parry | Time-limited window, telegraphed attacks, full heal, style, projectile reflection. |
+| Arenas | Dungeon rooms are arenas. Entering one with enemies locks its doors until it is cleared. |
+| Ranking | Each dungeon floor is scored on time, kills and style, D to S plus a P rank, with a restart penalty. |
+| Procedural | A seed gives the same dungeon, enemies and loot, so ranks are comparable and seeds can be shared. |
+
+What is new here is that the arenas are generated: the room shape (rect, L, circle, cavern), size, pillars
+and doors come from the seed, and room roles decide the encounter (standard fights, trap rooms with hazards,
+treasure rooms with a guard, the boss room last). Because layouts differ, thresholds for time and kills are
+computed from the floor itself (enemy count and path length) instead of being hand-tuned per level.
+
+## The loop, step by step
+
+1. **Enter a room.** If it holds enemies, the doors lock and the encounter starts.
+2. **Fight.** Move constantly, hit things up close to heal, chain kills and tricks to climb the style rank,
+   parry telegraphed attacks to recover.
+3. **Clear.** Doors open, loot and the floor key become available, and the rank for the floor keeps counting.
+4. **Descend.** The exit stairs on each floor need that floor's key. The last floor ends at the boss.
+5. **Score.** At the end of each floor you see time, kills and style ranks and the combined letter.
+6. **Repeat on a new seed**, or retry the same one for a better rank.
+
+## Build order
+
+1. **Rules in Core, tested first** (this branch): style meter, player vitals with blood and hard damage,
+   parry, floor ranking. Engine-free, deterministic, no frame-rate dependence.
+2. **Combat simulation in Core:** ray casting against voxels, weapons, enemies with simple AI, projectiles,
+   encounters driven by the dungeon spawn data. All stepped with a fixed time step so a run can be replayed.
+3. **Playable in Godot:** shooting and parrying input, enemy visuals, HUD (health with hard damage, style
+   meter, ranks), locking doors, end-of-floor rank screen.
+4. **Movement depth:** slide, dash, air control, slam, wall jump.
+5. **Content and feel:** more enemy types, a second weapon, hit stop and sound, a boss, sharing seeds.
+
+## Principles
+
+- **Rules live in Core** as pure, fixed-step code. Godot scripts only translate input and draw.
+- **Everything is testable without an engine.** If a rule cannot be unit tested, it is in the wrong place.
+- **Numbers are data.** Tuning values sit in one place per system so playtesting changes constants, not logic.
+- **No retreat tax.** If a mechanic makes stopping or hiding the best play, fix the mechanic.
+
+## Sources
+
+- [ULTRAKILL wiki: Ranking](https://ultrakill.wiki.gg/wiki/Ranking), [Health](https://ultrakill.wiki.gg/wiki/Health),
+  [Parry](https://ultrakill.wiki.gg/wiki/Parry) and [Style](https://ultrakill.wiki.gg/wiki/Style)
+- [ULTRAKILL on Wikipedia](https://en.wikipedia.org/wiki/Ultrakill) and the
+  [Film Stories developer interview](https://filmstories.co.uk/gaming/ultrakill-improvisational-and-impulsive/)
+- [How Doom's Push Forward Design Cured my Hoarder Syndrome](https://www.gamedeveloper.com/design/how-doom-s-push-forward-design-cured-my-hoarder-syndrome),
+  [Cyber Demons: The AI of Doom 2016](https://www.gamedeveloper.com/design/cyber-demons-the-ai-of-doom-2016-) and
+  [the id Software GDC Q&A](https://gdconf.com/news/speaker-qa-kurt-loudy-jake-campbell-break-combat-philosophy-doom)
