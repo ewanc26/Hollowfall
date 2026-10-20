@@ -6,6 +6,11 @@ Everything that changes for someone using VoxelGame goes here, newest first, in 
 
 ### Added
 
+- Dungeons: `VoxelGame.Core.Dungeon` builds seeded multi-floor dungeons. Each floor is a BSP layout of rect, L, circular and cavern rooms joined by 3-wide corridors, with doors, open loops and secret doors, and rule-based room roles (entrance, exit, boss, treasure, trap, safe). Floors are stacked 8 blocks apart and joined by spiral stairs; floor 0 is entered from a paved plaza on the surface.
+- `DungeonMap` places at most one dungeon per 384-block region on dry, solid ground. `TerrainGenerator` stamps it into chunks (pass `enableDungeons: false` to turn this off), so chunks inside a dungeon footprint differ from earlier worlds.
+- Dungeon blocks: stone brick, brick floor, door, secret door, pillar and stairs.
+- Deterministic spawn data (monsters, boss, loot, keys, traps) scaled by depth and room role.
+- `--dungeon` (and `--spawns`) CLI options print a floor plan and statistics for the dungeon nearest the origin.
 - Tall grass and flowers on grassy plains and forests (`BlockInfo.IsPlant`; plants are not solid). Worlds generated before this change differ.
 - Rivers: noise zero-crossings carve channels down to just below sea level, fading out toward the sea and thinning in mountains. New `River` biome with a gravel bed. Worlds generated before this change differ.
 - `--biomes` option on the CLI prints a coarse ASCII biome map.
