@@ -91,7 +91,7 @@ public partial class StoryUi : CanvasLayer
         // One-off lines sit low on the screen, clear of the crosshair and the HUD's banner.
         var captionBottom = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         captionBottom.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomWide, Control.LayoutPresetMode.Minsize, 0);
-        captionBottom.OffsetBottom = -210;
+        captionBottom.OffsetBottom = -185;
         captionBottom.GrowVertical = Control.GrowDirection.Begin;
         _ambient.AddChild(captionBottom);
         _caption = Outlined(new Label

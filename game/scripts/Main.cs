@@ -295,6 +295,7 @@ public partial class Main : Node3D
             if (_demo == "notes") actions = RunNotesDemo(actions);
             if (_demo == "ending" && ++_demoFrame == 10) _story.ShowEnding();
             if (_demo == "captions") RunCaptionDemo();
+            if (_demo == "floor") RunFloorDemo();
             actions = _story.Filter(actions, view.Feet, !dead);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
@@ -378,6 +379,23 @@ public partial class Main : Node3D
         if (_demoFrame == 10) _story.OnEvent(new PlayerDied());
         if (_demoFrame == 110) { _story.OnRespawn(); _story.OnEvent(new EncounterStarted(_story.Plan.FloorCount - 1, _story.BossRoomId, 1)); }
         if (_demoFrame == 330) _story.OnEvent(new FloorCompleted(0, new FloorResult(Grade.A, Grade.B, Grade.A, 0, 11, OverallGrade.A), 80));
+    }
+
+    /// <summary>
+    /// HOLLOWFALL_DEMO=floor: sends a floor-complete event through every listener (banner, result panel, story) once the first
+    /// floor's card has gone, then enters the next floor, to see how they share the screen.
+    /// </summary>
+    private void RunFloorDemo()
+    {
+        _demoFrame++;
+        if (_demoFrame == 380)
+        {
+            var done = new FloorCompleted(0, new FloorResult(Grade.A, Grade.B, Grade.A, 0, 11, OverallGrade.A), 80);
+            OnCombatEvent(done);
+            _hud.OnEvent(done);
+            _story.OnEvent(done);
+        }
+        if (_demoFrame == 381) _story.OnFloor(1);
     }
 
     private void Respawn()
