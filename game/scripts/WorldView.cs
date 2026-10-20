@@ -17,6 +17,7 @@ public partial class WorldView : Node3D
     private readonly Dictionary<(int, int), MeshInstance3D?> _shown = [];
     private readonly HashSet<(int, int)> _pending = [];
     private readonly ConcurrentQueue<((int X, int Z) Key, ChunkMesh Mesh)> _finished = new();
+    private readonly HashSet<(int, int)> _dirty = [];
     private int _jobs;
 
     public VoxelWorld World { get; private set; } = null!;
@@ -29,6 +30,12 @@ public partial class WorldView : Node3D
     public int PendingChunks => _pending.Count;
 
     public void Initialize(VoxelWorld world) => World = world;
+
+    /// <summary>Re-meshes a chunk whose blocks changed (a door locking, say). The old mesh stays until the new one is ready.</summary>
+    public void MarkDirty(int chunkX, int chunkZ)
+    {
+        if (_shown.ContainsKey((chunkX, chunkZ))) _dirty.Add((chunkX, chunkZ));
+    }
 
     public override void _Process(double delta)
     {
@@ -53,18 +60,30 @@ public partial class WorldView : Node3D
                 if (!_shown.ContainsKey(key) && !_pending.Contains(key)) wanted.Add((key.Item1, key.Item2, d));
             }
 
+        foreach (var key in _dirty.ToList())
+        {
+            if (Volatile.Read(ref _jobs) >= MaxJobs) break;
+            if (_pending.Contains(key)) continue;
+            _dirty.Remove(key);
+            StartJob(key);
+        }
+
         foreach (var (x, z, _) in wanted.OrderBy(w => w.D))
         {
             if (Volatile.Read(ref _jobs) >= MaxJobs) break;
-            var key = (x, z);
-            _pending.Add(key);
-            Interlocked.Increment(ref _jobs);
-            Task.Run(() =>
-            {
-                try { _finished.Enqueue((key, ChunkMesher.Build(key.x, key.z, World.GetBlock))); }
-                finally { Interlocked.Decrement(ref _jobs); }
-            });
+            StartJob((x, z));
         }
+    }
+
+    private void StartJob((int x, int z) key)
+    {
+        _pending.Add(key);
+        Interlocked.Increment(ref _jobs);
+        Task.Run(() =>
+        {
+            try { _finished.Enqueue((key, ChunkMesher.Build(key.x, key.z, World.GetBlock))); }
+            finally { Interlocked.Decrement(ref _jobs); }
+        });
     }
 
     private void Receive()
@@ -72,6 +91,7 @@ public partial class WorldView : Node3D
         for (int i = 0; i < MaxMeshesPerFrame && _finished.TryDequeue(out var done); i++)
         {
             _pending.Remove(done.Key);
+            if (_shown.TryGetValue(done.Key, out var old)) old?.QueueFree();
             MeshInstance3D? instance = null;
             if (ChunkMeshBuilder.ToArrayMesh(done.Mesh) is { } mesh)
             {

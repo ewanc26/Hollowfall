@@ -75,7 +75,30 @@ computed from the floor itself (enemy count and path length) instead of being ha
 3. **Playable in Godot:** shooting and parrying input, enemy visuals, HUD (health with hard damage, style
    meter, ranks), locking doors, end-of-floor rank screen.
 4. **Movement depth:** slide, dash, air control, slam, wall jump.
-5. **Content and feel:** more enemy types, a second weapon, hit stop and sound, a boss, sharing seeds.
+5. **Portals** (built): linked pairs, momentum, portal-aware shooting and rendering.
+6. **Content and feel:** more enemy types, a second weapon, hit stop and sound, a boss, sharing seeds.
+
+## Portals
+
+Portals come from Valve's Portal series, and they change how the combat loop and the dungeons play.
+
+- **Traversal puzzles and shortcuts.** A dungeon floor is a graph of rooms, but a portal pair lets you ignore the graph:
+  skip a locked arena's long way round, drop through a ceiling into the room below, or bring the exit to you.
+- **Momentum.** Speed is conserved through a portal. Falling into a floor portal and leaving through a wall portal
+  turns height into a horizontal launch, which is the movement skill expression we want alongside sliding and dashing.
+- **Shooting through.** Hitscan shots, enemy projectiles and parried projectiles all continue out of the linked portal,
+  so you can shoot an enemy that is behind you, or send a parried shot into a room you cannot see.
+- **Limits.** Portals need a flat, solid, portalable surface (stone brick, stone, dirt, sand and similar: not bedrock,
+  gates, stairs, pillars, leaves or snow) with the 1 x 2 opening clear in front. Locked arena doors are gates, so you
+  cannot portal past them; a respawn removes your portals.
+
+How it works: the frame of each portal is an axis-aligned right-handed basis (`Right x Up = Normal`). A point in front of
+one maps to the mirror point behind the other and is turned half way round about the portal's up axis, so walking in
+means walking out. The two blocks behind a portal are treated as open for the player, so the body can sink in until
+its centre crosses the face, and then it is moved to the other portal with its velocity and facing turned to match
+(at least a minimum exit speed, so you never stall inside). Rendering uses a second camera per portal placed where
+the viewer would be if the pair were one doorway; portals are not drawn inside portal views, so there is one level of
+see-through, not infinite recursion.
 
 ## Principles
 
