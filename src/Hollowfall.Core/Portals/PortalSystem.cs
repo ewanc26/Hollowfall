@@ -26,7 +26,7 @@ public sealed class PortalSystem
     public const double MaxPlaceDistance = 80;
 
     /// <summary>Slowest a body may leave a portal, so stepping in gently never leaves it stuck inside.</summary>
-    public const double MinExitSpeed = 1.5;
+    public const double MinExitSpeed = 3.0;
 
     public Portal? Teal { get; private set; }
     public Portal? Violet { get; private set; }

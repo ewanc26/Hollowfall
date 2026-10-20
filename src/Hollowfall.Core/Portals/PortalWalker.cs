@@ -30,8 +30,26 @@ public static class PortalWalker
 
         if (portals.TryCross(before, Centre(body), v, forward) is not { } crossing) return null;
 
-        body.Teleport(crossing.Position.X, crossing.Position.Y - CentreHeight, crossing.Position.Z,
-            crossing.Velocity.X, crossing.Velocity.Y, crossing.Velocity.Z);
-        return crossing;
+        // Come out clear of the opening. The centre is carried across at the depth it had, so a slow body would otherwise
+        // emerge with its feet still inside the one-block pit behind the exit, unable to walk sideways and falling straight back
+        // in. Lift (or push) it until the whole body is in front of the exit's face.
+        var clear = crossing with { Position = ClearOfExit(crossing) };
+        body.Teleport(clear.Position.X, clear.Position.Y - CentreHeight, clear.Position.Z,
+            clear.Velocity.X, clear.Velocity.Y, clear.Velocity.Z);
+        return clear;
+    }
+
+    /// <summary>
+    /// Moves a body centre out along the exit's normal until the body no longer overlaps the exit's plane: half its height
+    /// for floors and ceilings, half its width for walls.
+    /// </summary>
+    public static Vec3 ClearOfExit(Crossing crossing)
+    {
+        var frame = crossing.Exited.Frame;
+        var n = frame.Normal;
+        double vertical = Math.Abs(n.Y);
+        double need = vertical * CentreHeight + (1 - vertical) * PlayerBody.HalfWidth;
+        double along = (crossing.Position - frame.Center).Dot(n);
+        return along >= need ? crossing.Position : crossing.Position + n * (need - along);
     }
 }
