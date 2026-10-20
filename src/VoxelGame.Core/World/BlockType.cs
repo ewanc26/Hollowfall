@@ -18,9 +18,15 @@ public enum BlockType : byte
     CoalOre,
     IronOre,
     GoldOre,
+    TallGrass,
+    Flower,
 }
 
 public static class BlockInfo
 {
-    public static bool IsSolid(BlockType b) => b != BlockType.Air && b != BlockType.Water;
+    public static bool IsSolid(BlockType b) =>
+        b != BlockType.Air && b != BlockType.Water && !IsPlant(b);
+
+    /// <summary>Plants are walk-through decorations that sit on top of the ground.</summary>
+    public static bool IsPlant(BlockType b) => b == BlockType.TallGrass || b == BlockType.Flower;
 }

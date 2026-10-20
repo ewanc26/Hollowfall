@@ -6,6 +6,7 @@ Everything that changes for someone using VoxelGame goes here, newest first, in 
 
 ### Added
 
+- Tall grass and flowers on grassy plains and forests (`BlockInfo.IsPlant`; plants are not solid). Worlds generated before this change differ.
 - Rivers: noise zero-crossings carve channels down to just below sea level, fading out toward the sea and thinning in mountains. New `River` biome with a gravel bed. Worlds generated before this change differ.
 - `--biomes` option on the CLI prints a coarse ASCII biome map.
 - Coal, iron and gold ore veins from per-ore 3D noise, each limited to a depth band (`OreSpec`). Worlds generated before this change differ.
