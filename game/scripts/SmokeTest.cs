@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Meshing;
 using Hollowfall.Core.Terrain;
@@ -79,7 +80,46 @@ public partial class SmokeTest : Node
             bool ok = view.ShownChunks >= 40 && player.Body.OnGround;
             if (ok) { _passed++; GD.Print($"  ok   {name} ({view.ShownChunks} chunks, feet at y={player.Body.Y:F1})"); }
             else { _failed++; GD.PrintErr($"  FAIL {name}: chunks={view.ShownChunks} onGround={player.Body.OnGround}"); }
+
+            await CheckCombatAsync(main);
             main.QueueFree();
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+    }
+
+    /// <summary>Combat and portals running inside the real scene: enemies get bodies, portals get nodes and cameras.</summary>
+    private async Task CheckCombatAsync(Main main)
+    {
+        const string name = "combat and portals run in the scene";
+        try
+        {
+            var combat = main.Combat ?? throw new InvalidOperationException("no dungeon, so no combat view");
+            main.MovePlayerToFloor(0);
+            for (int i = 0; i < 5; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+
+            var view = main.Player.View;
+            var feet = new Vec3(view.Feet.X + 3, view.Feet.Y, view.Feet.Z);
+            var enemy = combat.Sim.SpawnEnemy(EnemyKind.Husk, feet);
+
+            // Fire both portals at the walls either side of the room.
+            var east = view with { Forward = new Vec3(1, 0, 0) };
+            var west = view with { Forward = new Vec3(-1, 0, 0) };
+            combat.Step(1.0 / 60, east, new PlayerActions(false, false, false, PortalBlue: true));
+            combat.Step(1.0 / 60, west, new PlayerActions(false, false, false, PortalOrange: true));
+            for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            combat.UpdatePortalViews(main.Player.Camera);
+
+            bool enemyDrawn = combat.GetNodeOrNull<MeshInstance3D>($"Enemy_{enemy.Id}") != null;
+            bool portalsDrawn = combat.GetNodeOrNull<PortalView>("Portal_Blue") != null && combat.GetNodeOrNull<PortalView>("Portal_Orange") != null;
+            bool linked = combat.Sim.Portals.Linked;
+
+            bool ok = enemyDrawn && portalsDrawn && linked;
+            if (ok) { _passed++; GD.Print($"  ok   {name}"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: enemyDrawn={enemyDrawn} portalsDrawn={portalsDrawn} linked={linked}"); }
         }
         catch (Exception e)
         {

@@ -37,12 +37,31 @@ Open the Godot .NET editor on `game/`, or run it directly:
 /Applications/Godot_mono.app/Contents/MacOS/Godot --path game
 ```
 
-You spawn on the plaza of the nearest dungeon, facing its stair shaft. WASD to move, Space to jump,
-mouse to look (click to capture, Esc to release), F to toggle free-fly. Terrain is shown as flat-coloured
-blocks with baked ambient occlusion; you carry a torch for the dungeons.
+You spawn on the plaza of the nearest dungeon, facing its stair shaft.
 
-Environment variables: `HOLLOWFALL_SEED` picks the world (default `voxel`), and
-`HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, for inspecting interiors.
+| Input | Action |
+|---|---|
+| WASD, Space | Move, jump |
+| Mouse | Look (click to capture, Esc to release) |
+| Left / right mouse | Revolver / shotgun |
+| V | Parry (hit it while an enemy flashes yellow) |
+| Q / E | Place the blue / orange portal where you aim |
+| R | Respawn after dying |
+| F | Free-fly, for inspecting the world |
+
+Terrain is shown as flat-coloured blocks with baked ambient occlusion, and you carry a torch for the dungeons.
+Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit
+locks away part of your health for a while, and a style meter rewards kills, headshots, parries and movement.
+See [docs/game-loop.md](docs/game-loop.md).
+
+**Portals.** Q and E fire the two ends of a linked pair onto flat stone walls, floors and ceilings (a 1 x 2
+opening, with room in front of it). Walk, fall or shoot into one and you come out of the other, keeping your
+speed, so a fall into a floor portal becomes a launch out of a wall. Your shots and enemy projectiles fly through
+too, including ones you parry.
+
+Environment variables: `HOLLOWFALL_SEED` picks the world (default `voxel`),
+`HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, and `HOLLOWFALL_DEMO=portals` runs a scripted
+portal setup for screenshots.
 
 ## Language
 

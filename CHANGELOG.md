@@ -14,6 +14,9 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Portals: Q and E place a linked blue and orange pair on flat portalable surfaces. You walk or fall through with your speed conserved (a fall into a floor portal launches you out of a wall), and shots, enemy projectiles and reflected projectiles pass through too. Core has `PortalSystem`, `PortalTransform` and `PortalWalker`; `PlayerBody` gained horizontal momentum and ground friction; the Godot view draws each portal with its own camera and a code-built shader.
+- Combat in the game: left and right mouse fire the revolver and shotgun, V parries, doors lock during encounters, and a HUD shows health with hard damage, the style meter, recent bonuses, the floor and the portals. R respawns after dying, and each floor is graded when you go down.
+- `HOLLOWFALL_DEMO=portals` runs a scripted portal setup for screenshots.
 - Playable world in Godot: chunks stream in around you, are meshed on worker threads, and are drawn with a first-person controller (WASD, jump, mouse look, free-fly) and a HUD. The game spawns at the nearest dungeon entrance; `HOLLOWFALL_SEED` and `HOLLOWFALL_SPAWN_FLOOR` choose the world and a starting dungeon floor.
 - `ChunkMesher`: face-culled chunk meshes across chunk borders, with per-vertex ambient occlusion, separate opaque, cutout and water buffers, and an engine-free output format. `VoxelWorld` is a thread-safe chunk cache over the generator.
 - `PlayerBody` voxel physics (gravity, jumping, wall sliding, one-block auto-step) and `Navigation` path finding. Tests walk real dungeons from the surface plaza to the boss through real collision.
