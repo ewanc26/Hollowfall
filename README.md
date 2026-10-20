@@ -55,12 +55,14 @@ to `user://settings.json` (Godot's user data folder).
 | Respawn | R | Y |
 | Free-fly (fly down) | F (Shift) | Right stick click (B) |
 | Pause menu | Esc | Start |
+| Debug overlay (fps, position, speed) | F3 | none |
 
 Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, render distance, inverted Y for mouse and
 gamepad, and controller prompts. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
 Nintendo letters, with the bottom and right buttons swapped), or you can pick a style.
 
 Terrain is shown as flat-coloured blocks with baked ambient occlusion, and you carry a torch for the dungeons.
+The HUD is kept clean: health, style, hints and a floor panel (floor, kills and time against par). The HUD fades out wherever it would cover a portal opening, and damage flashes are edge vignettes that leave the middle of the screen clear.
 Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit
 locks away part of your health for a while, and a style meter rewards kills, headshots, parries and movement.
 See [docs/game-loop.md](docs/game-loop.md).

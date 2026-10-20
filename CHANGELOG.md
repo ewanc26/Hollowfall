@@ -17,6 +17,8 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Portal polish: the inside of a portal is now exactly the other camera's image with nothing laid over it (no tint, shimmer or inner lines), the glowing frame sits outside the opening, new portals open with a short grow animation, and the portal camera matches the main view's lens, size and anti-aliasing. The HUD fades out wherever it would cover a portal opening, and damage and parry flashes are edge vignettes that keep the centre clear.
+- HUD refinements: a floor panel (floor, kills, time against par), a debug overlay that is off until F3 is pressed, display-font banners, and the wordmark logo on the title screen.
 - Assets: Chakra Petch (titles) and Rajdhani (menus and HUD), both SIL OFL, with their licences; a generated vector set (`tools/Hollowfall.AssetGen`) of controller, mouse and keyboard prompts, HUD icons, style-rank emblems, the app icon and the README banner; and `assets/CREDITS.md`. A test fails if the committed files drift from the generator.
 - Controller prompts for every face button in three layouts: Xbox (A, B, X, Y), PlayStation (cross, circle, square, triangle) and Nintendo (labels swapped by position), with matching shoulders, triggers and menu buttons. Prompts follow the connected controller, or can be forced in Settings.
 - The HUD and menus show glyphs and keycaps for each binding, a rank emblem, a heart for health and the two portal icons on the crosshair.

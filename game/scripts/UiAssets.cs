@@ -43,6 +43,9 @@ public static class Glyphs
         return Cache[id] = ResourceLoader.Exists(path) ? ResourceLoader.Load<Texture2D>(path) : null;
     }
 
+    /// <summary>Loads a texture by resource path, or null if it is missing or not imported.</summary>
+    public static Texture2D? LoadTexture(string path) => ResourceLoader.Exists(path) ? ResourceLoader.Load<Texture2D>(path) : null;
+
     public static Texture2D? ForBinding(Binding? b, ControllerStyle style = ControllerStyle.Xbox) => Get(BindingGlyphs.IdOf(b, style));
 
     /// <summary>A square image of an icon or glyph, or a blank spacer if the file is missing.</summary>

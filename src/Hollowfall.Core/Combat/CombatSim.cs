@@ -44,6 +44,7 @@ public sealed class CombatSim
     {
         public bool Started, Completed;
         public double StartTime;
+        public double FinishTime;
         public double StartStyle;
         public int Kills;
         public int Restarts;
@@ -116,6 +117,14 @@ public sealed class CombatSim
     }
 
     public FloorTargets TargetsFor(int floor) => _floors[floor].Targets;
+
+    /// <summary>Seconds spent on a floor so far (frozen once the floor is completed); zero if not yet entered.</summary>
+    public double ElapsedOn(int floor)
+    {
+        var p = _floors[floor];
+        if (!p.Started) return 0;
+        return (p.Completed ? p.FinishTime : Time) - p.StartTime;
+    }
 
     public int KillsOn(int floor) => _floors[floor].Kills;
 
@@ -214,6 +223,7 @@ public sealed class CombatSim
         var p = _floors[floor];
         if (p.Completed || !p.Started) return;
         p.Completed = true;
+        p.FinishTime = Time;
         var result = FloorRanking.Score(p.Targets, Time - p.StartTime, p.Kills, Style.TotalScore - p.StartStyle, p.Restarts);
         _events.Add(new FloorCompleted(floor, result));
     }

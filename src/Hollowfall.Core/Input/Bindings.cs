@@ -20,6 +20,7 @@ public enum GameAction
     Respawn,
     FlyToggle,
     FlyDown,
+    DebugInfo,
     Pause,
 }
 
@@ -139,6 +140,7 @@ public static class ActionInfo
         GameAction.Respawn => "Respawn",
         GameAction.FlyToggle => "Free-fly",
         GameAction.FlyDown => "Fly down",
+        GameAction.DebugInfo => "Debug overlay",
         _ => "Pause menu",
     };
 
@@ -281,6 +283,7 @@ public sealed class BindingMap
             GameAction.Respawn => Binding.Key("R"),
             GameAction.FlyToggle => Binding.Key("F"),
             GameAction.FlyDown => Binding.Key("Shift"),
+            GameAction.DebugInfo => Binding.Key("F3"),
             GameAction.Pause => PauseKey,
             _ => null,
         };
