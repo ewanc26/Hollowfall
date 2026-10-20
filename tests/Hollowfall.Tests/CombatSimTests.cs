@@ -1,5 +1,6 @@
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Portals;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Tests;
@@ -520,6 +521,104 @@ public class CombatSimTests
         Assert.True(sim.TargetsFor(0).ParTimeSeconds > 40);
         Assert.Equal(0, sim.KillsOn(0));
         Assert.True(sim.EnemiesOn(0) > 0);
+    }
+
+    // ---- portals ----------------------------------------------------------------------------
+
+    private static void LinkEastAndWest(Arena a, out Vec3 eastWall, out Vec3 westWall)
+    {
+        var view = a.View();
+        var east = new Vec3(1, 0, 0);
+        var west = new Vec3(-1, 0, 0);
+        eastWall = view.Eye + east * (RayCast.FirstSolid(a.World.GetBlock, view.Eye, east, 80) ?? throw new InvalidOperationException("no east wall"));
+        westWall = view.Eye + west * (RayCast.FirstSolid(a.World.GetBlock, view.Eye, west, 80) ?? throw new InvalidOperationException("no west wall"));
+        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalBlue: true));
+        a.Sim.Tick(Dt, view with { Forward = west }, new PlayerActions(false, false, false, PortalOrange: true));
+    }
+
+    [Fact]
+    public void FiringPortalsPlacesAndLinksThemAndReportsIt()
+    {
+        var a = MakeArena();
+        var view = a.View();
+        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalBlue: true));
+        var blue = Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>());
+        Assert.True(blue.Success, blue.Failure.ToString());
+        Assert.Equal(PortalColor.Blue, blue.Color);
+        Assert.Equal(-1, blue.Normal.X);
+        Assert.False(a.Sim.Portals.Linked);
+
+        a.Sim.Tick(Dt, view with { Forward = new Vec3(-1, 0, 0) }, new PlayerActions(false, false, false, PortalOrange: true));
+        Assert.True(Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>()).Success);
+        Assert.True(a.Sim.Portals.Linked);
+    }
+
+    [Fact]
+    public void ShotsGoThroughPortalsAndHitEnemiesOnTheOtherSide()
+    {
+        var a = MakeArena();
+        LinkEastAndWest(a, out _, out var westWall);
+        a.Sim.DrainEvents();
+
+        // The orange portal is on the west wall facing east; stand an enemy a few blocks out from it.
+        var enemy = a.Sim.SpawnEnemy(EnemyKind.Warden, new Vec3(westWall.X + 1.6, a.Y, a.Z));
+        a.Sim.DrainEvents();
+
+        // Shoot from a few blocks east, so the enemy near the orange portal is not on top of the shooter.
+        var view = a.View(dx: 5) with { Forward = new Vec3(1, 0, 0) };
+        a.Sim.Tick(Dt, view, new PlayerActions(true, false, false));
+        var events = a.Sim.DrainEvents();
+        var shot = Assert.Single(events.OfType<ShotFired>());
+        Assert.True(shot.Path!.Count >= 2, "the shot should be in two pieces: to the blue portal and out of the orange one");
+        Assert.Contains(events, e => e is EnemyHit h && h.Id == enemy.Id);
+        Assert.True(enemy.Health < enemy.Spec.Health);
+    }
+
+    [Fact]
+    public void WithoutALinkedPairShotsJustHitTheWall()
+    {
+        var a = MakeArena();
+        var view = a.View();
+        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalBlue: true));
+        a.Sim.DrainEvents();
+        a.Sim.Tick(Dt, view, new PlayerActions(true, false, false));
+        var shot = Assert.Single(a.Sim.DrainEvents().OfType<ShotFired>());
+        Assert.Single(shot.Path!);
+    }
+
+    [Fact]
+    public void ReflectedProjectilesFlyThroughPortals()
+    {
+        var a = MakeArena();
+        LinkEastAndWest(a, out _, out _);
+        a.Sim.DrainEvents();
+
+        var spitter = a.Sim.SpawnEnemy(EnemyKind.Spitter, new Vec3(a.X + 9, a.Y, a.Z + 1));
+        var view = a.View();
+        bool through = false, reflected = false;
+        for (int i = 0; i < 60 * 8 && !through; i++)
+        {
+            bool press = !reflected && a.Sim.Projectiles.Any(p => !p.Reflected && p.Position.DistanceTo(view.Eye) < 2.8);
+            a.Sim.Tick(Dt, view, new PlayerActions(false, false, press));
+            foreach (var e in a.Sim.DrainEvents())
+            {
+                reflected |= e is ProjectileReflected;
+                through |= e is PortalTraversed { What: "projectile" };
+            }
+        }
+        Assert.True(reflected, "the shot should have been parried");
+        Assert.True(through || spitter.Dead, "a reflected projectile should fly into the blue portal, or kill the spitter first");
+    }
+
+    [Fact]
+    public void RespawningRemovesPortals()
+    {
+        var a = MakeArena();
+        LinkEastAndWest(a, out _, out _);
+        Assert.True(a.Sim.Portals.Linked);
+        a.Sim.Respawn();
+        Assert.False(a.Sim.Portals.Linked);
+        Assert.Null(a.Sim.Portals.Blue);
     }
 
     [Fact]

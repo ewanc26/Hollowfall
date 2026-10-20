@@ -10,7 +10,12 @@ public enum ParryKind
 /// <summary>What happened this tick, for the host to turn into sound, particles and UI.</summary>
 public abstract record CombatEvent;
 
-public sealed record ShotFired(string Weapon, Vec3 Origin, Vec3 End) : CombatEvent;
+/// <summary>A shot. <see cref="Path"/> has one piece per straight run: more than one when the shot went through portals.</summary>
+public sealed record ShotFired(string Weapon, Vec3 Origin, Vec3 End, IReadOnlyList<(Vec3 From, Vec3 To)>? Path = null) : CombatEvent;
+
+public sealed record PortalPlaced(Portals.PortalColor Color, bool Success, Vec3 Position, Vec3 Normal, Vec3 Up, Portals.PlaceFailure Failure) : CombatEvent;
+
+public sealed record PortalTraversed(string What, Portals.PortalColor Entered) : CombatEvent;
 
 public sealed record EnemySpawned(int Id, EnemyKind Kind, Vec3 Position) : CombatEvent;
 
