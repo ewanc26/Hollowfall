@@ -144,7 +144,8 @@ public class CombatSimTests
             return Last<EnemyHit>(a.Sim.DrainEvents())!.Damage;
         }
 
-        double torso = Shot(1.0), head = Shot(1.6), legs = Shot(0.3);
+        // The warden is 2.3 tall: head above 1.725, legs below 0.7.
+        double torso = Shot(1.2), head = Shot(2.1), legs = Shot(0.4);
         Assert.Equal(12, torso, 6);
         Assert.Equal(24, head, 6);
         Assert.Equal(9.6, legs, 6);
@@ -194,8 +195,8 @@ public class CombatSimTests
     public void KillingEarnsStyleAndHeadshotsEarnMore()
     {
         var a = MakeArena();
-        var e = Place(a, EnemyKind.Spitter, 8); // 20 hp: one headshot (24)
-        Run(a.Sim, Aim(a.View(), new Vec3(a.X + 8, a.Y + 1.6, a.Z)), 1, new PlayerActions(true, false, false));
+        var e = Place(a, EnemyKind.Spitter, 8); // 20 hp: one headshot (24); it is 1.5 tall, so its head starts at 1.125
+        Run(a.Sim, Aim(a.View(), new Vec3(a.X + 8, a.Y + 1.35, a.Z)), 1, new PlayerActions(true, false, false));
         var ev = a.Sim.DrainEvents();
         Assert.True(Last<EnemyHit>(ev)!.Killed);
         Assert.NotNull(Last<EnemyKilled>(ev));
@@ -229,8 +230,8 @@ public class CombatSimTests
         a.Sim.Vitals.Damage(50);
         a.Sim.Vitals.Tick(20);
         double h = a.Sim.Vitals.Health;
-        Run(a.Sim, Aim(a.View(), new Vec3(a.X + 3, a.Y + 1.6, a.Z)), 1, new PlayerActions(true, false, false));
-        Assert.Equal(h + 30, a.Sim.Vitals.Health, 3); // head hit up close
+        Run(a.Sim, Aim(a.View(), new Vec3(a.X + 3, a.Y + 2.1, a.Z)), 1, new PlayerActions(true, false, false));
+        Assert.Equal(h + 30, a.Sim.Vitals.Health, 3); // head hit up close (the warden is 2.3 tall)
     }
 
     // ---- enemies ----------------------------------------------------------------------------
