@@ -36,6 +36,9 @@ public partial class PlayerController : Node3D
 
     private double _lastYaw, _lastPitch;
 
+    /// <summary>Which way the player faces, in radians (0 looks down -Z).</summary>
+    public double Yaw => _yaw;
+
     /// <summary>Raised when the player goes through a portal, so the view can react.</summary>
     public event Action<Crossing>? Crossed;
 

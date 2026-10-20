@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Hollowfall.Core.Terrain;
 using System.Text.Json.Nodes;
 
 namespace Hollowfall.Core.Input;
@@ -21,6 +22,7 @@ public sealed class GameSettings
     private double _deadzone = DeadzoneRange.Default;
     private double _fov = FovRange.Default;
     private int _viewRadius = ViewRadiusRange.Default;
+    private string _seed = SeedWords.Default;
     private double _master = VolumeRange.Default;
     private double _effects = 1.0;
     private double _ambience = AmbienceRange.Default;
@@ -55,6 +57,13 @@ public sealed class GameSettings
     {
         get => _viewRadius;
         set => _viewRadius = (int)Clamp(value, ViewRadiusRange.Min, ViewRadiusRange.Max, ViewRadiusRange.Default);
+    }
+
+    /// <summary>The world to play, as typed: any text, or a number. Cleaned on the way in so it is never empty.</summary>
+    public string Seed
+    {
+        get => _seed;
+        set => _seed = SeedWords.Clean(value);
     }
 
     /// <summary>Overall loudness, 0 (silent) to 1.</summary>
@@ -96,6 +105,7 @@ public sealed class GameSettings
         Deadzone = DeadzoneRange.Default;
         FieldOfView = FovRange.Default;
         ViewRadius = ViewRadiusRange.Default;
+        Seed = SeedWords.Default;
         MasterVolume = VolumeRange.Default;
         EffectsVolume = 1.0;
         AmbienceVolume = AmbienceRange.Default;
@@ -128,6 +138,7 @@ public sealed class GameSettings
             ["deadzone"] = Deadzone,
             ["fieldOfView"] = FieldOfView,
             ["viewRadius"] = ViewRadius,
+            ["seed"] = Seed,
             ["masterVolume"] = MasterVolume,
             ["effectsVolume"] = EffectsVolume,
             ["ambienceVolume"] = AmbienceVolume,
@@ -158,6 +169,7 @@ public sealed class GameSettings
         s.Deadzone = Number(root, "deadzone", DeadzoneRange.Default);
         s.FieldOfView = Number(root, "fieldOfView", FovRange.Default);
         s.ViewRadius = (int)Number(root, "viewRadius", ViewRadiusRange.Default);
+        s.Seed = root["seed"] is JsonValue sv && sv.TryGetValue<string>(out var seedText) ? seedText : SeedWords.Default;
         s.MasterVolume = Number(root, "masterVolume", VolumeRange.Default);
         s.EffectsVolume = Number(root, "effectsVolume", 1.0);
         s.AmbienceVolume = Number(root, "ambienceVolume", AmbienceRange.Default);

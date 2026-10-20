@@ -73,6 +73,9 @@ public sealed class CombatSim
 
     /// <summary>Keys, chests and spike traps.</summary>
     public Interactables Items => _items;
+
+    /// <summary>What the player has seen of each floor.</summary>
+    public FloorMap Map { get; }
     public StyleMeter Style { get; } = new();
     public double Time { get; private set; }
 
@@ -88,6 +91,7 @@ public sealed class CombatSim
         _site = site;
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
         _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add);
+        Map = new FloorMap(site);
         _floors = new FloorProgress[site.FloorCount];
         for (int k = 0; k < site.FloorCount; k++)
         {
@@ -169,6 +173,7 @@ public sealed class CombatSim
         if (Vitals.Dead) return;
 
         TrackFloor(view);
+        if (CurrentFloor >= 0) Map.Reveal(CurrentFloor, view.Feet.X, view.Feet.Z);
         _items.Tick(dt, view, actions.Interact);
         TriggerEncounters(view);
 
@@ -231,7 +236,7 @@ public sealed class CombatSim
         p.Completed = true;
         p.FinishTime = Time;
         var result = FloorRanking.Score(p.Targets, Time - p.StartTime, p.Kills, Style.TotalScore - p.StartStyle, p.Restarts);
-        _events.Add(new FloorCompleted(floor, result));
+        _events.Add(new FloorCompleted(floor, result, Time - p.StartTime));
     }
 
     private void TriggerEncounters(PlayerView view)

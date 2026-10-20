@@ -21,6 +21,11 @@ public partial class Main : Node3D
     private ViewModels _weapons = null!;
     private PropsView? _props;
     private AudioDirector _audio = null!;
+    private RunRecords _records = new();
+    private string _seedName = "";
+
+    /// <summary>Set when the scene is rebuilt for a new world, so the player is not shown the title screen they just left.</summary>
+    private static bool _skipTitleOnce;
     private CanvasLayer _weaponLayer = null!;
     private string _where = "";
     private int _demoFrame;
@@ -36,13 +41,19 @@ public partial class Main : Node3D
     public static string SettingsPath =>
         System.Environment.GetEnvironmentVariable("HOLLOWFALL_SETTINGS") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://settings.json");
 
+    /// <summary>Where personal bests are saved; HOLLOWFALL_RECORDS overrides it (tests and screenshots use that).</summary>
+    public static string RecordsPath =>
+        System.Environment.GetEnvironmentVariable("HOLLOWFALL_RECORDS") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://records.json");
+
     public override void _Ready()
     {
         Settings = GameSettings.Load(SettingsPath);
         InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
 
-        string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : "voxel";
+        string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : Settings.Seed;
         World = new VoxelWorld(TerrainGenerator.SeedFromString(seedText));
+        _seedName = seedText;
+        _records = RunRecords.Load(RecordsPath);
 
         AddChild(new WorldEnvironment { Environment = MakeEnvironment() });
         AddChild(new DirectionalLight3D
@@ -105,10 +116,13 @@ public partial class Main : Node3D
         };
         _menus.RespawnRequested += () => { if (Combat != null) Respawn(); };
         _menus.QuitRequested += () => GetTree().Quit();
+        _menus.NewGameRequested += () => Restart(skipTitle: true);
+        _menus.MainMenuRequested += () => Restart(skipTitle: false);
         AddChild(_menus);
 
         // The game starts at the title screen, except headless (tests), scripted demos and when asked to skip it.
-        bool skipTitle = DisplayServer.GetName() == "headless" || _demo != null || System.Environment.GetEnvironmentVariable("HOLLOWFALL_SKIP_TITLE") == "1";
+        bool skipTitle = DisplayServer.GetName() == "headless" || _demo != null || System.Environment.GetEnvironmentVariable("HOLLOWFALL_SKIP_TITLE") == "1" || _skipTitleOnce;
+        _skipTitleOnce = false;
         if (!skipTitle) _menus.Open(MenuScreen.Title);
 
         // For screenshots and videos: HOLLOWFALL_MENU=title|pause|controls|settings opens that screen straight away.
@@ -122,6 +136,14 @@ public partial class Main : Node3D
             }));
 
         GD.Print($"Hollowfall: seed \"{seedText}\", spawn {where} at ({feet.X:F1}, {feet.Y:F1}, {feet.Z:F1})");
+    }
+
+    /// <summary>Rebuilds the whole scene: a new world for a new seed, or back to the title screen.</summary>
+    private void Restart(bool skipTitle)
+    {
+        _skipTitleOnce = skipTitle;
+        GetTree().Paused = false;
+        GetTree().ReloadCurrentScene();
     }
 
     /// <summary>Applies changed settings and bindings to the running game.</summary>
@@ -293,7 +315,13 @@ public partial class Main : Node3D
                 _hud.ShowBanner("CLEAR", 1.5);
                 break;
             case FloorCompleted f:
-                _hud.ShowBanner($"FLOOR {f.Floor + 1} COMPLETE  {f.Result.Overall}\ntime {f.Result.Time}  kills {f.Result.Kills}  style {f.Result.Style}", 6);
+                {
+                    var (isBest, previous) = _records.Submit(_seedName, f.Floor, f.Result, f.Seconds);
+                    if (isBest) _records.TrySave(RecordsPath);
+                    string note = isBest ? (previous == null ? "first clear" : $"NEW BEST  (was {previous.Value.Grade})") : $"best {_records.Best(_seedName, f.Floor)!.Value.Grade}";
+                    int secs = (int)f.Seconds;
+                    _hud.ShowBanner($"FLOOR {f.Floor + 1} COMPLETE  {f.Result.Overall}  {secs / 60}:{secs % 60:D2}\ntime {f.Result.Time}  kills {f.Result.Kills}  style {f.Result.Style}\n{note}", 6);
+                }
                 break;
             case KeyCollected:
                 _hud.ShowBanner("KEY", 1.2);
@@ -334,6 +362,9 @@ public partial class Main : Node3D
         _weapons.SetPortals(sim.Portals.Teal != null, sim.Portals.Violet != null);
         if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds, sim.Items.KeysHeld);
         else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
+        {
+            _hud.SetMap(sim.Map, floor, new Vector2((float)(b.X - Combat.Site.OriginX), (float)(b.Z - Combat.Site.OriginZ)), (float)_player.Yaw);
+        }
 
         string info =
             $"{Engine.GetFramesPerSecond()} fps   x {b.X:F1}  y {b.Y:F1}  z {b.Z:F1}   speed {b.Speed:F1}   " +

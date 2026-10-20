@@ -2,6 +2,7 @@ using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Portals;
+using Hollowfall.Core.Terrain;
 
 namespace Hollowfall.Tests;
 
@@ -158,5 +159,38 @@ public class VolumeSettingsTests
         Assert.Equal(GameSettings.VolumeRange.Default, s.MasterVolume);
         Assert.Equal(1.0, s.EffectsVolume);
         Assert.Equal(GameSettings.AmbienceRange.Default, s.AmbienceVolume);
+    }
+}
+
+public class SeedWordsTests
+{
+    [Fact]
+    public void WordsAreStableReadableAndVaried()
+    {
+        Assert.Equal(SeedWords.From(5), SeedWords.From(5));
+        var seeds = Enumerable.Range(0, 200).Select(i => SeedWords.From((ulong)i)).ToHashSet();
+        Assert.True(seeds.Count > 150);
+        Assert.All(seeds, s => Assert.Matches("^[a-z]+-[a-z]+-\\d{3}$", s));
+    }
+
+    [Fact]
+    public void CleaningMakesAUsableSeed()
+    {
+        Assert.Equal("voxel", SeedWords.Clean(null));
+        Assert.Equal("voxel", SeedWords.Clean("   "));
+        Assert.Equal("abc", SeedWords.Clean("  a\tb\nc "), ignoreCase: false);
+        Assert.Equal(SeedWords.MaxLength, SeedWords.Clean(new string('x', 500)).Length);
+        Assert.Equal("amber-hollow-914", SeedWords.Clean("amber-hollow-914"));
+    }
+
+    [Fact]
+    public void ASeedRoundTripsThroughSettingsAndDrivesTheWorld()
+    {
+        var s = new GameSettings { Seed = "  Deep Delve 7 " };
+        Assert.Equal("Deep Delve 7", s.Seed);
+        var back = GameSettings.FromJson(s.ToJson());
+        Assert.Equal("Deep Delve 7", back.Seed);
+        Assert.Equal(Hollowfall.Core.Terrain.TerrainGenerator.SeedFromString(back.Seed), Hollowfall.Core.Terrain.TerrainGenerator.SeedFromString(s.Seed));
+        Assert.Equal("voxel", GameSettings.FromJson("{\"seed\": 12}").Seed);
     }
 }

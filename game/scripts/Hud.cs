@@ -1,5 +1,6 @@
 using Godot;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Portals;
@@ -20,6 +21,7 @@ public partial class Hud : CanvasLayer
     private Control _tealMark = null!, _violetMark = null!;
     private TextureRect _rankIcon = null!;
     private Control _crossCluster = null!;
+    private MiniMap _map = null!;
     private Label _floorStairs = null!, _floorKills = null!, _floorTime = null!, _floorKeys = null!;
     private PanelContainer _floorPanel = null!;
     private ShaderMaterial _vignette = null!;
@@ -87,6 +89,14 @@ public partial class Hud : CanvasLayer
         _floorKeys = FloorRow(floorRows, GameIcons.Key);
         root.AddChild(_floorPanel);
 
+        // The map hangs under the floor panel in the same corner.
+        _map = new MiniMap { Visible = false };
+        _map.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight, Control.LayoutPresetMode.Minsize, 14);
+        _map.GrowHorizontal = Control.GrowDirection.Begin;
+        _map.OffsetTop += 168;
+        _map.OffsetBottom += 168;
+        root.AddChild(_map);
+
         // Bottom-left stack: bonuses, style meter, health bar and the controls hint. Everything is anchored, so it
         // stays put whatever the window size.
         var stack = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -121,6 +131,7 @@ public partial class Hud : CanvasLayer
         stack.AddChild(_hint);
         _avoid.Add(stack);
         _avoid.Add(_floorPanel);
+        _avoid.Add(_map);
         _avoid.Add(_info);
 
         // Centre: crosshair, hit marker and the banner.
@@ -211,6 +222,13 @@ public partial class Hud : CanvasLayer
         _floorKeys.Text = keys == 1 ? "1 key" : $"{keys} keys";
         _floorKeys.GetParent<Control>().Visible = keys > 0;
         _floorTime.AddThemeColorOverride("font_color", elapsed <= par ? Colors.White : new Color(1f, 0.55f, 0.45f));
+    }
+
+    /// <summary>Shows what the player has seen of the floor, or hides the map on the surface.</summary>
+    public void SetMap(FloorMap? map, int floor, Vector2 cell, float yaw)
+    {
+        _map.Visible = map != null && floor >= 0;
+        if (_map.Visible) _map.Show(map!, floor, cell, yaw);
     }
 
     private static string Clock(double seconds) => $"{(int)seconds / 60}:{(int)seconds % 60:D2}";

@@ -41,7 +41,7 @@ public sealed record EncounterCleared(int Floor, int RoomId) : CombatEvent;
 
 public sealed record DoorsChanged(int Floor, int RoomId, bool Locked) : CombatEvent;
 
-public sealed record FloorCompleted(int Floor, FloorResult Result) : CombatEvent;
+public sealed record FloorCompleted(int Floor, FloorResult Result, double Seconds = 0) : CombatEvent;
 
 public sealed record PlayerDied : CombatEvent;
 
