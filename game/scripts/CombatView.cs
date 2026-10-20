@@ -25,6 +25,7 @@ public partial class CombatView : Node3D
     private readonly Dictionary<PortalColor, PortalView> _portals = [];
     private readonly List<Tracer> _tracers = [];
     private WorldView _world = null!;
+    private EffectsView _effects = null!;
 
     public CombatSim Sim { get; private set; } = null!;
     public DungeonSite Site { get; private set; } = null!;
@@ -37,7 +38,9 @@ public partial class CombatView : Node3D
         Sim = sim;
         Site = site;
         _world = world;
-
+        _effects = new EffectsView { Name = "Effects" };
+        _effects.Initialize(world.World.GetBlock);
+        AddChild(_effects);
     }
 
     private static StandardMaterial3D Solid(Color c) => new() { AlbedoColor = c, Roughness = 0.8f };
@@ -92,6 +95,7 @@ public partial class CombatView : Node3D
 
     private void Handle(CombatEvent e)
     {
+        _effects.OnEvent(e);
         switch (e)
         {
             case ShotFired shot when shot.Path != null:
@@ -108,6 +112,7 @@ public partial class CombatView : Node3D
                 AddChild(SeverEffect.ForEnemy(severed));
                 break;
             case EnemyKilled killed when _enemies.TryGetValue(killed.Id, out var node):
+                _effects.Gib(killed.Kind, node.Position, killed.Id);
                 Collapse(node);
                 _enemies.Remove(killed.Id);
                 break;
@@ -130,14 +135,14 @@ public partial class CombatView : Node3D
         }
     }
 
-    /// <summary>A killed enemy slumps, shrinks into the floor and disappears.</summary>
+    /// <summary>A killed enemy bursts into shards (<see cref="EffectsView"/>) as the body slumps, shrinks into the floor and disappears.</summary>
     private void Collapse(EnemyView view)
     {
         view.ForcePose("stunned");
         var tween = CreateTween();
         tween.SetParallel();
-        tween.TweenProperty(view, "scale", new Vector3(1.15f, 0.05f, 1.15f), 0.45).SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.In);
-        tween.TweenProperty(view, "position:y", view.Position.Y - 0.25f, 0.45);
+        tween.TweenProperty(view, "scale", new Vector3(1.15f, 0.05f, 1.15f), 0.3).SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.In);
+        tween.TweenProperty(view, "position:y", view.Position.Y - 0.25f, 0.3);
         tween.Chain().TweenCallback(Callable.From(view.QueueFree));
     }
 

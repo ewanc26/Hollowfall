@@ -7,7 +7,7 @@ namespace Hollowfall.Game;
 /// <summary>Converts Core's engine-free chunk meshes into Godot meshes. Must run on the main thread.</summary>
 public static class ChunkMeshBuilder
 {
-    private static StandardMaterial3D? _opaque, _cutout, _water;
+    private static StandardMaterial3D? _opaque, _cutout;
 
     private static ImageTexture? _atlas;
 
@@ -39,11 +39,8 @@ public static class ChunkMeshBuilder
         m.AlphaScissorThreshold = 0.5f;
     });
 
-    public static StandardMaterial3D Water => _water ??= Textured(m =>
-    {
-        m.Roughness = 0.2f;
-        m.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
-    });
+    /// <summary>Animated inside the water tile by a code-built shader; see <see cref="EffectsWater"/>.</summary>
+    public static Material Water => EffectsWater.Material;
 
     /// <summary>Returns null for an empty chunk. Each non-empty buffer becomes one surface with its own material.</summary>
     public static ArrayMesh? ToArrayMesh(ChunkMesh chunk)

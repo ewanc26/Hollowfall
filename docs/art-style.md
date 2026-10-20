@@ -37,6 +37,17 @@ Blocks wear 16 by 16 pixel tiles drawn by `BlockTextures` (no image files), pack
 
 To add a surface: add a `Tile`, paint it in `Paint`, map blocks to it in `TileFor`, give the block a palette colour, and the tests cover the rest.
 
+## Water
+
+Water uses the water tile of the shared atlas, but not the shared material. Scrolling a tile's UVs would drag its neighbours (snow, gravel) across the surface, so `EffectsWater` is a code-built spatial shader: it turns the mesh's atlas coordinates back into a pixel position inside the tile, drifts it and ripples it by whole pixels (so the motion stays chunky), wraps it with `fract` over the tile, and only then reads the atlas, with the nearest filter. The tile and its half-pixel inset come from `BlockTextures` as uniforms, so redrawing the tile needs no shader change. Alpha and roughness match the old material.
+
+## Effects
+
+- **Shards, not blood.** A killed enemy bursts into 10 to 22 chunky prisms in its own palette (`Gibs.Palette`: rust and bone for the Husk, violet for the Spitter, steel and crimson for the Warden). They tumble, bounce on the floor and walls, lie for a couple of seconds and shrink away. Hits throw bright flecks from the impact point: orange for a body hit, gold for a head shot, hot white for the killing blow.
+- **Pooled.** `ShardField` is a fixed array (192 gibs, 96 sparks) that recycles its oldest slot, and `EffectsView` draws it as two MultiMeshes, so a fight allocates nothing per frame. What flies, and where, is decided in Core from a seed and is unit tested.
+- **Dust motes.** `EffectsDust` is a small CPU particle box (70 tiny warm specks) that follows the viewer while the motes stay put in the world. Underground only. It should be noticed only when missing.
+- **Footsteps.** `Footsteps` maps the block underfoot to one of nine synthesised sounds (stone, brick, dirt, grass, sand, gravel, snow, wood, splash) and `Stride` times them by distance walked, with a heavier landing sound and a little pitch and volume variation from a hash, never a random generator.
+
 ## Props
 
 Chests stand where loot spawns, keys turn in the air, spike traps fill trap rooms, and wall torches (`PropPlacer`, a pure function of the seed) light every room. Only the six torches nearest the player cast light.
@@ -49,4 +60,4 @@ Opening a chest releases a **loot pickup** that floats out of the lid, turns and
 HOLLOWFALL_SHOWCASE=enemies godot --path game res://scenes/Showcase.tscn
 ```
 
-Pages: `enemies`, `poses`, `weapons`, `props`.
+Pages: `enemies`, `poses`, `weapons`, `props`, `effects`. The effects page shows the lake beside snow and gravel, three enemies being hit and burst on a loop, and dust; `HOLLOWFALL_SHOT=water` looks closely at the water's edge, and a walker crossing every surface prints the footstep sound it chose. Record frames with the movie writer, e.g. `godot --path game res://scenes/Showcase.tscn --write-movie out/f.png --fixed-fps 30 --quit-after 150`.

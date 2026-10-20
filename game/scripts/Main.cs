@@ -22,6 +22,7 @@ public partial class Main : Node3D
     private PropsView? _props;
     private ReplayDirector? _replay;
     private AudioDirector _audio = null!;
+    private EffectsDust _dust = null!;
     private RunRecords _records = new();
     private string _seedName = "";
 
@@ -83,6 +84,8 @@ public partial class Main : Node3D
         _player.Settings = Settings;
         _player.Initialize(World, feet, yaw);
         AddChild(_player);
+        _dust = new EffectsDust { Name = "Dust", Active = false, Target = () => _player.Camera.GlobalPosition };
+        AddChild(_dust);
 
         if (site != null)
         {
@@ -259,6 +262,7 @@ public partial class Main : Node3D
     {
         var dead = Combat?.Sim.Dead ?? false;
         var actions = _player.Step(delta, Combat?.Sim.Portals, dead);
+        _audio.Walk(delta, _player.Body, dead || _player.Flying, World.GetBlock);
 
         if (Combat != null)
         {
@@ -387,6 +391,7 @@ public partial class Main : Node3D
         _weapons.Pose(delta, b.Speed, b.OnGround, _player.LookDelta);
         _props?.Update(delta, _view.Focus);
         _audio.Underground = Combat != null && Combat.Sim.CurrentFloor >= 0;
+        _dust.Active = _audio.Underground;
 
         if (Combat == null) return;
         var sim = Combat.Sim;
