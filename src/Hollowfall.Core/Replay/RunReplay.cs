@@ -11,13 +11,13 @@ namespace Hollowfall.Core.Replay;
 public sealed class RunReplay
 {
     /// <summary>The file format. Bump when the byte layout changes.</summary>
-    public const int FormatVersion = 1;
+    public const int FormatVersion = 2;
 
     /// <summary>
     /// The simulation rules the run was recorded under. Bump this whenever <c>CombatSim</c> behaviour changes in a way that alters a
     /// replay's outcome; older files still load (a ghost only needs the recorded positions) but are flagged as unverifiable.
     /// </summary>
-    public const int SimVersion = 1;
+    public const int SimVersion = 2;
 
     public const int TicksPerSecond = 60;
     public const double Dt = 1.0 / TicksPerSecond;
@@ -113,13 +113,14 @@ public static class ReplayCodec
                 f.Fx - prev.Fx, f.Fy - prev.Fy, f.Fz - prev.Fz,
                 f.Ex - prev.Ex, f.Ey - prev.Ey, f.Ez - prev.Ez,
                 f.Dx - prev.Dx, f.Dy - prev.Dy, f.Dz - prev.Dz,
+                f.Speed - prev.Speed,
             ];
             uint mask = 0;
-            for (int i = 0; i < 9; i++) if (delta[i] != 0) mask |= 1u << i;
+            for (int i = 0; i < 10; i++) if (delta[i] != 0) mask |= 1u << i;
             PutVar(o, (uint)count);
-            PutVar(o, (uint)f.Flags | (f.Respawns > 0 ? 1u << 8 : 0) | (mask << 9));
+            PutVar(o, (uint)f.Flags | (f.Respawns > 0 ? 1u << 10 : 0) | (mask << 11));
             if (f.Respawns > 0) PutVar(o, (uint)f.Respawns);
-            for (int i = 0; i < 9; i++) if ((mask & (1u << i)) != 0) PutVar(o, Zig(delta[i]));
+            for (int i = 0; i < 10; i++) if ((mask & (1u << i)) != 0) PutVar(o, Zig(delta[i]));
             prev = f;
         }
 
@@ -244,28 +245,28 @@ public static class ReplayCodec
         var frames = new ReplayFrame[ticks];
         int n = 0;
         var cur = default(ReplayFrame);
-        long[] v = new long[9];
+        long[] v = new long[10];
         for (uint run = 0; run < runCount; run++)
         {
             uint repeat = r.Var(), control = r.Var();
             if (r.Failed || repeat == 0 || repeat > ticks - n) return null;
-            int flags = (int)(control & 0xFF);
+            int flags = (int)(control & 0x3FF);
             int respawns = 0;
-            if ((control & (1u << 8)) != 0)
+            if ((control & (1u << 10)) != 0)
             {
                 respawns = (int)r.Var();
                 if (respawns is < 1 or > ReplayFrame.MaxRespawns || repeat != 1) return null;
             }
-            uint mask = control >> 9;
-            if (mask > 0x1FF) return null;
+            uint mask = control >> 11;
+            if (mask > 0x3FF) return null;
 
-            v[0] = cur.Fx; v[1] = cur.Fy; v[2] = cur.Fz; v[3] = cur.Ex; v[4] = cur.Ey; v[5] = cur.Ez; v[6] = cur.Dx; v[7] = cur.Dy; v[8] = cur.Dz;
-            for (int i = 0; i < 9; i++)
+            v[0] = cur.Fx; v[1] = cur.Fy; v[2] = cur.Fz; v[3] = cur.Ex; v[4] = cur.Ey; v[5] = cur.Ez; v[6] = cur.Dx; v[7] = cur.Dy; v[8] = cur.Dz; v[9] = cur.Speed;
+            for (int i = 0; i < 10; i++)
                 if ((mask & (1u << i)) != 0) v[i] += Unzig(r.Var());
             if (r.Failed) return null;
             foreach (long x in v) if (Math.Abs(x) > ReplayFrame.MaxPosition) return null;
 
-            cur = new ReplayFrame((int)v[0], (int)v[1], (int)v[2], (int)v[3], (int)v[4], (int)v[5], (int)v[6], (int)v[7], (int)v[8], flags, respawns);
+            cur = new ReplayFrame((int)v[0], (int)v[1], (int)v[2], (int)v[3], (int)v[4], (int)v[5], (int)v[6], (int)v[7], (int)v[8], flags, respawns, (int)v[9]);
             if (!cur.InRange) return null;
             for (uint k = 0; k < repeat; k++) frames[n++] = cur;
         }

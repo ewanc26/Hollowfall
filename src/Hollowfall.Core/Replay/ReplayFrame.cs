@@ -7,7 +7,7 @@ namespace Hollowfall.Core.Replay;
 /// so what the simulation saw while you played is exactly what a replay feeds it. Positions are in 1/1024 of a block and
 /// the look direction is three 16-bit components, which keeps a frame to a few bytes without any rounding drift.
 /// </summary>
-public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey, int Ez, int Dx, int Dy, int Dz, int Flags, int Respawns)
+public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey, int Ez, int Dx, int Dy, int Dz, int Flags, int Respawns, int Speed = 0)
 {
     public const int PositionScale = 1024;
     public const int DirectionScale = 32767;
@@ -28,7 +28,14 @@ public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey
     public const int TealBit = 1 << 5;
     public const int VioletBit = 1 << 6;
     public const int InteractBit = 1 << 7;
-    public const int AllFlags = 0xFF;
+    public const int ClosePortalsBit = 1 << 8;
+    public const int CrossedBit = 1 << 9;
+    public const int AllFlags = 0x3FF;
+
+    /// <summary>Speed is stored in 1/64 of a block per second. The Meteor reads only the speed and whether the player just crossed a portal, so that is all the frame keeps of the velocity.</summary>
+    public const int SpeedScale = 64;
+
+    public const int MaxSpeed = 65535;
 
     /// <summary>Quantises a view and its buttons. Non-finite numbers become zero and out-of-range ones are clamped.</summary>
     public static ReplayFrame From(PlayerView view, PlayerActions actions, int respawns = 0)
@@ -56,7 +63,11 @@ public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey
         if (actions.PortalTeal) flags |= TealBit;
         if (actions.PortalViolet) flags |= VioletBit;
         if (actions.Interact) flags |= InteractBit;
-        return new ReplayFrame(fx, fy, fz, ex, ey, ez, dx, dy, dz, flags, Math.Clamp(respawns, 0, MaxRespawns));
+        if (actions.ClosePortals) flags |= ClosePortalsBit;
+        if (view.Crossed) flags |= CrossedBit;
+        double speed = view.Velocity.Length;
+        int quantisedSpeed = double.IsFinite(speed) ? (int)Math.Clamp(Math.Round(speed * SpeedScale), 0, MaxSpeed) : 0;
+        return new ReplayFrame(fx, fy, fz, ex, ey, ez, dx, dy, dz, flags, Math.Clamp(respawns, 0, MaxRespawns), quantisedSpeed);
     }
 
     private static int Pos(double v) => double.IsFinite(v) ? (int)Math.Clamp(Math.Round(v * PositionScale), -MaxPosition, MaxPosition) : 0;
@@ -71,7 +82,7 @@ public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey
         Math.Abs((long)Ex) <= MaxEyeOffset && Math.Abs((long)Ey) <= MaxEyeOffset && Math.Abs((long)Ez) <= MaxEyeOffset &&
         Math.Abs((long)Dx) <= DirectionScale && Math.Abs((long)Dy) <= DirectionScale && Math.Abs((long)Dz) <= DirectionScale &&
         (Dx != 0 || Dy != 0 || Dz != 0) &&
-        (Flags & ~AllFlags) == 0 && Respawns is >= 0 and <= MaxRespawns;
+        (Flags & ~AllFlags) == 0 && Respawns is >= 0 and <= MaxRespawns && Speed is >= 0 and <= MaxSpeed;
 
     public Vec3 Feet => new((double)Fx / PositionScale, (double)Fy / PositionScale, (double)Fz / PositionScale);
 
@@ -81,10 +92,10 @@ public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey
         var feet = Feet;
         var eye = new Vec3(feet.X + (double)Ex / PositionScale, feet.Y + (double)Ey / PositionScale, feet.Z + (double)Ez / PositionScale);
         var forward = new Vec3((double)Dx / DirectionScale, (double)Dy / DirectionScale, (double)Dz / DirectionScale).Normalized();
-        return new PlayerView(feet, eye, forward, (Flags & AirborneBit) != 0, (Flags & SlidingBit) != 0);
+        return new PlayerView(feet, eye, forward, (Flags & AirborneBit) != 0, (Flags & SlidingBit) != 0, new Vec3((double)Speed / SpeedScale, 0, 0), (Flags & CrossedBit) != 0);
     }
 
     public PlayerActions ToActions() => new(
         (Flags & RevolverBit) != 0, (Flags & ShotgunBit) != 0, (Flags & ParryBit) != 0,
-        (Flags & TealBit) != 0, (Flags & VioletBit) != 0, (Flags & InteractBit) != 0);
+        (Flags & TealBit) != 0, (Flags & VioletBit) != 0, (Flags & InteractBit) != 0, (Flags & ClosePortalsBit) != 0);
 }

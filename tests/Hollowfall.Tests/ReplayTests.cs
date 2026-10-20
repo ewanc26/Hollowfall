@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4208;
-    private const uint ExpectedGoldenChecksum = 2416686344;
+    private const uint ExpectedGoldenChecksum = 1248447351;
 
     [Fact]
     public void FileSizesStaySane()
@@ -484,5 +484,23 @@ public class ReplayTests
         var replay = run.Replay!;
         Assert.Equal(replay.EndTick - (int)Math.Round(replay.Result.Seconds / Dt), replay.StartTick);
         Assert.InRange(replay.StartTick, 0, 2); // the bot starts on floor 0 at once
+    }
+
+    [Fact]
+    public void MeteorAndSeverInputsSurviveQuantisingAndTheFile()
+    {
+        var view = new PlayerView(new Vec3(10, 20, 30), new Vec3(10, 21.6, 30), new Vec3(0, 0, -1), true, false, new Vec3(0, -25, 0), true);
+        var actions = new PlayerActions(false, false, false, ClosePortals: true);
+        var frame = ReplayFrame.From(view, actions);
+        var seen = frame.ToView();
+        Assert.True(seen.Crossed);
+        Assert.Equal(25, seen.Velocity.Length, 1);
+        Assert.True(frame.ToActions().ClosePortals);
+
+        var plain = ReplayFrame.From(view with { Crossed = false, Velocity = default }, default);
+        var replay = new RunReplay("meteor", 0, 0, 0, 2, new FloorRecord(OverallGrade.C, 5, 1), [plain, frame, plain]);
+        Assert.True(ReplayCodec.TryDecode(ReplayCodec.Encode(replay), out var back));
+        Assert.Equal(frame, back!.Frames[1]);
+        Assert.False(back.Frames[0].ToView().Crossed);
     }
 }
