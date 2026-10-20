@@ -12,6 +12,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Fixed
 
+- Walking up a hill no longer jerks the camera. Stepping up a ledge still moves the body at once, but the eye now glides up to the new height (`StepSmoothing`), over a fraction of a second.
 - Two portals on the floor no longer trap you. A slow body came out of a portal with its feet still inside the one-block pit behind the exit, could not walk sideways, and fell back in forever. The body is now moved out along the exit's normal until it is fully clear (half its height for floors and ceilings, half its width for walls), and the minimum exit speed is 3 blocks per second. A floor pair is still a loop if you stand still, but steering gets you out, and closing the pair with the Close portals action (C) always does.
 - Chest lids now swing open in the game (the props view never registered its chests, so the lid animation never ran).
 - Every locked chest can be opened: each floor now hides one key per locked chest on it, in a standard or trap room (this changes the spawns of existing seeds), and replays are recorded under `RunReplay.SimVersion` 3, so older ghosts are unverifiable.

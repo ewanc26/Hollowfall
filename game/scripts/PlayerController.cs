@@ -36,6 +36,9 @@ public partial class PlayerController : Node3D
 
     private double _lastYaw, _lastPitch;
 
+    /// <summary>How far the eye sits below the body after a step-up (0 or negative); it eases back to 0.</summary>
+    private double _stepOffset;
+
     /// <summary>Which way the player faces, in radians (0 looks down -Z).</summary>
     public double Yaw => _yaw;
 
@@ -130,8 +133,17 @@ public partial class PlayerController : Node3D
         if (!dead)
         {
             if (InputMapper.JustPressed(GameAction.FlyToggle)) Flying = !Flying;
+            double yBefore = Body.Y;
+            bool groundedBefore = Body.OnGround;
             Move(delta, portals);
+
+            // Walking up a ledge lifts the body at once. Keep the eye where it was and let it glide up, so a hill is a smooth
+            // climb rather than a jerk. Only real step-ups count: stayed on the ground, rose less than the step height.
+            double rise = Body.Y - yBefore;
+            if (!Flying && groundedBefore && Body.OnGround && rise > 0.02 && rise <= PlayerBody.StepHeight + 0.05)
+                _stepOffset = Math.Max(_stepOffset - rise, -PlayerBody.StepHeight);
         }
+        _stepOffset = StepSmoothing.Settle(_stepOffset, delta);
         UpdateCamera();
         return actions;
     }
@@ -182,7 +194,7 @@ public partial class PlayerController : Node3D
         LookDelta = new Vector2((float)Mathf.Wrap(_yaw - _lastYaw, -Math.PI, Math.PI), (float)(_pitch - _lastPitch));
         _lastYaw = _yaw;
         _lastPitch = _pitch;
-        Position = new Vector3((float)Body.X, (float)(Body.Y + EyeHeight), (float)Body.Z);
+        Position = new Vector3((float)Body.X, (float)(Body.Y + EyeHeight + _stepOffset), (float)Body.Z);
         Rotation = new Vector3(0, (float)_yaw, 0);
         _camera.Rotation = new Vector3((float)_pitch, 0, 0);
     }
@@ -191,6 +203,7 @@ public partial class PlayerController : Node3D
     public void PlaceAt(Vector3 feet, double yaw)
     {
         Body.Teleport(feet.X, feet.Y, feet.Z, 0, 0, 0);
+        _stepOffset = 0;
         _yaw = yaw;
         _pitch = 0;
         UpdateCamera();
