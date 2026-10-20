@@ -71,7 +71,7 @@ public static class ChunkMesher
     private static void AddFace(MeshBuffer buf, Func<int, int, int, BlockType> blockAt, int wx, int y, int wz, int lx, int lz, int faceIndex, BlockType b)
     {
         var f = Faces[faceIndex];
-        var colour = BlockPalette.Color(b, faceIndex);
+        var colour = BlockPalette.Color(b, faceIndex, DungeonThemes.IsThemed(b) ? DungeonThemes.ForY(y) : DungeonTheme.Plain);
         bool water = b == BlockType.Water;
 
         // Water's top sits slightly lower so a lake looks like it fills its basin.
@@ -80,7 +80,7 @@ public static class ChunkMesher
         float cy = (water ? (y + top) * 0.5f : y + 0.5f) + 0.5f * f.Ny * (water ? (top - y) : 1f);
 
         // Which picture, and how it is turned: a hash of the block's place flips tiles so repeats are less obvious.
-        var rect = BlockTextures.Rect(BlockTextures.TileFor(b, faceIndex));
+        var rect = BlockTextures.Rect(TileSelector.Pick(b, faceIndex, wx, y, wz, blockAt));
         uint spin = (uint)SeedHash.Hash(0, wx, wz, y);
         bool flipU = !water && (spin & 1) != 0, flipV = !water && faceIndex is 2 or 3 && (spin & 2) != 0;
         bool sideFace = f.Ny == 0;

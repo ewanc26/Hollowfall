@@ -3,6 +3,7 @@ using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Terrain;
+using Hollowfall.Core.Textures;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Game;
@@ -25,6 +26,8 @@ public partial class Main : Node3D
     private EffectsDust _dust = null!;
     private RunRecords _records = new();
     private string _seedName = "";
+    private Godot.Environment _env = null!;
+    private Atmosphere _atmosphere = DungeonThemes.Surface;
 
     /// <summary>Set when the scene is rebuilt for a new world, so the player is not shown the title screen they just left.</summary>
     private static bool _skipTitleOnce;
@@ -57,10 +60,11 @@ public partial class Main : Node3D
         _seedName = seedText;
         _records = RunRecords.Load(RecordsPath);
 
-        AddChild(new WorldEnvironment { Environment = MakeEnvironment() });
+        _env = SkyBuilder.Create(out _);
+        AddChild(new WorldEnvironment { Environment = _env });
         AddChild(new DirectionalLight3D
         {
-            RotationDegrees = new Vector3(-50, 35, 0),
+            RotationDegrees = SkyBuilder.SunRotationDegrees,
             LightEnergy = 1.1f,
             ShadowEnabled = true,
             DirectionalShadowMaxDistance = 90,
@@ -187,28 +191,6 @@ public partial class Main : Node3D
             Hint(GameAction.Jump, "jump"),
             Hint(GameAction.Pause, "menu"),
         ];
-    }
-
-    private static Godot.Environment MakeEnvironment()
-    {
-        var sky = new ProceduralSkyMaterial
-        {
-            SkyTopColor = new Color(0.30f, 0.52f, 0.85f),
-            SkyHorizonColor = new Color(0.72f, 0.82f, 0.92f),
-            GroundHorizonColor = new Color(0.72f, 0.82f, 0.92f),
-            GroundBottomColor = new Color(0.25f, 0.28f, 0.32f),
-        };
-        return new Godot.Environment
-        {
-            BackgroundMode = Godot.Environment.BGMode.Sky,
-            Sky = new Sky { SkyMaterial = sky },
-            AmbientLightSource = Godot.Environment.AmbientSource.Color,
-            AmbientLightColor = new Color(0.55f, 0.6f, 0.7f),
-            AmbientLightEnergy = 0.35f,
-            FogEnabled = true,
-            FogLightColor = new Color(0.72f, 0.82f, 0.92f),
-            FogDensity = 0.003f,
-        };
     }
 
     private static DungeonSite? FindNearestSite(VoxelWorld world)
@@ -396,6 +378,9 @@ public partial class Main : Node3D
         if (Combat == null) return;
         var sim = Combat.Sim;
         int floor = sim.CurrentFloor;
+        // The fog and ambient light ease toward the theme of the floor the player is on (or the open sky).
+        _atmosphere = DungeonThemes.Lerp(_atmosphere, DungeonThemes.ForAtmosphere(floor), 1f - MathF.Exp(-2.5f * (float)delta));
+        SkyBuilder.Apply(_env, _atmosphere);
         var openings = Combat.PortalScreenRects(_player.Camera);
         _hud.SetOpenings(openings);
         _weapons.SetOpenings(openings);

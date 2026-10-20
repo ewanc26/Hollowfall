@@ -31,6 +31,36 @@ public enum Tile
     Gate,
     Door,
     Bedrock,
+
+    // Natural variants the mesher picks by place (see TileSelector).
+    MossyStone,
+    PackedSnow,
+    DryDirt,
+
+    // Floor 0 details: cracks, cobwebs, bones.
+    BrickCracked,
+    BrickWeb,
+    FloorCracked,
+    FloorBones,
+
+    // Floor 1: damp and mossy.
+    MossBrick,
+    MossBrickHeavy,
+    MossBrickVine,
+    MossFloor,
+    MossFloorPuddle,
+    MossPillar,
+    MossStairs,
+
+    // Floor 2 and deeper: ashen, scorched and ember-lit.
+    AshBrick,
+    AshBrickCracked,
+    AshBrickScorch,
+    AshFloor,
+    AshFloorBones,
+    AshFloorEmbers,
+    AshPillar,
+    AshStairs,
 }
 
 /// <summary>
@@ -39,7 +69,7 @@ public enum Tile
 /// biome can recolour grass without a new picture and the dungeon's stone keeps its mood. The art is chunky on purpose, to sit
 /// with the low-poly models, and every pattern wraps at its edges so neighbouring blocks join without seams.
 /// </summary>
-public static class BlockTextures
+public static partial class BlockTextures
 {
     public const int TileSize = 16;
     public const int Columns = 8;
@@ -261,24 +291,17 @@ public static class BlockTextures
 
             case Tile.BrickFloor:
                 {
-                    // Four flagstones with a thin grout line, each its own tone.
-                    bool grout = x % 8 == 7 || y % 8 == 7;
-                    float stone = 0.80f + (Hash(34, x / 8, y / 8) - 0.5f) * 0.14f;
-                    return Grey(grout ? 0.5f : stone + Tone(35, x, y, 2, 0.04f) - (Speck(36, x, y, 0.05f) ? 0.1f : 0f));
+                    return Grey(FloorTone(x, y, out _));
                 }
 
             case Tile.Pillar:
                 {
-                    // Fluted: soft vertical channels.
-                    float flute = MathF.Sin(x * MathF.PI / 2f) * 0.07f;
-                    bool band = y is 0 or 1 or 14 or 15;
-                    return Grey(0.85f + flute + (band ? -0.08f : 0f) + Tone(37, x, y, 4, 0.03f));
+                    return Grey(PillarTone(x, y));
                 }
 
             case Tile.Stairs:
                 {
-                    bool edge = y % 4 == 3;
-                    return Grey(0.82f + (edge ? -0.18f : 0.04f) + Tone(38, x, y, 4, 0.05f));
+                    return Grey(StairsTone(x, y, out _));
                 }
 
             case Tile.Gate:
@@ -300,8 +323,30 @@ public static class BlockTextures
                 }
 
             default:
-                return Grey(0.8f);
+                return PaintVariant(t, x, y);
         }
+    }
+
+    /// <summary>Four flagstones with a thin grout line, each its own tone.</summary>
+    private static float FloorTone(int x, int y, out bool grout)
+    {
+        grout = x % 8 == 7 || y % 8 == 7;
+        float stone = 0.80f + (Hash(34, x / 8, y / 8) - 0.5f) * 0.14f;
+        return grout ? 0.5f : stone + Tone(35, x, y, 2, 0.04f) - (Speck(36, x, y, 0.05f) ? 0.1f : 0f);
+    }
+
+    /// <summary>Fluted: soft vertical channels, with a band at each end.</summary>
+    private static float PillarTone(int x, int y)
+    {
+        float flute = MathF.Sin(x * MathF.PI / 2f) * 0.07f;
+        bool band = y is 0 or 1 or 14 or 15;
+        return 0.85f + flute + (band ? -0.08f : 0f) + Tone(37, x, y, 4, 0.03f);
+    }
+
+    private static float StairsTone(int x, int y, out bool edge)
+    {
+        edge = y % 4 == 3;
+        return 0.82f + (edge ? -0.18f : 0.04f) + Tone(38, x, y, 4, 0.05f);
     }
 
     private static (float, float, float, float) Ore(int x, int y, float r, float g, float b, int seed)
@@ -317,15 +362,18 @@ public static class BlockTextures
         return (stone, stone, stone, 1f);
     }
 
-    private static (float, float, float, float) Bricks(int x, int y)
+    private static (float, float, float, float) Bricks(int x, int y) => Grey(BrickTone(x, y, out _));
+
+    /// <summary>Running-bond brick: light and shade for one pixel, and whether it is mortar.</summary>
+    private static float BrickTone(int x, int y, out bool mortar)
     {
         int row = y / 4;
         int shifted = (x + (row % 2 == 0 ? 0 : 4)) % TileSize;
-        bool mortar = y % 4 == 3 || shifted % 8 == 7;
+        mortar = y % 4 == 3 || shifted % 8 == 7;
         int brick = (x + (row % 2 == 0 ? 0 : 4)) / 8;
         float tone = 0.84f + (Hash(43, brick, row) - 0.5f) * 0.16f;
-        if (mortar) return Grey(0.52f + Tone(44, x, y, 2, 0.04f));
-        return Grey(tone + Tone(45, x, y, 2, 0.05f) - (Speck(46, x, y, 0.05f) ? 0.1f : 0f) + (y % 4 == 0 ? 0.05f : 0f));
+        if (mortar) return 0.52f + Tone(44, x, y, 2, 0.04f);
+        return tone + Tone(45, x, y, 2, 0.05f) - (Speck(46, x, y, 0.05f) ? 0.1f : 0f) + (y % 4 == 0 ? 0.05f : 0f);
     }
 
     /// <summary>Pebbles: each pixel belongs to the nearest of a jittered grid of points, tinted per pebble, with dark seams between them.</summary>

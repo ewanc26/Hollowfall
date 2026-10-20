@@ -47,6 +47,26 @@ Water uses the water tile of the shared atlas, but not the shared material. Scro
 - **Pooled.** `ShardField` is a fixed array (192 gibs, 96 sparks) that recycles its oldest slot, and `EffectsView` draws it as two MultiMeshes, so a fight allocates nothing per frame. What flies, and where, is decided in Core from a seed and is unit tested.
 - **Dust motes.** `EffectsDust` is a small CPU particle box (70 tiny warm specks) that follows the viewer while the motes stay put in the world. Underground only. It should be noticed only when missing.
 - **Footsteps.** `Footsteps` maps the block underfoot to one of nine synthesised sounds (stone, brick, dirt, grass, sand, gravel, snow, wood, splash) and `Stride` times them by distance walked, with a heavier landing sound and a little pitch and volume variation from a hash, never a random generator.
+### Depth themes and decals
+
+Deeper dungeon floors look different, chosen by height alone (`DungeonThemes.ForY`; floors sit `DungeonSite.FloorSpacing` blocks apart from `FirstFloorY`), so the mesher needs no site and terrain is never themed.
+
+| Floor | Theme | Look |
+| --- | --- | --- |
+| 0 | Plain | Grey brick with the odd crack, cobwebs in the corner under the ceiling, a few bones. Cold, dim fog. |
+| 1 | Mossy | Green-tinted brick with moss patches, hanging vines near the ceiling, pools on the flagstones. Green fog. |
+| 2+ | Ashen | Warm, darker brick with soot scorch marks, glowing ember cracks and coals. Dull ember fog. |
+
+- `TileSelector.Pick` chooses the tile for a block face from its position and neighbours with a hash, so the same place always gets the same picture. Decals are sparse (about 9 to 40 percent of wall faces, 6 to 20 percent of floor tops depending on the theme) so rooms look lived in rather than noisy.
+- Cobwebs only appear on the wall layer just under the ceiling; floor decals only on the tops of flagstones.
+- Palette tints (`BlockPalette.Color(block, face, theme)`) darken and shift the dungeon blocks per theme; the tiles carry the detail.
+- A secret door is picked as if it were the wall block in the same place, so it matches its wall tile and tint in every theme (a test checks this).
+- Surface variants need no new blocks: stone touching grass, leaves, logs or water is sometimes mossy, the sides of deep snow are packed, and dirt open to the air is sometimes dry and cracked.
+- New tiles are added only at the end of `Tile`, so existing tiles keep their places on the atlas; it is 8 tiles wide and its height stays a power of two.
+
+## Sky and fog
+
+`SkyBuilder` paints the sky with a sky shader held as a code string: gradient, sun disc and glow (at the angle of the directional light), and two drifting cloud layers. The fog and ambient light ease toward the atmosphere of the current floor (`DungeonThemes.ForAtmosphere`), and back to the open-air values on the surface. Fog does not tint the sky itself (`FogSkyAffect` is 0); the shader paints its own horizon haze.
 
 ## Props
 

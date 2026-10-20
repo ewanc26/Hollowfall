@@ -80,6 +80,9 @@ public class BlockTextureTests
     [InlineData(Tile.Bedrock)]
     [InlineData(Tile.Water)]
     [InlineData(Tile.Sandstone)]
+    [InlineData(Tile.MossyStone)]
+    [InlineData(Tile.PackedSnow)]
+    [InlineData(Tile.DryDirt)]
     public void NaturalTilesWrapSoNeighboursJoinWithoutSeams(Tile t)
     {
         // The step across the tile edge should be no worse, on average, than a step inside the tile.
@@ -190,7 +193,8 @@ public class MesherTextureTests
         var buf = MeshOf(block).Opaque;
         var uv = buf.Uvs();
         Assert.Equal(buf.VertexCount * 2, uv.Length);
-        var allowed = Enumerable.Range(0, 6).Select(f => BlockTextures.Rect(BlockTextures.TileFor(block, f))).ToList();
+        BlockType At(int x, int y, int z) => x == 8 && y == 10 && z == 8 ? block : BlockType.Air;
+        var allowed = Enumerable.Range(0, 6).Select(f => BlockTextures.Rect(TileSelector.Pick(block, f, 8, 10, 8, At))).ToList();
         for (int i = 0; i < buf.VertexCount; i++)
         {
             float u = uv[i * 2], v = uv[i * 2 + 1];
