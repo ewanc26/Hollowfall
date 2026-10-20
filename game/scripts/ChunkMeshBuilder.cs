@@ -1,7 +1,7 @@
 using Godot;
-using VoxelGame.Core.Meshing;
+using Hollowfall.Core.Meshing;
 
-namespace VoxelGame.Game;
+namespace Hollowfall.Game;
 
 /// <summary>Converts Core's engine-free chunk meshes into Godot meshes. Must run on the main thread.</summary>
 public static class ChunkMeshBuilder

@@ -1,8 +1,8 @@
 using Godot;
-using VoxelGame.Core.Physics;
-using VoxelGame.Core.World;
+using Hollowfall.Core.Physics;
+using Hollowfall.Core.World;
 
-namespace VoxelGame.Game;
+namespace Hollowfall.Game;
 
 /// <summary>
 /// First-person walker. Movement and collision come from Core's <see cref="PlayerBody"/>, so the game feels

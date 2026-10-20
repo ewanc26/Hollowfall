@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using Godot;
-using VoxelGame.Core.Meshing;
-using VoxelGame.Core.World;
+using Hollowfall.Core.Meshing;
+using Hollowfall.Core.World;
 
-namespace VoxelGame.Game;
+namespace Hollowfall.Game;
 
 /// <summary>
 /// Keeps the chunks around a focus point meshed and on screen. Meshing runs on worker threads

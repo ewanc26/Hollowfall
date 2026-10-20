@@ -1,10 +1,10 @@
 <p align="center">
-  <a href="https://github.com/ewanc26/VoxelGame/actions/workflows/ci.yml"><img src="https://github.com/ewanc26/VoxelGame/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/ewanc26/VoxelGame?label=licence" alt="AGPL-3.0"></a>
+  <a href="https://github.com/ewanc26/Hollowfall/actions/workflows/ci.yml"><img src="https://github.com/ewanc26/Hollowfall/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ewanc26/Hollowfall?label=licence" alt="AGPL-3.0"></a>
   <a href="https://github.com/sponsors/ewanc26"><img src="https://img.shields.io/github/sponsors/ewanc26?logo=githubsponsors&logoColor=white&label=sponsors" alt="Sponsor"></a>
 </p>
 
-# VoxelGame
+# Hollowfall
 
 A voxel-based game written in C# on .NET 10.
 
@@ -16,10 +16,10 @@ The game is a procedural voxel dungeon crawler.
 
 ## Layout
 
-- `src/VoxelGame.Core` — world data, terrain and dungeon generation, chunk meshing and player physics (no engine dependency).
-- `src/VoxelGame.Cli` — prints a top-down map and block statistics for a seed.
+- `src/Hollowfall.Core` — world data, terrain and dungeon generation, chunk meshing and player physics (no engine dependency).
+- `src/Hollowfall.Cli` — prints a top-down map and block statistics for a seed.
 - `game` — the Godot 4 (.NET) shell. Thin C# scripts that connect the engine to Core.
-- `tests/VoxelGame.Tests` — xunit tests, including determinism checks.
+- `tests/Hollowfall.Tests` — xunit tests, including determinism checks.
 
 ## Terrain
 
@@ -41,14 +41,14 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. WASD to m
 mouse to look (click to capture, Esc to release), F to toggle free-fly. Terrain is shown as flat-coloured
 blocks with baked ambient occlusion; you carry a torch for the dungeons.
 
-Environment variables: `VOXELGAME_SEED` picks the world (default `voxel`), and
-`VOXELGAME_SPAWN_FLOOR=1` starts inside that dungeon floor, for inspecting interiors.
+Environment variables: `HOLLOWFALL_SEED` picks the world (default `voxel`), and
+`HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, for inspecting interiors.
 
 ## Language
 
 The game is written entirely in C#. Godot is used as the engine shell only: no
 GDScript, no GDExtension, and every script attached to a scene must be a `.cs`
-file. `dotnet test` enforces this. Game logic lives in `VoxelGame.Core`, which has no
+file. `dotnet test` enforces this. Game logic lives in `Hollowfall.Core`, which has no
 Godot dependency, so it stays unit-testable.
 
 ## Dungeons
@@ -59,7 +59,7 @@ layout of rect, L, circular and cavern rooms joined by corridors, with doors,
 loops and secret doors, and rooms get roles by rule (entrance, exit, boss,
 treasure, trap, safe). Voxelisation is a pure function of the seed and position, so
 any chunk can be generated alone. Spawn points for monsters, loot and keys are
-produced as data. Run `dotnet run --project src/VoxelGame.Cli -c Release -- <seed> 1 --dungeon --spawns`
+produced as data. Run `dotnet run --project src/Hollowfall.Cli -c Release -- <seed> 1 --dungeon --spawns`
 to see a floor plan.
 
 ## Agent control (MCP)
@@ -74,7 +74,7 @@ It can open the editor, run and stop the game, return its console output and err
 scenes, add nodes and read project info. Use it with `project path = game/`.
 
 It does not know about this game's world. To inspect generated terrain and dungeons, use the CLI
-(`dotnet run --project src/VoxelGame.Cli -c Release -- <seed> 1 --dungeon --spawns`, `--biomes`, `--stats`,
+(`dotnet run --project src/Hollowfall.Cli -c Release -- <seed> 1 --dungeon --spawns`, `--biomes`, `--stats`,
 `--dungeon-stats`) and the unit tests. Running a project executes its code, so only point the server at
 projects you trust, and approve its tools individually rather than auto-approving them.
 
@@ -91,7 +91,7 @@ The core library and its tests need only the .NET SDK:
 ```bash
 dotnet build
 dotnet test
-dotnet run --project src/VoxelGame.Cli -c Release -- <seed> <chunk-radius> [--stats]
+dotnet run --project src/Hollowfall.Cli -c Release -- <seed> <chunk-radius> [--stats]
 ```
 
 ## Licence

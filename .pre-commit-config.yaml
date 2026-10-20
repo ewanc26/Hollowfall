@@ -1,4 +1,4 @@
-# Pre-commit hooks for VoxelGame — keep C# sources formatted.
+# Pre-commit hooks for Hollowfall — keep C# sources formatted.
 repos:
   - repo: local
     hooks:

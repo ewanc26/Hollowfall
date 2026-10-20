@@ -1,10 +1,10 @@
 # Game loop
 
-VoxelGame is a procedural voxel dungeon crawler built around a fast, aggressive combat loop in the
+Hollowfall is a procedural voxel dungeon crawler built around a fast, aggressive combat loop in the
 tradition of ULTRAKILL and DOOM (2016): you are never safe standing still, your health comes from hurting
 things, and a style meter rewards you for doing it with flair. This page records what we learned from those
 games, what we are taking from them, and how it maps onto this codebase. The numbers in the tables are
-starting values to be playtested, and live in code (`VoxelGame.Core.Combat`) so tests can pin them.
+starting values to be playtested, and live in code (`Hollowfall.Core.Combat`) so tests can pin them.
 
 ## What the reference games do
 
@@ -40,7 +40,7 @@ still is dangerous. The game was designed around fast pace, constant action and 
 
 ## What we take, and what we change
 
-| Idea | In VoxelGame |
+| Idea | In Hollowfall |
 |---|---|
 | Push forward | No regeneration, no pickups to retreat for. Health comes from blood. |
 | Blood heals | Hits within about 4 blocks heal, more for headshots and limbs, a lot for melee finishers. Distance matters: standing back to snipe heals nothing. |

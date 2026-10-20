@@ -1,4 +1,4 @@
-# Contributing to VoxelGame
+# Contributing to Hollowfall
 
 ## Project context
 

@@ -10,11 +10,11 @@ config_version=5
 
 [application]
 
-config/name="VoxelGame"
+config/name="Hollowfall"
 config/description="A procedural voxel dungeon crawler. All game code is C#; see AGENTS.md."
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 
 [dotnet]
 
-project/assembly_name="VoxelGame.Game"
+project/assembly_name="Hollowfall.Game"
