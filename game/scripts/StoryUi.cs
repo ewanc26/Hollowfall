@@ -20,6 +20,7 @@ public partial class StoryUi : CanvasLayer
         None,
         Note,
         Crawl,
+        Dialogue,
     }
 
     private static readonly Color Gold = new(1f, 0.8f, 0.3f);
@@ -31,6 +32,10 @@ public partial class StoryUi : CanvasLayer
     private Label _cardName = null!, _cardEpigraph = null!, _caption = null!, _prompt = null!, _speaker = null!;
     private Control _reader = null!;
     private Label _readerFloor = null!, _readerTitle = null!, _readerText = null!, _readerHint = null!;
+    private Control _dialogue = null!;
+    private Label _dialogueSpeaker = null!, _dialogueText = null!, _dialogueHint = null!;
+    private VBoxContainer _dialogueChoices = null!;
+    private Action<int>? _onChoose;
     private Control _crawl = null!;
     private ColorRect _crawlBack = null!;
     private Label _crawlHeading = null!, _crawlHint = null!;
@@ -129,6 +134,7 @@ public partial class StoryUi : CanvasLayer
 
         BuildReader(root);
         BuildCrawl(root);
+        BuildDialogue(root);
     }
 
     private static Label Outlined(Label label, int size, Font font, Color colour, int outline)
@@ -200,6 +206,81 @@ public partial class StoryUi : CanvasLayer
         _readerHint.AddThemeFontSizeOverride("font_size", 18);
         column.AddChild(_readerHint);
     }
+
+    private void BuildDialogue(Control root)
+    {
+        // A panel low on the screen, so the speaker stays in view above it. It takes the mouse and focus; the rest of the screen does not.
+        var anchor = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
+        anchor.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomWide, Control.LayoutPresetMode.Minsize, 0);
+        anchor.OffsetBottom = -62;
+        anchor.GrowVertical = Control.GrowDirection.Begin;
+        root.AddChild(anchor);
+        _dialogue = anchor;
+
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(860, 0) };
+        panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.06f, 0.05f, 0.05f, 0.93f),
+            BorderColor = new Color(0.55f, 0.42f, 0.2f),
+            BorderWidthBottom = 2,
+            BorderWidthTop = 2,
+            BorderWidthLeft = 2,
+            BorderWidthRight = 2,
+            CornerRadiusBottomLeft = 4,
+            CornerRadiusBottomRight = 4,
+            CornerRadiusTopLeft = 4,
+            CornerRadiusTopRight = 4,
+            ContentMarginLeft = 28,
+            ContentMarginRight = 28,
+            ContentMarginTop = 18,
+            ContentMarginBottom = 14,
+        });
+        anchor.AddChild(panel);
+
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 8);
+        panel.AddChild(column);
+
+        _dialogueSpeaker = new Label { HorizontalAlignment = HorizontalAlignment.Left };
+        _dialogueSpeaker.AddThemeFontSizeOverride("font_size", 30);
+        _dialogueSpeaker.AddThemeColorOverride("font_color", Gold);
+        column.AddChild(_dialogueSpeaker);
+
+        _dialogueText = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(800, 0) };
+        _dialogueText.AddThemeFontSizeOverride("font_size", 26);
+        _dialogueText.AddThemeColorOverride("font_color", Paper);
+        _dialogueText.AddThemeConstantOverride("line_spacing", 3);
+        column.AddChild(_dialogueText);
+
+        column.AddChild(new HSeparator());
+
+        _dialogueChoices = new VBoxContainer();
+        _dialogueChoices.AddThemeConstantOverride("separation", 4);
+        column.AddChild(_dialogueChoices);
+
+        _dialogueHint = new Label { HorizontalAlignment = HorizontalAlignment.Right };
+        _dialogueHint.AddThemeColorOverride("font_color", Dim);
+        _dialogueHint.AddThemeFontSizeOverride("font_size", 18);
+        column.AddChild(_dialogueHint);
+    }
+
+    private static StyleBoxFlat ButtonBox(Color fill, Color border) => new()
+    {
+        BgColor = fill,
+        BorderColor = border,
+        BorderWidthBottom = 1,
+        BorderWidthTop = 1,
+        BorderWidthLeft = 1,
+        BorderWidthRight = 1,
+        CornerRadiusBottomLeft = 3,
+        CornerRadiusBottomRight = 3,
+        CornerRadiusTopLeft = 3,
+        CornerRadiusTopRight = 3,
+        ContentMarginLeft = 14,
+        ContentMarginRight = 14,
+        ContentMarginTop = 5,
+        ContentMarginBottom = 5,
+    };
 
     private void BuildCrawl(Control root)
     {
@@ -332,6 +413,62 @@ public partial class StoryUi : CanvasLayer
     /// <summary>Whether every paragraph of the crawl is showing.</summary>
     public bool CrawlComplete => _page == Page.Crawl && _crawlTime >= CrawlStart + CrawlGap * Math.Max(_paragraphs.Count - 1, 0) + CrawlFade;
 
+    /// <summary>The line the speaker says now (for tests).</summary>
+    public string DialogueText => _dialogueText.Text;
+
+    /// <summary>The labels of the choice buttons now showing (for tests).</summary>
+    public IReadOnlyList<string> DialogueChoices => [.. _dialogueChoices.GetChildren().OfType<Button>().Where(b => !b.IsQueuedForDeletion()).Select(b => b.Text)];
+
+    public bool DialogueOpen => _page == Page.Dialogue;
+
+    /// <summary>
+    /// Opens the choice panel and pauses the game: the speaker's name above their line, then a button for each thing the player can say.
+    /// The first button has focus, so the keyboard and a gamepad work as in the menus. <paramref name="onChoose"/> gets the index of the
+    /// button pressed; Interact or the menu button closes the panel.
+    /// </summary>
+    public void ShowDialogue(string speaker, string text, IReadOnlyList<string> choices, Action<int> onChoose, string closeHint)
+    {
+        CloseQuietly();
+        _dialogueSpeaker.Text = speaker;
+        _dialogueSpeaker.AddThemeFontOverride("font", UiFonts.FaceWithGlyphs(speaker, UiFonts.Display));
+        _dialogueHint.Text = closeHint;
+        _onChoose = onChoose;
+        _dialogue.Visible = true;
+        Open(Page.Dialogue);
+        UpdateDialogue(text, choices);
+    }
+
+    /// <summary>Replaces the line and the buttons of the open panel.</summary>
+    public void UpdateDialogue(string text, IReadOnlyList<string> choices)
+    {
+        _dialogueText.Text = text;
+        foreach (var old in _dialogueChoices.GetChildren())
+        {
+            _dialogueChoices.RemoveChild(old);
+            old.QueueFree();
+        }
+        for (int i = 0; i < choices.Count; i++)
+        {
+            int index = i;
+            var b = new Button { Text = choices[i], Alignment = HorizontalAlignment.Left, FocusMode = Control.FocusModeEnum.All };
+            b.AddThemeFontSizeOverride("font_size", 22);
+            b.AddThemeColorOverride("font_color", Paper);
+            b.AddThemeStyleboxOverride("normal", ButtonBox(new Color(0.12f, 0.11f, 0.11f), new Color(0.3f, 0.27f, 0.24f)));
+            b.AddThemeStyleboxOverride("hover", ButtonBox(new Color(0.2f, 0.17f, 0.13f), new Color(0.7f, 0.55f, 0.3f)));
+            b.AddThemeStyleboxOverride("pressed", ButtonBox(new Color(0.3f, 0.2f, 0.12f), new Color(1f, 0.7f, 0.2f)));
+            b.AddThemeStyleboxOverride("focus", ButtonBox(new Color(0.2f, 0.17f, 0.13f), new Color(1f, 0.75f, 0.25f)));
+            b.Pressed += () => _onChoose?.Invoke(index);
+            _dialogueChoices.AddChild(b);
+        }
+        if (_dialogueChoices.GetChildCount() > 0 && IsInsideTree()) ((Control)_dialogueChoices.GetChild(0)).GrabFocus();
+    }
+
+    /// <summary>Presses a choice button as the player would (for tests).</summary>
+    public void PressDialogueChoice(int index)
+    {
+        if (_dialogueChoices.GetChildOrNull<Button>(index) is { } b) b.EmitSignal(BaseButton.SignalName.Pressed);
+    }
+
     private void Open(Page page)
     {
         _page = page;
@@ -343,6 +480,8 @@ public partial class StoryUi : CanvasLayer
     {
         _reader.Visible = false;
         _crawl.Visible = false;
+        _dialogue.Visible = false;
+        _onChoose = null;
         _page = Page.None;
         CurrentNoteId = null;
     }

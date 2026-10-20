@@ -85,96 +85,6 @@ public class WulverPlacerTests
     }
 }
 
-public class WulverEncounterTests
-{
-    private static WulverSpot Spot => new(10, 10, 60, 10.5, 61, 10.5, 0, 0, 0, 60);
-
-    [Fact]
-    public void HeIsReachedWithinAboutThreeBlocks()
-    {
-        var e = new WulverEncounter(1, Spot);
-        Assert.True(e.IsNear(10.5, 61, 12.5));
-        Assert.False(e.IsNear(10.5, 61, 14.5));
-        Assert.False(e.IsNear(10.5, 70, 10.5), "not through the floor");
-    }
-
-    [Fact]
-    public void TheGiftHealsCleansesAndGrantsAPerkOnce()
-    {
-        var vitals = new PlayerVitals();
-        var perks = new Perks();
-        vitals.Damage(80);
-        Assert.True(vitals.HardDamage > 0);
-        var e = new WulverEncounter(1, Spot);
-
-        var first = e.Speak(vitals, perks);
-        Assert.True(first.GiftGiven);
-        Assert.Equal(PlayerVitals.MaxHealth, vitals.Health);
-        Assert.Equal(0, vitals.HardDamage);
-        Assert.True(perks.ParryWindowBonus > 0);
-        Assert.True(first.Healed > 0);
-
-        vitals.Damage(50);
-        perks.Clear();
-        var second = e.Speak(vitals, perks);
-        Assert.False(second.GiftGiven);
-        Assert.Equal(PlayerVitals.MaxHealth - 50, vitals.Health);
-        Assert.Equal(0, perks.ParryWindowBonus);
-        Assert.True(e.GiftTaken);
-    }
-
-    [Fact]
-    public void HeGivesNothingToTheDead()
-    {
-        var vitals = new PlayerVitals();
-        vitals.Damage(1000);
-        var e = new WulverEncounter(1, Spot);
-        Assert.False(e.Speak(vitals, new Perks()).GiftGiven);
-        Assert.False(e.GiftTaken);
-    }
-
-    [Fact]
-    public void HeIntroducesHimselfFirstAndNeverRepeatsUntilTheListIsUsedUp()
-    {
-        var e = new WulverEncounter(7, Spot);
-        var said = new List<string>();
-        for (int i = 0; i < WulverVoice.AllLines.Count; i++) said.Add(e.Speak(new PlayerVitals(), new Perks()).Text);
-
-        Assert.Contains(WulverVoice.Name, said[0]);
-        Assert.All(said.Skip(1), line => Assert.DoesNotContain(WulverVoice.Name, line));
-        Assert.Equal(said.Count, said.Distinct().Count());
-        Assert.Equal(WulverVoice.AllLines.OrderBy(l => l), said.OrderBy(l => l));
-        Assert.Equal(said[1], e.Speak(new PlayerVitals(), new Perks()).Text);
-    }
-
-    [Fact]
-    public void TheOrderIsFixedByTheSeedAndVariesBetweenSeeds()
-    {
-        Assert.Equal(WulverVoice.OrderFor(5), WulverVoice.OrderFor(5));
-        var orders = Enumerable.Range(1, 12).Select(s => string.Join("|", WulverVoice.OrderFor(s))).Distinct().Count();
-        Assert.True(orders > 6);
-    }
-
-    [Fact]
-    public void HisVoiceHasEightToTenDistinctLinesAndTheNameIsAccented()
-    {
-        Assert.InRange(WulverVoice.AllLines.Count, 8, 10);
-        Assert.Equal(WulverVoice.AllLines.Count, WulverVoice.AllLines.Distinct().Count());
-        Assert.Equal("Eòghann", WulverVoice.Name);
-        string all = string.Join(" ", WulverVoice.AllLines).ToLowerInvariant();
-        foreach (var word in new[] { "fish", "yew", "long way down", "weather" }) Assert.Contains(word, all);
-    }
-
-    [Fact]
-    public void ItsGreetingSoundRendersSoftly()
-    {
-        var samples = Synth.Render(SoundId.WulverGreeting);
-        Assert.InRange(samples.Length / (double)Synth.SampleRate, 0.5, 3);
-        Assert.InRange(samples.Max(Math.Abs), 0.05, 0.8);
-        Assert.All(samples, s => Assert.True(float.IsFinite(s)));
-    }
-}
-
 public class WulverModelTests
 {
     private static LowPolyModel M => ModelCatalog.Wulver;
@@ -236,9 +146,9 @@ public class NameIsHisAloneTests
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
         foreach (var file in files)
         {
-            if (Path.GetFileName(file) == "WulverVoice.cs") continue;
+            if (Path.GetFileName(file) == "WulverDialogue.cs") continue;
             var m = Forbidden.Match(File.ReadAllText(file));
-            Assert.False(m.Success, $"{Path.GetFileName(file)} uses his name ({m.Value}); it belongs only in WulverVoice");
+            Assert.False(m.Success, $"{Path.GetFileName(file)} uses his name ({m.Value}); it belongs only in WulverDialogue");
         }
     }
 

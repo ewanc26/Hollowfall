@@ -5,6 +5,7 @@ using Hollowfall.Core.Input;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Meshing;
 using Hollowfall.Core.Story;
+using Hollowfall.Core.Story.Dialogue;
 using Hollowfall.Core.Replay;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
@@ -360,38 +361,72 @@ public partial class SmokeTest : Node
         }
     }
 
-    /// <summary>The Wulver in the real scene: standing beside him, Interact makes him speak and gives the gift, once.</summary>
+    /// <summary>The Wulver in the real scene: standing beside him, Interact opens his conversation; a path through it gives the gift once and is saved.</summary>
     private void CheckWulver(Main main)
     {
-        Check("the Wulver speaks under his name, heals and cleanses once, and leaves a fish", () =>
+        Check("the Wulver greets, opens his choice panel, gives the gift once, remembers what was chosen and never says Ewan on an ordinary seed", () =>
         {
             var wulver = main.Wulver ?? throw new InvalidOperationException("no Wulver in the world");
             var view = main.WulverView!;
             var ui = main.StoryUi;
             var vitals = main.Combat!.Sim.Vitals;
             var spot = wulver.Encounter.Spot;
-            var feet = new Hollowfall.Core.Combat.Vec3(spot.X + 1.5, spot.Y, spot.Z);
+            var near = new Hollowfall.Core.Combat.Vec3(spot.X + 1.5, spot.Y, spot.Z);
             var press = new Hollowfall.Core.Combat.PlayerActions(false, false, false, Interact: true);
+            string seen = "";
 
-            vitals.Damage(60);
+            vitals.Damage(50);
             bool hurt = vitals.Health < 100 && vitals.HardDamage > 0;
             var far = wulver.Filter(press, new Hollowfall.Core.Combat.Vec3(spot.X + 30, spot.Y, spot.Z), alive: true);
-            bool ignoredFar = far.Interact && wulver.LastSpeech == null;
+            bool ignoredFar = far.Interact && !ui.DialogueOpen && wulver.Greeted == 0;
 
-            var used = wulver.Filter(press, feet, alive: true);
-            bool spoke = !used.Interact && ui.SpeakerText == WulverVoice.Name && ui.CaptionText == WulverVoice.Introduction;
+            // Walking up: he greets once, with no key press, and nothing more until you have gone and come back.
+            wulver.Filter(new Hollowfall.Core.Combat.PlayerActions(false, false, false), new Hollowfall.Core.Combat.Vec3(spot.X + 6, spot.Y, spot.Z), alive: true);
+            bool greeted = wulver.Greeted == 1 && ui.SpeakerText == WulverDialogue.Name && ui.CaptionText == WulverDialogue.GreetingFirst;
+            wulver.Filter(new Hollowfall.Core.Combat.PlayerActions(false, false, false), new Hollowfall.Core.Combat.Vec3(spot.X + 5, spot.Y, spot.Z), alive: true);
+            greeted &= wulver.Greeted == 1;
+
+            var used = wulver.Filter(press, near, alive: true);
+            bool opened = ui.DialogueOpen && !used.Interact && ui.DialogueText.Contains(WulverDialogue.Name) && ui.DialogueChoices.Count >= 2 && GetTree().Paused;
+            seen += ui.DialogueText;
+            ui.PressDialogueChoice(1); // what is this place
+            seen += ui.DialogueText;
+            bool offered = ui.DialogueChoices.Any(c => c.StartsWith("You mentioned a gift"));
+            ui.PressDialogueChoice(1); // the gift
+            seen += ui.DialogueText;
+            ui.PressDialogueChoice(0); // take it
+            seen += ui.DialogueText;
             bool gift = vitals.Health == 100 && vitals.HardDamage == 0 && main.Combat.Sim.Items.Perks.ParryWindowBonus > 0 && view.FishVisible;
+            ui.PressDialogueChoice(0); // thank you -> the fish
+            ui.PressDialogueChoice(0); // leave it on a windowsill
+            seen += ui.DialogueText;
+            ui.Close();
+            bool closed = !ui.DialogueOpen && !GetTree().Paused;
 
-            vitals.Damage(40);
-            var again = wulver.Filter(press, feet, alive: true);
-            bool once = !again.Interact && vitals.Health < 100 && wulver.LastSpeech is { GiftGiven: false } && ui.CaptionText != WulverVoice.Introduction && view.FishVisible;
+            var saved = Hollowfall.Core.Story.StoryProgress.Load(Main.StoryPath);
+            bool remembered = saved.WulverVisits(main.SeedName) == 1 && saved.WulverFlags(main.SeedName).Contains(WulverDialogue.GaveFishBack);
+
+            // A return visit: the gift is not offered again, and claiming to be the maker on an ordinary seed earns only the kind reply.
+            vitals.Damage(30);
+            main.Combat.Sim.Items.Perks.Clear();
+            wulver.Filter(new Hollowfall.Core.Combat.PlayerActions(false, false, false), new Hollowfall.Core.Combat.Vec3(spot.X + 30, spot.Y, spot.Z), alive: true);
+            var again = wulver.Filter(press, near, alive: true);
+            bool back = ui.DialogueOpen && !again.Interact && !ui.DialogueChoices.Any(c => c.StartsWith("About that gift")) && vitals.Health < 100;
+            seen += ui.DialogueText;
+            ui.PressDialogueChoice(0); // sit a while
+            ui.PressDialogueChoice(2); // I made this place
+            seen += ui.DialogueText;
+            bool kind = ui.DialogueText.Contains("A good many folk say that");
+            ui.Close();
+            bool quiet = !seen.Contains("Ewan");
+
             ui.ClearCaption();
             vitals.Reset();
             main.Combat.Sim.Items.Perks.Clear();
 
-            bool font = UiFonts.FaceWithGlyphs(WulverVoice.Name, UiFonts.Display).HasChar('\u00f2');
-            GD.Print($"    wulver: hurt={hurt} ignoredFar={ignoredFar} spoke={spoke} gift={gift} once={once} font={font}");
-            return hurt && ignoredFar && spoke && gift && once && font;
+            bool font = UiFonts.FaceWithGlyphs(WulverDialogue.Name, UiFonts.Display).HasChar('\u00f2');
+            GD.Print($"    wulver: hurt={hurt} ignoredFar={ignoredFar} greeted={greeted} opened={opened} offered={offered} gift={gift} closed={closed} remembered={remembered} back={back} kind={kind} quiet={quiet} font={font}");
+            return hurt && ignoredFar && greeted && opened && offered && gift && closed && remembered && back && kind && quiet && font;
         });
     }
 
