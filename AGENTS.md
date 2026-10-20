@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Guidance for AI coding agents working in **VoxelGame**.
+Guidance for AI coding agents working in **Hollowfall**.
 
 ## Project overview
 
-A voxel game in C# on .NET 10. `VoxelGame.Core` holds world data and seeded terrain generation, `VoxelGame.Cli` is a seed inspector, and `VoxelGame.Tests` is the xunit suite.
+A voxel game in C# on .NET 10. `Hollowfall.Core` holds world data and seeded terrain generation, `Hollowfall.Cli` is a seed inspector, and `Hollowfall.Tests` is the xunit suite.
 
 - Language: C#
 - Default branch: main
@@ -15,8 +15,8 @@ Godot is the shell; the game is C#. This is a hard rule, not a preference.
 
 - All game code is C#. Do not write GDScript (`.gd`), GDExtension (`.gdextension`), or attach any non-`.cs` script to a scene, resource or autoload.
 - Scenes (`.tscn`) and resources (`.tres`) are data and are fine, but every script they reference must be a `.cs` file.
-- Keep game logic in `src/VoxelGame.Core`, which has no Godot dependency. Scripts under `game/scripts` are thin: they connect the engine to Core and nothing more.
-- Godot node classes must be `public partial class` and live in the `VoxelGame.Game` namespace.
+- Keep game logic in `src/Hollowfall.Core`, which has no Godot dependency. Scripts under `game/scripts` are thin: they connect the engine to Core and nothing more.
+- Godot node classes must be `public partial class` and live in the `Hollowfall.Game` namespace.
 - `LanguagePolicyTests` fails `dotnet test` if any of this is broken, and a pre-commit hook rejects `.gd` files. If a task seems to call for GDScript, write the C# equivalent instead and say so.
 - Verify the Godot side with `./run-smoke-test.sh` (needs the Godot .NET editor, found via `GODOT=`, `PATH` or `/Applications/Godot_mono.app`).
 

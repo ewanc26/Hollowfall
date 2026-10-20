@@ -1,13 +1,13 @@
 using Godot;
-using VoxelGame.Core.Dungeon;
-using VoxelGame.Core.Meshing;
-using VoxelGame.Core.Terrain;
-using VoxelGame.Core.World;
+using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Meshing;
+using Hollowfall.Core.Terrain;
+using Hollowfall.Core.World;
 
-namespace VoxelGame.Game;
+namespace Hollowfall.Game;
 
 /// <summary>
-/// Headless check that the Godot shell can load VoxelGame.Core and run it. Prints a
+/// Headless check that the Godot shell can load Hollowfall.Core and run it. Prints a
 /// "==== N passed, M failed ====" summary and exits non-zero on failure
 /// (run-smoke-test.sh depends on both).
 /// </summary>

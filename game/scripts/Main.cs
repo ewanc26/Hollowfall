@@ -1,13 +1,13 @@
 using Godot;
-using VoxelGame.Core.Dungeon;
-using VoxelGame.Core.Terrain;
-using VoxelGame.Core.World;
+using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Terrain;
+using Hollowfall.Core.World;
 
-namespace VoxelGame.Game;
+namespace Hollowfall.Game;
 
 /// <summary>
 /// Entry scene: builds the world, light, sky, player and a small HUD in code. Game logic lives in
-/// VoxelGame.Core; the scripts here only connect the engine to it. Set the seed with VOXELGAME_SEED.
+/// Hollowfall.Core; the scripts here only connect the engine to it. Set the seed with HOLLOWFALL_SEED.
 /// </summary>
 public partial class Main : Node3D
 {
@@ -19,7 +19,7 @@ public partial class Main : Node3D
 
     public override void _Ready()
     {
-        string seedText = System.Environment.GetEnvironmentVariable("VOXELGAME_SEED") is { Length: > 0 and <= 100 } s ? s : "voxel";
+        string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : "voxel";
         World = new VoxelWorld(TerrainGenerator.SeedFromString(seedText));
 
         AddChild(new WorldEnvironment { Environment = MakeEnvironment() });
@@ -48,7 +48,7 @@ public partial class Main : Node3D
         layer.AddChild(_hud);
         AddChild(layer);
 
-        GD.Print($"VoxelGame: seed \"{seedText}\", spawn {where} at ({feet.X:F1}, {feet.Y:F1}, {feet.Z:F1})");
+        GD.Print($"Hollowfall: seed \"{seedText}\", spawn {where} at ({feet.X:F1}, {feet.Y:F1}, {feet.Z:F1})");
     }
 
     private static Godot.Environment MakeEnvironment()
@@ -86,7 +86,7 @@ public partial class Main : Node3D
                     if (d < bestDist) { best = site; bestDist = d; }
                 }
 
-        if (best != null && System.Environment.GetEnvironmentVariable("VOXELGAME_SPAWN_FLOOR") is { } f && int.TryParse(f, out int floor) && floor >= 0 && floor < best.FloorCount)
+        if (best != null && System.Environment.GetEnvironmentVariable("HOLLOWFALL_SPAWN_FLOOR") is { } f && int.TryParse(f, out int floor) && floor >= 0 && floor < best.FloorCount)
         {
             // Debug aid: start inside a dungeon floor, a few cells from its entrance stairs, facing the room centre.
             var layout = best.Floors[floor];
