@@ -9,7 +9,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -62,6 +62,7 @@ public sealed class CombatSim
     private readonly List<CombatEvent> _events = [];
     private readonly HashSet<(int, int)> _dirtyChunks = [];
     private readonly Dictionary<string, double> _cooldowns = [];
+    private readonly Interactables _items;
     private double _parryWindow, _parryCooldown;
     private int _nextId = 1;
 
@@ -69,6 +70,9 @@ public sealed class CombatSim
     public PortalSystem Portals { get; } = new();
 
     public PlayerVitals Vitals { get; } = new();
+
+    /// <summary>Keys, chests and spike traps.</summary>
+    public Interactables Items => _items;
     public StyleMeter Style { get; } = new();
     public double Time { get; private set; }
 
@@ -83,6 +87,7 @@ public sealed class CombatSim
         _world = world;
         _site = site;
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
+        _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add);
         _floors = new FloorProgress[site.FloorCount];
         for (int k = 0; k < site.FloorCount; k++)
         {
@@ -164,6 +169,7 @@ public sealed class CombatSim
         if (Vitals.Dead) return;
 
         TrackFloor(view);
+        _items.Tick(dt, view, actions.Interact);
         TriggerEncounters(view);
 
         if (actions.Parry && _parryCooldown <= 0 && _parryWindow <= 0) _parryWindow = ParryWindowSeconds;

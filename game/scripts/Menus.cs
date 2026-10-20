@@ -212,9 +212,14 @@ public partial class Menus : CanvasLayer
         return l;
     }
 
+    /// <summary>Raised for menu ticks and selections so the host can play them.</summary>
+    public static event Action<Hollowfall.Core.Audio.SoundId>? UiSound;
+
     private static Button MakeButton(string text, Action onPress, float minWidth = 0)
     {
         var b = new Button { Text = text, CustomMinimumSize = new Vector2(minWidth, 0) };
+        b.Pressed += () => UiSound?.Invoke(Hollowfall.Core.Audio.SoundId.UiSelect);
+        b.FocusEntered += () => UiSound?.Invoke(Hollowfall.Core.Audio.SoundId.UiMove);
         b.Pressed += onPress;
         return b;
     }
@@ -331,6 +336,12 @@ public partial class Menus : CanvasLayer
             () => _settings.Deadzone, v => _settings.Deadzone = v, v => $"{v:P0}");
         Slider(col, "Field of view", GameSettings.FovRange.Min, GameSettings.FovRange.Max, 1,
             () => _settings.FieldOfView, v => _settings.FieldOfView = v, v => $"{v:F0}°");
+        Slider(col, "Master volume", GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
+            () => _settings.MasterVolume, v => _settings.MasterVolume = v, v => $"{v * 100:F0}%");
+        Slider(col, "Effects volume", GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
+            () => _settings.EffectsVolume, v => _settings.EffectsVolume = v, v => $"{v * 100:F0}%");
+        Slider(col, "Ambience volume", GameSettings.AmbienceRange.Min, GameSettings.AmbienceRange.Max, 0.05,
+            () => _settings.AmbienceVolume, v => _settings.AmbienceVolume = v, v => $"{v * 100:F0}%");
         Slider(col, "Render distance", GameSettings.ViewRadiusRange.Min, GameSettings.ViewRadiusRange.Max, 1,
             () => _settings.ViewRadius, v => _settings.ViewRadius = (int)v, v => $"{v:F0} chunks");
 

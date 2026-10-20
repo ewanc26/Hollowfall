@@ -49,12 +49,12 @@ public class BindingMapTests
     public void RebindingReplacesTheBindingInItsOwnSlotOnly()
     {
         var m = BindingMap.CreateDefault();
-        Assert.Equal(RebindOutcome.Ok, m.Rebind(GameAction.Parry, Binding.Key("G")));
-        Assert.Equal(Binding.Key("G"), m.Get(GameAction.Parry, Slot.KeyboardMouse));
+        Assert.Equal(RebindOutcome.Ok, m.Rebind(GameAction.Parry, Binding.Key("K")));
+        Assert.Equal(Binding.Key("K"), m.Get(GameAction.Parry, Slot.KeyboardMouse));
         Assert.Equal(Binding.Button("X"), m.Get(GameAction.Parry, Slot.Gamepad)); // untouched
 
         Assert.Equal(RebindOutcome.Ok, m.Rebind(GameAction.Parry, Binding.Button("Back")));
-        Assert.Equal(Binding.Key("G"), m.Get(GameAction.Parry, Slot.KeyboardMouse));
+        Assert.Equal(Binding.Key("K"), m.Get(GameAction.Parry, Slot.KeyboardMouse));
         Assert.Equal(Binding.Button("Back"), m.Get(GameAction.Parry, Slot.Gamepad));
     }
 
@@ -116,7 +116,7 @@ public class BindingMapTests
     {
         var m = BindingMap.CreateDefault();
         var copy = m.Clone();
-        m.Rebind(GameAction.Parry, Binding.Key("G"));
+        m.Rebind(GameAction.Parry, Binding.Key("K"));
         Assert.False(m.EqualsMap(copy));
         Assert.Equal(Binding.Key("V"), copy.Get(GameAction.Parry, Slot.KeyboardMouse));
         m.ResetToDefaults();
@@ -187,7 +187,7 @@ public class GameSettingsTests : IDisposable
     public void SettingsRoundTripThroughJson()
     {
         var s = new GameSettings { MouseSensitivity = 0.004, FieldOfView = 95, ViewRadius = 9, InvertMouseY = true, InvertPadY = true, Deadzone = 0.3, PadLookSpeed = 5 };
-        s.Bindings.Rebind(GameAction.Parry, Binding.Key("G"));
+        s.Bindings.Rebind(GameAction.Parry, Binding.Key("K"));
         s.Bindings.Rebind(GameAction.PortalViolet, Binding.Button("Back"));
         s.Bindings.Unbind(GameAction.FlyToggle, Slot.KeyboardMouse);
 
@@ -217,7 +217,7 @@ public class GameSettingsTests : IDisposable
         string json = """
         {"fieldOfView": 100, "mouseSensitivity": 99,
          "bindings": {
-           "Parry": {"keyboardMouse": {"device":"Keyboard","code":"G","axisSign":0}},
+           "Parry": {"keyboardMouse": {"device":"Keyboard","code":"K","axisSign":0}},
            "Jump": {"keyboardMouse": {"device":"Keyboard","code":"","axisSign":0}},
            "PortalTeal": {"keyboardMouse": {"device":"Warp","code":"Q"}},
            "Nonsense": {"keyboardMouse": {"device":"Keyboard","code":"X"}}
@@ -226,7 +226,7 @@ public class GameSettingsTests : IDisposable
         var s = GameSettings.FromJson(json);
         Assert.Equal(100, s.FieldOfView);
         Assert.Equal(GameSettings.MouseSensitivityRange.Max, s.MouseSensitivity);
-        Assert.Equal(Binding.Key("G"), s.Bindings.Get(GameAction.Parry, Slot.KeyboardMouse));
+        Assert.Equal(Binding.Key("K"), s.Bindings.Get(GameAction.Parry, Slot.KeyboardMouse));
         Assert.Equal(Binding.Key("Space"), s.Bindings.Get(GameAction.Jump, Slot.KeyboardMouse)); // blank code rejected
         Assert.Equal(Binding.Key("Q"), s.Bindings.Get(GameAction.PortalTeal, Slot.KeyboardMouse)); // unknown device rejected
     }
@@ -272,7 +272,7 @@ public class GameSettingsTests : IDisposable
     public void ResetRestoresEverything()
     {
         var s = new GameSettings { FieldOfView = 100, InvertMouseY = true };
-        s.Bindings.Rebind(GameAction.Parry, Binding.Key("G"));
+        s.Bindings.Rebind(GameAction.Parry, Binding.Key("K"));
         s.ResetToDefaults();
         Assert.Equal(80, s.FieldOfView);
         Assert.False(s.InvertMouseY);

@@ -44,3 +44,11 @@ public sealed record DoorsChanged(int Floor, int RoomId, bool Locked) : CombatEv
 public sealed record FloorCompleted(int Floor, FloorResult Result) : CombatEvent;
 
 public sealed record PlayerDied : CombatEvent;
+
+public sealed record KeyCollected(int SpawnIndex) : CombatEvent;
+
+public sealed record ChestOpened(int SpawnIndex, double Healed, bool WasLocked) : CombatEvent;
+
+public sealed record ChestLocked(int SpawnIndex) : CombatEvent;
+
+public sealed record TrapSprung(int SpawnIndex, double Damage) : CombatEvent;

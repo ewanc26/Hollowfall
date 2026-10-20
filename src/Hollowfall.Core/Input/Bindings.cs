@@ -21,6 +21,7 @@ public enum GameAction
     FlyToggle,
     FlyDown,
     DebugInfo,
+    Interact,
     Pause,
 }
 
@@ -114,7 +115,7 @@ public static class ActionInfo
 {
     public static ActionGroup GroupOf(GameAction a) => a switch
     {
-        GameAction.MoveForward or GameAction.MoveBack or GameAction.MoveLeft or GameAction.MoveRight or GameAction.Jump => ActionGroup.Movement,
+        GameAction.MoveForward or GameAction.MoveBack or GameAction.MoveLeft or GameAction.MoveRight or GameAction.Jump or GameAction.Interact => ActionGroup.Movement,
         GameAction.LookUp or GameAction.LookDown or GameAction.LookLeft or GameAction.LookRight => ActionGroup.Look,
         GameAction.FirePrimary or GameAction.FireSecondary or GameAction.Parry => ActionGroup.Combat,
         GameAction.PortalTeal or GameAction.PortalViolet => ActionGroup.Portals,
@@ -141,6 +142,7 @@ public static class ActionInfo
         GameAction.FlyToggle => "Free-fly",
         GameAction.FlyDown => "Fly down",
         GameAction.DebugInfo => "Debug overlay",
+        GameAction.Interact => "Open and use",
         _ => "Pause menu",
     };
 
@@ -281,7 +283,8 @@ public sealed class BindingMap
             GameAction.PortalTeal => Binding.Key("Q"),
             GameAction.PortalViolet => Binding.Key("E"),
             GameAction.Respawn => Binding.Key("R"),
-            GameAction.FlyToggle => Binding.Key("F"),
+            GameAction.FlyToggle => Binding.Key("G"),
+            GameAction.Interact => Binding.Key("F"),
             GameAction.FlyDown => Binding.Key("Shift"),
             GameAction.DebugInfo => Binding.Key("F3"),
             GameAction.Pause => PauseKey,
@@ -306,6 +309,7 @@ public sealed class BindingMap
             GameAction.PortalViolet => Binding.Button("RightShoulder"),
             GameAction.Respawn => Binding.Button("Y"),
             GameAction.FlyToggle => Binding.Button("RightStick"),
+            GameAction.Interact => Binding.Button("LeftStick"),
             GameAction.FlyDown => Binding.Button("B"),
             GameAction.Pause => Binding.Button("Start"),
             _ => null,
