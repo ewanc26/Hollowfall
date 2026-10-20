@@ -4,6 +4,7 @@ using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Meshing;
+using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
@@ -24,6 +25,8 @@ public partial class SmokeTest : Node
         // Never touch the real settings file from a test run.
         string settingsPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-{System.Environment.ProcessId}.json");
         System.Environment.SetEnvironmentVariable("HOLLOWFALL_SETTINGS", settingsPath);
+        string storyPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-story-{System.Environment.ProcessId}.json");
+        System.Environment.SetEnvironmentVariable("HOLLOWFALL_STORY", storyPath);
 
         Check("both fonts load as real fonts, not the fallback", () =>
             UiFonts.Display != ThemeDB.FallbackFont && UiFonts.Body != ThemeDB.FallbackFont && UiFonts.Display.HasChar('H') && UiFonts.Body.HasChar('9'));
@@ -141,6 +144,7 @@ public partial class SmokeTest : Node
 
             await CheckCombatAsync(main);
             await CheckInputAndMenusAsync(main);
+            await CheckStoryAsync(main);
             main.QueueFree();
         }
         catch (Exception e)
@@ -290,6 +294,51 @@ public partial class SmokeTest : Node
         {
             _failed++;
             GD.PrintErr($"  FAIL {menuName}: {e.Message}");
+        }
+    }
+
+    /// <summary>The story inside the real scene: a note can be walked up to and read, is remembered and saved, and a floor card fades in.</summary>
+    private async Task CheckStoryAsync(Main main)
+    {
+        const string name = "a note can be read: the panel opens and pauses, the journal remembers it, and it is saved";
+        try
+        {
+            var story = main.Story;
+            var ui = main.StoryUi;
+            if (story.Spots.Count == 0) throw new InvalidOperationException("the dungeon holds no notes");
+            var spot = story.Spots[0];
+            var feet = new Hollowfall.Core.Combat.Vec3(spot.X + spot.FaceX, spot.Y, spot.Z + spot.FaceZ);
+
+            var prompted = story.Filter(new Hollowfall.Core.Combat.PlayerActions(false, false, false), feet, alive: true);
+            bool promptOnly = !ui.Modal && !prompted.Interact;
+
+            var used = story.Filter(new Hollowfall.Core.Combat.PlayerActions(false, false, false, Interact: true), feet, alive: true);
+            bool opened = ui.Modal && ui.CurrentNoteId == spot.Note.Id && ui.ReaderText == spot.Note.Text && GetTree().Paused && !used.Interact;
+            bool remembered = story.IsRead(spot.Note.Id) && story.Journal().Any(j => j.Note.Id == spot.Note.Id);
+            bool saved = StoryProgress.Load(Main.StoryPath).IsRead(main.SeedName, spot.Note.Id);
+
+            ui.Close();
+            bool closed = !ui.Modal && !GetTree().Paused;
+
+            var menus = main.Menus;
+            menus.OpenFrom(MenuScreen.Pause, MenuScreen.Journal);
+            bool journal = menus.Current == MenuScreen.Journal;
+            menus.Close();
+
+            story.OnFloor(0);
+            var deadline = Time.GetTicksMsec() + 5_000;
+            while (Time.GetTicksMsec() < deadline && !ui.CardVisible) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            bool card = ui.CardVisible && ui.CardTitle == story.Plan.Cards[0].Title;
+            ui.ClearCaption();
+
+            bool ok = promptOnly && opened && remembered && saved && closed && journal && card;
+            if (ok) { _passed++; GD.Print($"  ok   {name}"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: promptOnly={promptOnly} opened={opened} remembered={remembered} saved={saved} closed={closed} journal={journal} card={card}"); }
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
         }
     }
 

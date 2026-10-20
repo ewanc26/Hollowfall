@@ -147,6 +147,13 @@ public sealed class StoryPlan
     /// <summary>Every note this dungeon can hold, in floor and reading order.</summary>
     public IEnumerable<StoryNote> AllNotes => _runs.SelectMany(r => r);
 
+    /// <summary>The notes a player has read, as the journal lists them: by floor, then in reading order. Unknown ids are ignored.</summary>
+    public IReadOnlyList<StoryNote> Journal(IEnumerable<string> readIds)
+    {
+        var read = new HashSet<string>(readIds);
+        return [.. AllNotes.Where(n => read.Contains(n.Id)).OrderBy(n => n.Floor).ThenBy(n => n.Order)];
+    }
+
     public StoryNote? Note(string id) => _byId.GetValueOrDefault(id);
 
     public FloorCard? CardFor(int floor) => floor >= 0 && floor < _cards.Count ? _cards[floor] : null;

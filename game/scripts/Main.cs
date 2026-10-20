@@ -2,6 +2,7 @@ using Godot;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Textures;
 using Hollowfall.Core.World;
@@ -28,6 +29,9 @@ public partial class Main : Node3D
     private string _seedName = "";
     private Godot.Environment _env = null!;
     private Atmosphere _atmosphere = DungeonThemes.Surface;
+    private StoryUi _storyUi = null!;
+    private StoryDirector _story = null!;
+    private NotesView? _notesView;
 
     /// <summary>Set when the scene is rebuilt for a new world, so the player is not shown the title screen they just left.</summary>
     private static bool _skipTitleOnce;
@@ -49,6 +53,14 @@ public partial class Main : Node3D
     /// <summary>Where personal bests are saved; HOLLOWFALL_RECORDS overrides it (tests and screenshots use that).</summary>
     public static string RecordsPath =>
         System.Environment.GetEnvironmentVariable("HOLLOWFALL_RECORDS") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://records.json");
+
+    /// <summary>Where the notes you have read are saved; HOLLOWFALL_STORY overrides it (tests and screenshots use that).</summary>
+    public static string StoryPath =>
+        System.Environment.GetEnvironmentVariable("HOLLOWFALL_STORY") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://story.json");
+
+    public StoryDirector Story => _story;
+    public StoryUi StoryUi => _storyUi;
+    public string SeedName => _seedName;
 
     public override void _Ready()
     {
@@ -98,6 +110,7 @@ public partial class Main : Node3D
             Combat.EventRaised += OnCombatEvent;
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => _hud?.OnEvent(e);
+            Combat.EventRaised += e => _story?.OnEvent(e);
             Combat.EventRaised += e => { if (e is ShotFired shot) _weapons?.Fire(shot.Weapon); };
             AddChild(Combat);
             _props = new PropsView { Name = "Props" };
@@ -107,6 +120,23 @@ public partial class Main : Node3D
             _replay.Initialize(Combat.Sim, site, seedText, RecordsPath);
             AddChild(_replay);
         }
+
+        // The story: a plan chosen by the seed, scrolls lying in the dungeon, and the director that reads them out.
+        var storyProgress = StoryProgress.Load(StoryPath);
+        var plan = StoryPlan.For(World.Seed, site?.FloorCount ?? 3);
+        var noteSpots = site != null ? NotePlacer.Place(site, World.Seed, plan) : [];
+        _storyUi = new StoryUi { Name = "Story" };
+        if (noteSpots.Count > 0)
+        {
+            _notesView = new NotesView { Name = "Notes" };
+            _notesView.Initialize(noteSpots, id => storyProgress.IsRead(_seedName, id));
+            AddChild(_notesView);
+        }
+        _story = new StoryDirector(plan, storyProgress, _seedName, StoryPath, noteSpots, site?.Floors[^1].BossRoom?.Id ?? -1, _storyUi, _notesView, id => _audio.Play(id))
+        {
+            InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+            MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+        };
 
         // The weapons in your hands, drawn under the HUD.
         _weaponLayer = new CanvasLayer { Layer = 4, Name = "Weapons" };
@@ -129,12 +159,23 @@ public partial class Main : Node3D
         _menus.QuitRequested += () => GetTree().Quit();
         _menus.NewGameRequested += () => Restart(skipTitle: true);
         _menus.MainMenuRequested += () => Restart(skipTitle: false);
+        _menus.JournalProvider = () => (plan.Title, _story.Journal());
         AddChild(_menus);
+        AddChild(_storyUi); // after the menus, so it sees a press first and can close a note without opening the pause menu
+        _menus.MenuOpenChanged += open => _storyUi.SetMenuOpen(open);
 
         // The game starts at the title screen, except headless (tests), scripted demos and when asked to skip it.
         bool skipTitle = DisplayServer.GetName() == "headless" || _demo != null || System.Environment.GetEnvironmentVariable("HOLLOWFALL_SKIP_TITLE") == "1" || _skipTitleOnce;
         _skipTitleOnce = false;
         if (!skipTitle) _menus.Open(MenuScreen.Title);
+
+        // The opening crawl plays the first time a seed is played: when the title screen is left, or straight away if it was skipped.
+        bool introAllowed = DisplayServer.GetName() != "headless" && _demo == null;
+        if (introAllowed)
+        {
+            _menus.ResumeRequested += () => _story.ShowIntroIfNew();
+            if (skipTitle) CallDeferred(MethodName.ShowIntro);
+        }
 
         // For screenshots and videos: HOLLOWFALL_MENU=title|pause|controls|settings opens that screen straight away.
         if (System.Environment.GetEnvironmentVariable("HOLLOWFALL_MENU") is { } menu)
@@ -143,6 +184,7 @@ public partial class Main : Node3D
                 "title" => MenuScreen.Title,
                 "controls" => MenuScreen.Controls,
                 "settings" => MenuScreen.Settings,
+                "journal" => MenuScreen.Journal,
                 _ => MenuScreen.Pause,
             }));
 
@@ -250,6 +292,10 @@ public partial class Main : Node3D
         {
             if (dead && _player.RespawnRequested) Respawn();
             var view = _player.View;
+            if (_demo == "notes") actions = RunNotesDemo(actions);
+            if (_demo == "ending" && ++_demoFrame == 10) _story.ShowEnding();
+            if (_demo == "captions") RunCaptionDemo();
+            actions = _story.Filter(actions, view.Feet, !dead);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
             if (_replay != null) (view, actions) = _replay.Capture(delta, view, actions);
@@ -306,6 +352,34 @@ public partial class Main : Node3D
         return (view, actions);
     }
 
+    /// <summary>
+    /// A scripted setup for screenshots (HOLLOWFALL_DEMO=notes): go to the first floor, stand a few blocks from its first note,
+    /// then walk up to it and read it. HOLLOWFALL_DEMO=ending shows the ending card.
+    /// </summary>
+    private PlayerActions RunNotesDemo(PlayerActions actions)
+    {
+        _demoFrame++;
+        if (Combat == null || _story.Spots.Count == 0) return actions;
+        var spot = _story.Spots[0];
+        double away = _demoFrame < 40 ? 4.2 : 1.4;
+        if (_demoFrame is 5 or 40)
+        {
+            if (_demoFrame == 5) MovePlayerToFloor(spot.Floor);
+            var at = new Vector3((float)(spot.X + spot.FaceX * away), (float)spot.Y, (float)(spot.Z + spot.FaceZ * away));
+            _player.PlaceAt(at, Math.Atan2(spot.FaceX, spot.FaceZ));
+        }
+        return _demoFrame == 48 ? actions with { Interact = true } : actions;
+    }
+
+    /// <summary>HOLLOWFALL_DEMO=captions: shows the death line, the boss line and a floor-complete line in turn, for screenshots.</summary>
+    private void RunCaptionDemo()
+    {
+        _demoFrame++;
+        if (_demoFrame == 10) _story.OnEvent(new PlayerDied());
+        if (_demoFrame == 110) { _story.OnRespawn(); _story.OnEvent(new EncounterStarted(_story.Plan.FloorCount - 1, _story.BossRoomId, 1)); }
+        if (_demoFrame == 330) _story.OnEvent(new FloorCompleted(0, new FloorResult(Grade.A, Grade.B, Grade.A, 0, 11, OverallGrade.A), 80));
+    }
+
     private void Respawn()
     {
         var combat = Combat!;
@@ -315,7 +389,10 @@ public partial class Main : Node3D
         var site = combat.Site;
         _player.PlaceAt(combat.Sim.CurrentFloor < 0 ? new Vector3(site.EntranceX + DungeonSite.PlazaRadius + 0.5f, site.SurfaceY + 1, site.EntranceZ + 0.5f) : FloorSpawn(site, floor), 0);
         _hud.ShowBanner("", 0);
+        _story.OnRespawn();
     }
+
+    private void ShowIntro() => _story.ShowIntroIfNew();
 
     private void OnCombatEvent(CombatEvent e)
     {
@@ -381,6 +458,9 @@ public partial class Main : Node3D
         // The fog and ambient light ease toward the theme of the floor the player is on (or the open sky).
         _atmosphere = DungeonThemes.Lerp(_atmosphere, DungeonThemes.ForAtmosphere(floor), 1f - MathF.Exp(-2.5f * (float)delta));
         SkyBuilder.Apply(_env, _atmosphere);
+        _story.OnFloor(floor);
+        _story.Tick(delta, floor);
+        _notesView?.Update(delta);
         var openings = Combat.PortalScreenRects(_player.Camera);
         _hud.SetOpenings(openings);
         _weapons.SetOpenings(openings);
