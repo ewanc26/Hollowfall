@@ -29,6 +29,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 ### Changed
 
 - All saved data now lives in one folder, `~/.ewanc26/hollowfall` (`DataHome`; `HOLLOWFALL_HOME` moves it): settings, personal bests, replays, story progress and, later, relationships. A first run copies files an earlier version saved in Godot's user folder and leaves the old ones in place.
+- Scottish flavour: dungeon seed names now include Scots words (`dreich-howe-318`, `haar-bothy-042`), and a few lore notes and floor cards nod to the kelpie, the bean nighe, brownies, the Cailleach and the Fortingall Yew. `docs/mythology.md` records the sources and how sure they are.
 - Chests no longer always heal: the flat 30 (60 locked) health is now one possible outcome, at the same amounts for common and rare chests.
 
 - Free-fly moved to G so that F can open chests. Saved bindings keep working.
