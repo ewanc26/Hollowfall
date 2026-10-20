@@ -125,7 +125,7 @@ public static class FactionGraph
         [Faction.Brownies] = [new(Faction.Brownies, 1), new(Faction.Selkies, 0.8), new(Faction.Kelpies, 0.2), new(Faction.Wanderers, 0.15)],
         [Faction.Selkies] = [new(Faction.Selkies, 1), new(Faction.Brownies, 0.8), new(Faction.Kelpies, 0.2), new(Faction.Wanderers, 0.15)],
         [Faction.Kelpies] = [new(Faction.Kelpies, 1), new(Faction.Brownies, -0.3), new(Faction.Selkies, -0.3), new(Faction.Wanderers, -0.1)],
-        [Faction.Wanderers] = [new(Faction.Wanderers, 1), new(Faction.Brownies, 0.2), new(Faction.Selkies, 0.2), new(Faction.Vermin, 0.1)],
+        [Faction.Wanderers] = [new(Faction.Wanderers, 1), new(Faction.Brownies, 0.75), new(Faction.Selkies, 0.75), new(Faction.Kelpies, 0.2), new(Faction.Vermin, 0.1)],
         [Faction.Vermin] = [new(Faction.Vermin, 1), new(Faction.Wanderers, 0.1), new(Faction.Brownies, 0.05)],
     };
 
