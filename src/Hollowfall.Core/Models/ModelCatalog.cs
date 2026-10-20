@@ -81,6 +81,8 @@ public static class ModelCatalog
         LootHealth, LootCleanse, LootStyle, LootBloodlust, LootParry,
         // ---- story: models added for the lore notes (append further models above this line, not below) ----
         Scroll,
+        // ---- the Wulver: a hidden figure on a hill (append further models above this line, not below) ----
+        Wulver,
     ];
 
     public static LowPolyModel ForEnemy(EnemyKind kind) => kind switch
@@ -414,6 +416,91 @@ public static class ModelCatalog
             .Box(V(0.02, 0.006, -0.17), V(0.34, 0.012, 0.2), Palette.Bone.Shade(0.12f), V(0, 8, 0));
         m.Part("seal", V(0, 0.16, 0))
             .Gem(V(0.03, 0, 0), V(0.028, 0.02, 0.028), Palette.EyeAmber, glow: true);
+        return m.Build();
+    }
+    // ---- the Wulver: a wolf-headed man on a rock, holding a branch of yew ----------------------
+
+    private static readonly Lazy<LowPolyModel> WulverModel = new(BuildWulver);
+
+    public static LowPolyModel Wulver => WulverModel.Value;
+
+    private static LowPolyModel BuildWulver()
+    {
+        var fur = ModelColor.Hex(0x4a4036);
+        var furLight = ModelColor.Hex(0x6e6250);
+        var furDark = ModelColor.Hex(0x2a241d);
+        var cloak = ModelColor.Hex(0x34332c);
+        var rope = ModelColor.Hex(0x5a4c30);
+        var needle = ModelColor.Hex(0x123220);
+        var needleLight = ModelColor.Hex(0x1d4a29);
+        var aril = ModelColor.Hex(0xd81f3a);
+        var m = new ModelBuilder("wulver");
+
+        // A flat rock to stand on, with a smaller stone beside it.
+        m.Part("rock", V(0, 0, 0))
+            .Prism(V(0, 0.14, 0), 0.95, 0.28, 7, Palette.Stone.Shade(-0.38f), 0.86)
+            .Prism(V(0.7, 0.3, 0.35), 0.2, 0.2, 5, Palette.Stone.Shade(-0.5f), 0.7);
+
+        // The fish he leaves behind (hidden until he has given his gift).
+        m.Part("fish", V(-0.3, 0.3, -0.72))
+            .Gem(V(0, 0.04, 0), V(0.24, 0.05, 0.085), ModelColor.Hex(0x9fb4c0), V(0, 28, 0))
+            .Gem(V(0.2, 0.06, 0.1), V(0.05, 0.1, 0.02), ModelColor.Hex(0x6f8796), V(0, 28, 0));
+
+        // The cloaked, hunched body. Everything else hangs from it.
+        m.Part("body", V(0, 0.95, 0))
+            .Prism(V(0, -0.02, 0), 0.5, 1.25, 6, cloak, 0.55)
+            .Box(V(0, 0.45, 0.04), V(0.62, 0.45, 0.5), cloak.Shade(0.06f), V(-18, 0, 0))
+            .Box(V(0, 0.58, 0.2), V(0.44, 0.3, 0.3), cloak.Shade(-0.08f), V(-25, 0, 0))
+            .Box(V(0, 0.7, -0.07), V(0.5, 0.12, 0.42), furLight)
+            .Prism(V(0, 0, 0), 0.4, 0.07, 6, rope)
+            .Box(V(-0.12, -0.6, -0.3), V(0.16, 0.1, 0.28), furDark)
+            .Box(V(0.12, -0.6, -0.3), V(0.16, 0.1, 0.28), furDark)
+            .Prism(V(0, -0.5, 0.55), 0.09, 0.5, 4, furDark, 0, V(60, 0, 0), spin: 45);
+
+        // The wolf's head, forward of the shoulders: long snout, upright ears, pale amber eyes.
+        m.Part("head", V(0, 1.78, -0.14), "body")
+            .Box(V(0, 0.07, 0), V(0.44, 0.4, 0.42), fur)
+            .Box(V(0, -0.03, -0.37), V(0.22, 0.19, 0.44), furLight)
+            .Box(V(0, -0.13, -0.34), V(0.19, 0.07, 0.36), furDark)
+            .Box(V(0, 0.01, -0.6), V(0.11, 0.1, 0.06), ModelColor.Hex(0x16120f))
+            .Box(V(0, 0.2, -0.2), V(0.4, 0.07, 0.12), furDark)
+            .Prism(V(-0.13, 0.42, 0.03), 0.09, 0.38, 4, fur, 0, V(0, 0, 8), spin: 45)
+            .Prism(V(0.13, 0.42, 0.03), 0.09, 0.38, 4, fur, 0, V(0, 0, -8), spin: 45)
+            .Gem(V(-0.24, -0.04, -0.04), V(0.08, 0.13, 0.12), furLight)
+            .Gem(V(0.24, -0.04, -0.04), V(0.08, 0.13, 0.12), furLight)
+            .Gem(V(-0.13, 0.12, -0.215), V(0.07, 0.045, 0.04), Palette.EyeAmber, glow: true)
+            .Gem(V(0.13, 0.12, -0.215), V(0.07, 0.045, 0.04), Palette.EyeAmber, glow: true);
+
+        // The free arm hangs loose.
+        m.Part("arm_l", V(-0.4, 1.55, -0.1), "body")
+            .Box(V(-0.02, -0.22, -0.02), V(0.16, 0.44, 0.16), cloak.Shade(0.05f), V(0, 0, 4))
+            .Box(V(-0.04, -0.48, -0.04), V(0.12, 0.14, 0.12), furDark)
+            .Box(V(-0.04, -0.58, -0.05), V(0.12, 0.1, 0.12), fur);
+
+        // The arm that holds the yew: bent a little forward, the hand at the grip.
+        m.Part("arm_r", V(0.4, 1.55, -0.1), "body")
+            .Box(V(0.03, -0.2, -0.06), V(0.16, 0.42, 0.16), cloak.Shade(0.05f), V(-14, 0, -4))
+            .Box(V(0.05, -0.43, -0.16), V(0.12, 0.14, 0.12), furDark)
+            .Box(V(0.06, -0.5, -0.2), V(0.12, 0.1, 0.12), fur);
+
+        // A branch of yew: dark, flat needles in tufts along the stem and a few bright red arils.
+        m.Part("branch", V(0.46, 1.05, -0.3), "arm_r")
+            .Prism(V(0.04, 0.5, 0), 0.03, 1.2, 5, Palette.Wood, 0.8, V(0, 0, -5))
+            .Prism(V(-0.06, 0.78, 0), 0.075, 0.34, 4, needle, 0, V(0, 0, 70), spin: 45)
+            .Prism(V(0.16, 0.86, 0), 0.075, 0.34, 4, needleLight, 0, V(0, 0, -70), spin: 45)
+            .Prism(V(0.02, 0.98, -0.07), 0.07, 0.3, 4, needle, 0, V(-65, 0, 0), spin: 45)
+            .Prism(V(0.06, 0.98, 0.08), 0.07, 0.3, 4, needleLight, 0, V(65, 0, 0), spin: 45)
+            .Prism(V(-0.07, 1.16, 0), 0.07, 0.3, 4, needle, 0, V(0, 0, 60), spin: 45)
+            .Prism(V(0.17, 1.2, 0), 0.07, 0.3, 4, needleLight, 0, V(0, 0, -60), spin: 45)
+            .Prism(V(0.08, 1.3, 0), 0.075, 0.4, 4, needle, 0, V(0, 0, -6), spin: 45)
+            .Prism(V(0.0, 0.62, 0.1), 0.06, 0.26, 4, needle, 0, V(55, 0, 20), spin: 45)
+            .Prism(V(0.12, 0.64, -0.1), 0.06, 0.26, 4, needle, 0, V(-55, 0, -20), spin: 45)
+            .Gem(V(-0.14, 0.72, 0.03), V(0.035, 0.035, 0.035), aril, glow: true)
+            .Gem(V(0.27, 0.8, 0.0), V(0.035, 0.035, 0.035), aril, glow: true)
+            .Gem(V(0.1, 1.04, 0.14), V(0.035, 0.035, 0.035), aril, glow: true)
+            .Gem(V(-0.1, 1.08, -0.1), V(0.035, 0.035, 0.035), aril, glow: true);
+
+        m.Anchor("eyes", V(0, 1.85, -0.3));
         return m.Build();
     }
 }

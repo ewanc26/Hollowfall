@@ -144,7 +144,7 @@ public class ModelCatalogTests
         {
             Assert.NotEmpty(model.Parts);
             Assert.True(model.TriangleCount > 8, model.Id);
-            int budget = model.Id is "warden" ? 520 : model.Id is "husk" or "spitter" ? 460 : 260;
+            int budget = model.Id is "wulver" ? 450 : model.Id is "warden" ? 520 : model.Id is "husk" or "spitter" ? 460 : 260;
             Assert.True(model.TriangleCount <= budget, $"{model.Id} has {model.TriangleCount} triangles (budget {budget})");
         }
         Assert.True(ModelCatalog.All.Sum(m => m.TriangleCount) < 3000, "the whole catalogue stays tiny");

@@ -44,6 +44,9 @@ public enum SoundId
     // ---- story (appended; new sounds go below this line) ----
     NoteRead,
     TitleCard,
+
+    // ---- the Wulver (appended; new sounds go below this line) ----
+    WulverGreeting,
 }
 
 /// <summary>
@@ -103,6 +106,7 @@ public static class Synth
             SoundId.StepWater => Splash(0.32),
             SoundId.NoteRead => Mix(0.4, (t, i) => Noise(i, 31) * Math.Sin(Math.PI * Math.Min(1, t / 0.4)) * (0.55 + 0.45 * Math.Sin(t * 70)) * 0.35 + Sine(t, 330) * Decay(t, 32) * 0.12),
             SoundId.TitleCard => Mix(2.2, (t, _) => (Sine(t, 110) * 0.5 * Decay(t, 2.2) + Sine(t, 165) * 0.3 * Decay(t, 3) + Sine(t, 277) * 0.18 * Decay(t, 5)) * Math.Min(1, t / 0.04)),
+            SoundId.WulverGreeting => Mix(1.7, (t, i) => ((Sine(t, 196) * 0.45 + Sine(t, 294) * 0.25 + Sine(t, 392) * 0.12) * Decay(t, 2.6) + (t > 0.35 ? (Sine(t - 0.35, 247) * 0.3 + Sine(t - 0.35, 370) * 0.12) * Decay(t - 0.35, 2.8) : 0) + Noise(i, 32) * Math.Sin(Math.PI * Math.Min(1, t / 0.5)) * 0.03) * Math.Min(1, t / 0.12) * (1 + 0.04 * Math.Sin(Tau * 4.5 * t)) * 0.8),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
