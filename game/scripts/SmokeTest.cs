@@ -158,6 +158,7 @@ public partial class SmokeTest : Node
             CheckTrapStrikes(main);
             CheckRunRecordsSaveAndReload(main);
             await CheckReplaySavedByARealRunAsync(main);
+            await CheckABotCanPlayTheWholeDungeonAsync(main);
             await CheckSeedChangesTheWorldAsync(main);
             main.QueueFree();
         }
@@ -539,6 +540,83 @@ public partial class SmokeTest : Node
             return ok;
         });
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// A bot plays the whole dungeon in the real scene with no cheats beyond teleporting between rooms: it walks into every room
+    /// that holds enemies, aims at the nearest one and fires until the room is clear (respawning when it dies), descends every
+    /// floor, kills the boss, and the story's ending must then be reached.
+    /// </summary>
+    private async Task CheckABotCanPlayTheWholeDungeonAsync(Main main)
+    {
+        const string name = "a bot plays every room, floor and the boss to the ending";
+        try
+        {
+            var combat = main.Combat ?? throw new InvalidOperationException("no dungeon");
+            var sim = combat.Sim;
+            var site = combat.Site;
+            var cleared = new HashSet<(int, int)>();
+            var floorsCompleted = new HashSet<int>();
+            bool bossKilled = false;
+            int deaths = 0, ticks = 0;
+            combat.EventRaised += e =>
+            {
+                if (e is EncounterCleared c) cleared.Add((c.Floor, c.RoomId));
+                if (e is FloorCompleted f) floorsCompleted.Add(f.Floor);
+                if (e is EnemyKilled k && k.Kind == EnemyKind.Warden) bossKilled = true;
+                if (e is PlayerDied) deaths++;
+            };
+
+            sim.Respawn();
+            var rooms = new List<(int Floor, int RoomId)>();
+            foreach (var floor in site.Floors)
+                foreach (int roomId in site.Spawns.Where(s => s.Floor == floor.Floor && s.Kind is SpawnKind.Monster or SpawnKind.Boss).Select(s => s.RoomId).Distinct().OrderBy(id => floor.Rooms[id].Depth))
+                    rooms.Add((floor.Floor, roomId));
+
+            PlayerView Stand(Vec3 feet, Vec3 look) => new(feet, feet + new Vec3(0, 1.62, 0), look.Normalized(), false, false);
+
+            foreach (var (floorIndex, roomId) in rooms)
+            {
+                var layout = site.Floors[floorIndex];
+                var room = layout.Rooms[roomId];
+                var (wx, wy, wz) = site.ToWorld(floorIndex, room.CenterX, room.CenterZ);
+                var feet = new Vec3(wx + 0.5, wy, wz + 0.5);
+                int attempts = 0;
+                while (!cleared.Contains((floorIndex, roomId)) && attempts++ < 12)
+                {
+                    if (sim.Dead) sim.Respawn();
+                    for (int t = 0; t < 60 * 120 && !cleared.Contains((floorIndex, roomId)) && !sim.Dead; t++, ticks++)
+                    {
+                        var target = sim.Enemies.Where(en => !en.Dead).OrderBy(en => (en.Feet - feet).Length).FirstOrDefault();
+                        var look = target == null ? new Vec3(1, 0, 0) : new Vec3(target.Feet.X - feet.X, target.Feet.Y + target.Spec.Height * 0.55 - (feet.Y + 1.62), target.Feet.Z - feet.Z);
+                        bool close = target != null && (target.Feet - feet).Length < 7;
+                        combat.Step(1.0 / 60, Stand(feet, look), new PlayerActions(target != null && !close, target != null && close, false));
+                    }
+                }
+                if (!cleared.Contains((floorIndex, roomId))) throw new InvalidOperationException($"the bot could not clear floor {floorIndex + 1} room {roomId} (deaths {deaths})");
+
+                // After the floor's last room, descend.
+                bool lastOnFloor = rooms.Last(r => r.Floor == floorIndex).RoomId == roomId;
+                if (lastOnFloor && floorIndex < site.FloorCount - 1)
+                {
+                    var below = site.ToWorld(floorIndex + 1, 3, 3);
+                    combat.Step(1.0 / 60, Stand(new Vec3(below.X + 0.5, below.Y, below.Z + 0.5), new Vec3(1, 0, 0)), default);
+                }
+            }
+
+            // The boss fell: give the story its delay to show the ending.
+            await ToSignal(GetTree().CreateTimer(4.5), SceneTreeTimer.SignalName.Timeout);
+
+            bool everyFloor = Enumerable.Range(0, site.FloorCount).All(sim.FloorCompleted);
+            bool ending = main.Story.EndingShown;
+            if (everyFloor && bossKilled && ending) { _passed++; GD.Print($"  ok   {name} ({ticks / 60} s of play, {deaths} deaths)"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: floors={floorsCompleted.Count}/{site.FloorCount} boss={bossKilled} ending={ending} deaths={deaths}"); }
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
     }
 
     /// <summary>
