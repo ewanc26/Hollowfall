@@ -19,6 +19,17 @@ public static class UiFonts
 
     public static Font BodyBold => _bodyBold ??= Load("Rajdhani/Rajdhani-Bold.ttf");
 
+    /// <summary>
+    /// The preferred font if it draws every character of <paramref name="text"/>, else the first of Chakra Petch, Rajdhani or the engine's
+    /// fallback that does. Used for names with accents (a missing glyph would otherwise show as a box).
+    /// </summary>
+    public static Font FaceWithGlyphs(string text, Font preferred)
+    {
+        foreach (var font in new[] { preferred, Display, Body, BodyBold, ThemeDB.FallbackFont })
+            if (text.All(c => font.HasChar(c))) return font;
+        return ThemeDB.FallbackFont;
+    }
+
     private static Font Load(string relative)
     {
         // A missing or un-imported file must never break the game: fall back to the engine's default font.

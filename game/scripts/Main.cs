@@ -34,6 +34,8 @@ public partial class Main : Node3D
     private StoryUi _storyUi = null!;
     private StoryDirector _story = null!;
     private NotesView? _notesView;
+    private WulverDirector? _wulver;
+    private WulverView? _wulverView;
 
     /// <summary>Set when the scene is rebuilt for a new world, so the player is not shown the title screen they just left.</summary>
     private static bool _skipTitleOnce;
@@ -61,6 +63,8 @@ public partial class Main : Node3D
     public static string StoryPath => Data.StoryPath;
 
     public StoryDirector Story => _story;
+    public WulverDirector? Wulver => _wulver;
+    public WulverView? WulverView => _wulverView;
     public StoryUi StoryUi => _storyUi;
     public string SeedName => _seedName;
 
@@ -156,6 +160,19 @@ public partial class Main : Node3D
             InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
             MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
         };
+
+        // The Wulver: a hidden figure on a hill, found with a little exploring.
+        if (Combat != null && WulverPlacer.Place(World, site) is { } wulverSpot)
+        {
+            _wulverView = new WulverView { Name = "Wulver" };
+            _wulverView.Initialize(wulverSpot, false);
+            AddChild(_wulverView);
+            _wulver = new WulverDirector(new WulverEncounter(World.Seed, wulverSpot), Combat.Sim.Vitals, Combat.Sim.Items.Perks, _storyUi, _wulverView, id => _audio.Play(id))
+            {
+                InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+            };
+            GD.Print($"Hollowfall: the Wulver stands at ({wulverSpot.X:F1}, {wulverSpot.Y:F1}, {wulverSpot.Z:F1}), {wulverSpot.Distance:F0} blocks from the entrance");
+        }
 
         // The weapons in your hands, drawn under the HUD.
         _weaponLayer = new CanvasLayer { Layer = 4, Name = "Weapons" };
@@ -335,7 +352,9 @@ public partial class Main : Node3D
             if (_demo == "ending" && ++_demoFrame == 10) _story.ShowEnding();
             if (_demo == "captions") RunCaptionDemo();
             if (_demo == "floor") RunFloorDemo();
+            if (_demo is { } d && d.StartsWith("wulver")) RunWulverDemo(d);
             actions = _story.Filter(actions, view.Feet, !dead);
+            if (_wulver != null) actions = _wulver.Filter(actions, view.Feet, !dead);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
             if (_replay != null) (view, actions) = _replay.Capture(delta, view, actions);
@@ -409,6 +428,31 @@ public partial class Main : Node3D
             _player.PlaceAt(at, Math.Atan2(spot.FaceX, spot.FaceZ));
         }
         return _demoFrame == 48 ? actions with { Interact = true } : actions;
+    }
+
+    /// <summary>
+    /// HOLLOWFALL_DEMO=wulver stands the player a few blocks in front of the Wulver, looking at him; wulver_wide stands well back to show
+    /// his hill; wulver_talk walks up and speaks to him.
+    /// </summary>
+    private void RunWulverDemo(string demo)
+    {
+        _demoFrame++;
+        if (_wulverView == null) return;
+        var s = _wulverView.Spot;
+        double away = demo switch { "wulver_wide" => 8, "wulver_talk" => 2.4, _ => 4.0 };
+        if (_demoFrame is 5 or 40)
+        {
+            double fx = -Math.Sin(s.Yaw), fz = -Math.Cos(s.Yaw);
+            if (demo == "wulver_wide")
+            {
+                // Off to one side and a little back, so the hill and his outline show together.
+                (fx, fz) = (fx * Math.Cos(0.7) - fz * Math.Sin(0.7), fx * Math.Sin(0.7) + fz * Math.Cos(0.7));
+            }
+            double px = s.X + fx * away, pz = s.Z + fz * away;
+            int ground = World.Generator.SampleColumn((int)Math.Floor(px), (int)Math.Floor(pz)).Height;
+            _player.PlaceAt(new Vector3((float)px, ground + 1.2f, (float)pz), Math.Atan2(px - s.X, pz - s.Z));
+        }
+        if (demo == "wulver_talk" && _demoFrame == 60) _wulver?.Speak();
     }
 
     /// <summary>HOLLOWFALL_DEMO=captions: shows the death line, the boss line and a floor-complete line in turn, for screenshots.</summary>
@@ -519,6 +563,7 @@ public partial class Main : Node3D
         _story.OnFloor(floor);
         _story.Tick(delta, floor);
         _notesView?.Update(delta);
+        _wulverView?.Update(delta, new Vector3((float)b.X, (float)b.Y, (float)b.Z));
         var openings = Combat.PortalScreenRects(_player.Camera);
         _hud.SetOpenings(openings);
         _weapons.SetOpenings(openings);
