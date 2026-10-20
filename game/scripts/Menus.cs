@@ -441,6 +441,9 @@ public partial class Menus : CanvasLayer
             () => _settings.Deadzone, v => _settings.Deadzone = v, v => $"{v:P0}");
         Slider(col, "Field of view", GameSettings.FovRange.Min, GameSettings.FovRange.Max, 1,
             () => _settings.FieldOfView, v => _settings.FieldOfView = v, v => $"{v:F0}°");
+        Slider(col, "Interface size", UiScaling.UserRange.Min, UiScaling.UserRange.Max, 0.05,
+            () => _settings.UiScale, v => _settings.UiScale = v, v => $"{v * 100:F0}%");
+        CheckBox(col, "Scale the interface with the window", () => _settings.AutoUiScale, v => _settings.AutoUiScale = v);
         Slider(col, "Master volume", GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
             () => _settings.MasterVolume, v => _settings.MasterVolume = v, v => $"{v * 100:F0}%");
         Slider(col, "Effects volume", GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,

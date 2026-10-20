@@ -159,6 +159,7 @@ public partial class SmokeTest : Node
             CheckTrapStrikes(main);
             CheckRunRecordsSaveAndReload(main);
             await CheckReplaySavedByARealRunAsync(main);
+            CheckUiScaling(main);
             await CheckABotCanPlayTheWholeDungeonAsync(main);
             await CheckSeedChangesTheWorldAsync(main);
             main.QueueFree();
@@ -524,6 +525,42 @@ public partial class SmokeTest : Node
             bool same = back is { } b && b.Grade == expected.Grade && b.Points == expected.Points && Near(b.Seconds, expected.Seconds);
             if (!(fileWritten && same)) GD.PrintErr($"    records: file={fileWritten} expected {expected} got {back}");
             return fileWritten && same;
+        });
+    }
+
+    /// <summary>The interface scale follows the settings and lands on the real window.</summary>
+    private void CheckUiScaling(Main main)
+    {
+        Check("the interface size follows the settings and is applied to the window", () =>
+        {
+            var settings = main.Settings;
+            double userBefore = settings.UiScale;
+            bool autoBefore = settings.AutoUiScale;
+            try
+            {
+                var window = main.GetWindow();
+                settings.AutoUiScale = false;
+                settings.UiScale = 1.5;
+                main.ApplyUiScale();
+                bool fixedScale = Near(main.UiScaleApplied, 1.5) && Near(window.ContentScaleFactor, 1.5);
+
+                settings.UiScale = 1.0;
+                main.ApplyUiScale();
+                bool back = Near(window.ContentScaleFactor, 1.0);
+
+                settings.AutoUiScale = true;
+                main.ApplyUiScale();
+                double expected = UiScaling.Factor(window.Size.X, window.Size.Y, 1.0, true);
+                bool automatic = Near(window.ContentScaleFactor, expected);
+                if (!(fixedScale && back && automatic)) GD.PrintErr($"    ui scale: fixed={fixedScale} back={back} automatic={automatic} (window {window.Size}, expected {expected})");
+                return fixedScale && back && automatic;
+            }
+            finally
+            {
+                settings.UiScale = userBefore;
+                settings.AutoUiScale = autoBefore;
+                main.ApplyUiScale();
+            }
         });
     }
 

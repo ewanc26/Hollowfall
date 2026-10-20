@@ -6,6 +6,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Dynamic UI scaling (`UiScaling`): the HUD, menus and story panels are laid out for 1280 by 720 and scale with the window, so they keep their share of the screen on a small laptop, a 4K or a retina display. Settings has an Interface size slider (60 to 160 percent) and a switch to turn the automatic sizing off. Scales move in whole steps of 0.05 so dragging the window edge does not shimmer text, and the portal views still render at the window's real pixels.
 - Chests hold real loot, rolled from the seed (`LootTable`): the same dungeon always holds the same loot. Ordinary chests are common; locked chests (treasure and boss rooms) roll a better table with stronger, longer effects. Outcomes are a vial of blood (health), a cleansing drop (clears hard damage), a style shard (a burst of style), Bloodlust (hits heal more for a while), Open guard (a longer parry window for a while) and, from ordinary chests only, a spare key.
 - Opening a chest releases a floating pickup (five new low-poly models: vial, drop, star, fang and shield) and the banner names the loot. `ChestOpened` now carries the `Loot` and what it did.
 - `PlayerVitals.Cleanse` and `HitHealScale`, `Interactables.Perks`, and `CombatSim.ParryWindowLeft`: small hooks the perks use. The props showcase page shows the new pickups.

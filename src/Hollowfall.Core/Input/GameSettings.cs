@@ -22,6 +22,7 @@ public sealed class GameSettings
     private double _deadzone = DeadzoneRange.Default;
     private double _fov = FovRange.Default;
     private int _viewRadius = ViewRadiusRange.Default;
+    private double _uiScale = Ui.UiScaling.UserRange.Default;
     private string _seed = SeedWords.Default;
     private double _master = VolumeRange.Default;
     private double _effects = 1.0;
@@ -58,6 +59,16 @@ public sealed class GameSettings
         get => _viewRadius;
         set => _viewRadius = (int)Clamp(value, ViewRadiusRange.Min, ViewRadiusRange.Max, ViewRadiusRange.Default);
     }
+
+    /// <summary>Your own size multiplier for the interface, on top of the automatic one (see <see cref="Ui.UiScaling"/>).</summary>
+    public double UiScale
+    {
+        get => _uiScale;
+        set => _uiScale = Clamp(value, Ui.UiScaling.UserRange.Min, Ui.UiScaling.UserRange.Max, Ui.UiScaling.UserRange.Default);
+    }
+
+    /// <summary>Whether the interface also grows and shrinks with the window. Off pins it to your multiplier alone.</summary>
+    public bool AutoUiScale { get; set; } = true;
 
     /// <summary>The world to play, as typed: any text, or a number. Cleaned on the way in so it is never empty.</summary>
     public string Seed
@@ -105,6 +116,8 @@ public sealed class GameSettings
         Deadzone = DeadzoneRange.Default;
         FieldOfView = FovRange.Default;
         ViewRadius = ViewRadiusRange.Default;
+        UiScale = Ui.UiScaling.UserRange.Default;
+        AutoUiScale = true;
         Seed = SeedWords.Default;
         MasterVolume = VolumeRange.Default;
         EffectsVolume = 1.0;
@@ -138,6 +151,8 @@ public sealed class GameSettings
             ["deadzone"] = Deadzone,
             ["fieldOfView"] = FieldOfView,
             ["viewRadius"] = ViewRadius,
+            ["uiScale"] = UiScale,
+            ["autoUiScale"] = AutoUiScale,
             ["seed"] = Seed,
             ["masterVolume"] = MasterVolume,
             ["effectsVolume"] = EffectsVolume,
@@ -174,6 +189,8 @@ public sealed class GameSettings
         s.FieldOfView = Number(root, "fieldOfView", FovRange.Default);
         s.ViewRadius = (int)Number(root, "viewRadius", ViewRadiusRange.Default);
         s.Seed = root["seed"] is JsonValue sv && sv.TryGetValue<string>(out var seedText) ? seedText : SeedWords.Default;
+        s.UiScale = Number(root, "uiScale", Ui.UiScaling.UserRange.Default);
+        s.AutoUiScale = root["autoUiScale"] is not JsonValue au || !au.TryGetValue<bool>(out var autoScale) || autoScale;
         s.MasterVolume = Number(root, "masterVolume", VolumeRange.Default);
         s.EffectsVolume = Number(root, "effectsVolume", 1.0);
         s.AmbienceVolume = Number(root, "ambienceVolume", AmbienceRange.Default);
