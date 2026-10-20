@@ -28,7 +28,7 @@ public partial class StoryUi : CanvasLayer
 
     private Control _ambient = null!;
     private Control _cardBox = null!, _captionBox = null!, _promptBox = null!;
-    private Label _cardName = null!, _cardEpigraph = null!, _caption = null!, _prompt = null!;
+    private Label _cardName = null!, _cardEpigraph = null!, _caption = null!, _prompt = null!, _speaker = null!;
     private Control _reader = null!;
     private Label _readerFloor = null!, _readerTitle = null!, _readerText = null!, _readerHint = null!;
     private Control _crawl = null!;
@@ -52,6 +52,12 @@ public partial class StoryUi : CanvasLayer
     public string ReaderText => _readerText.Text;
 
     public string CaptionText => _caption.Text;
+
+    /// <summary>The name shown above a spoken line (empty for an ordinary caption).</summary>
+    public string SpeakerText => _speaker.Text;
+
+    /// <summary>True while someone's spoken line is on screen.</summary>
+    public bool Speaking => _speaker.Visible && _captionTime >= 0;
 
     public string CardTitle => _cardName.Text;
 
@@ -102,8 +108,15 @@ public partial class StoryUi : CanvasLayer
             MouseFilter = Control.MouseFilterEnum.Ignore,
             Modulate = new Color(1, 1, 1, 0),
         }, 26, UiFonts.Body, Paper, 8);
-        captionBottom.AddChild(_caption);
-        _captionBox = _caption;
+        // A speaker's name sits above the line, in a display face. It is empty (and takes no room) for ordinary captions.
+        var captionColumn = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0) };
+        captionColumn.AddThemeConstantOverride("separation", 2);
+        captionBottom.AddChild(captionColumn);
+        _speaker = Outlined(new Label { HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false }, 30, UiFonts.Display, Gold, 9);
+        captionColumn.AddChild(_speaker);
+        _caption.Modulate = Colors.White;
+        captionColumn.AddChild(_caption);
+        _captionBox = captionColumn;
 
         // The prompt over a note you can read.
         var promptCentre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -229,8 +242,19 @@ public partial class StoryUi : CanvasLayer
     }
 
     /// <summary>Shows one line (or a few) low on the screen for <paramref name="seconds"/>, fading in and out.</summary>
+    /// <summary>A line spoken by someone, with their name above it. The name is drawn in a face that has every letter in it.</summary>
+    public void ShowSpeech(string speaker, string text, double seconds)
+    {
+        ShowCaption(text, seconds);
+        _speaker.Text = speaker;
+        _speaker.Visible = true;
+        _speaker.AddThemeFontOverride("font", UiFonts.FaceWithGlyphs(speaker, UiFonts.Display));
+    }
+
     public void ShowCaption(string text, double seconds)
     {
+        _speaker.Text = "";
+        _speaker.Visible = false;
         _caption.Text = text;
         _captionTotal = Math.Max(seconds, 0.1);
         _captionTime = 0;
@@ -241,6 +265,8 @@ public partial class StoryUi : CanvasLayer
     {
         _captionTime = -1;
         _caption.Text = "";
+        _speaker.Text = "";
+        _speaker.Visible = false;
         _captionBox.Modulate = new Color(1, 1, 1, 0);
     }
 

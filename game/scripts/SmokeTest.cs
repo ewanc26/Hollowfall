@@ -153,6 +153,7 @@ public partial class SmokeTest : Node
             await CheckCombatAsync(main);
             await CheckInputAndMenusAsync(main);
             await CheckStoryAsync(main);
+            CheckWulver(main);
             CheckVolumeSlidersPersist(main);
             await CheckMiniMapAsync(main);
             CheckChestOpens(main);
@@ -357,6 +358,41 @@ public partial class SmokeTest : Node
             _failed++;
             GD.PrintErr($"  FAIL {name}: {e.Message}");
         }
+    }
+
+    /// <summary>The Wulver in the real scene: standing beside him, Interact makes him speak and gives the gift, once.</summary>
+    private void CheckWulver(Main main)
+    {
+        Check("the Wulver speaks under his name, heals and cleanses once, and leaves a fish", () =>
+        {
+            var wulver = main.Wulver ?? throw new InvalidOperationException("no Wulver in the world");
+            var view = main.WulverView!;
+            var ui = main.StoryUi;
+            var vitals = main.Combat!.Sim.Vitals;
+            var spot = wulver.Encounter.Spot;
+            var feet = new Hollowfall.Core.Combat.Vec3(spot.X + 1.5, spot.Y, spot.Z);
+            var press = new Hollowfall.Core.Combat.PlayerActions(false, false, false, Interact: true);
+
+            vitals.Damage(60);
+            bool hurt = vitals.Health < 100 && vitals.HardDamage > 0;
+            var far = wulver.Filter(press, new Hollowfall.Core.Combat.Vec3(spot.X + 30, spot.Y, spot.Z), alive: true);
+            bool ignoredFar = far.Interact && wulver.LastSpeech == null;
+
+            var used = wulver.Filter(press, feet, alive: true);
+            bool spoke = !used.Interact && ui.SpeakerText == WulverVoice.Name && ui.CaptionText == WulverVoice.Introduction;
+            bool gift = vitals.Health == 100 && vitals.HardDamage == 0 && main.Combat.Sim.Items.Perks.ParryWindowBonus > 0 && view.FishVisible;
+
+            vitals.Damage(40);
+            var again = wulver.Filter(press, feet, alive: true);
+            bool once = !again.Interact && vitals.Health < 100 && wulver.LastSpeech is { GiftGiven: false } && ui.CaptionText != WulverVoice.Introduction && view.FishVisible;
+            ui.ClearCaption();
+            vitals.Reset();
+            main.Combat.Sim.Items.Perks.Clear();
+
+            bool font = UiFonts.FaceWithGlyphs(WulverVoice.Name, UiFonts.Display).HasChar('\u00f2');
+            GD.Print($"    wulver: hurt={hurt} ignoredFar={ignoredFar} spoke={spoke} gift={gift} once={once} font={font}");
+            return hurt && ignoredFar && spoke && gift && once && font;
+        });
     }
 
     // ---- gameplay checks driven through the real scene -------------------------------------------

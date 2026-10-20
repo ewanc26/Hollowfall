@@ -6,7 +6,7 @@ Everything in Hollowfall that is not a voxel is a **low-poly model built in code
 
 - **Flat shading only.** Every face of a model has one normal and one colour; no smoothing, no textures on models (blocks do wear textures, see below).
 - **Convex primitives.** `Box`, `Prism` (cylinders, cones, pyramids by `sides` and `taper`), `Wedge`, `Gem` (octahedron) and `Blob` (icosahedron).
-- **Triangle budgets** (tested): Warden 520, Husk and Spitter 460, any other model 260, the whole catalogue under 3000.
+- **Triangle budgets** (tested): Warden 520, Wulver 450, Husk and Spitter 460, any other model 260, the whole catalogue under 3000.
 - **One shared palette** (`ModelCatalog.Palette`). Enemies are told apart by silhouette and hue: rust Husk, violet Spitter, steel and crimson Warden.
 - **Glow is for meaning.** Eyes, cores, gems and flames are in the glow buffer, drawn unlit. While an enemy winds up an attack its glow flashes bright yellow, the cue to parry.
 - **Hit boxes match the art.** An enemy's model is as tall and wide as its `EnemySpec`, and a head shot lands on the head.
@@ -25,6 +25,7 @@ A model is a set of named parts, each with a pivot at its joint. Geometry is pos
 | Torch | `bracket`, `flame` | none |
 | Key, enemy orb | `key`, `orb` | none |
 | Chest | `base`, `lid` (hinged at the back edge) | none |
+| Wulver | `rock`, `fish`, `body`, `head`, `arm_l`, `arm_r`, `branch` | head and arms hang from `body`; `branch` (the yew, pivoting at the hand) from `arm_r` |
 
 Arms and legs have their pivot at the top and hang below it; feet touch y=0 at rest. A child follows its parent, so a leaning torso carries the head and arms. Poses are procedural (`EnemyView`): they move parts from the rest position the model defines, so there are no animation files and nothing to fall out of date. `ModelRigTests` checks the rules above, and the smoke test poses every enemy in the engine and checks the joints move and children follow.
 

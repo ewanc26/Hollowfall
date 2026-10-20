@@ -123,6 +123,10 @@ Under the hill a Hollow is falling in on itself. Seven Wardens went down to hold
 
 All the words and every choice are in `Hollowfall.Core.Story`, a pure function of the seed. See [docs/story.md](docs/story.md) for the premise, characters, floor-by-floor beats and what is deliberately left open. `HOLLOWFALL_STORY` overrides where `story.json` is saved.
 
+## Hidden things
+
+Somewhere out on the hills, a wolf stands holding a branch of yew. He is there as a nod to the author, and he is gentle. Go and say hello.
+
 ## Agent control (MCP)
 
 Agents drive Godot through the off-the-shelf [Coding-Solo godot-mcp](https://github.com/Coding-Solo/godot-mcp)

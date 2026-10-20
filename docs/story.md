@@ -88,6 +88,12 @@ The last Warden falls and the Hollow stops falling. The fold-craft is warm in yo
 - **What the other six cords were attached to.**
 - **Whether the surface above is still there.**
 
+## The Wulver
+
+A hidden figure outside the story, and a nod to the author. In Shetland folklore (mostly Jessie Saxby's account) the Wulver is a gentle wolf-headed man who fishes from a rock and leaves fish on the windowsills of the poor. Ours is called Eòghann, stands on a hill holding a branch of yew (dark, flat-needled, with red arils), and speaks in a voice no one else in the game shares: gentle, dry, unhurried, a little Scots, fond of fishing, weather and the long way down. His name and nine lines live in `WulverVoice`, not in `StoryBook`, and a test keeps the name out of everything else.
+
+`WulverPlacer` puts him on the highest level, dry, open 3 by 3 patch of ground 45 to 110 blocks from the entrance you spawn beside, facing it. Pressing Interact within about 3 blocks makes him speak (his name over the line, the first line an introduction) and, the first time only, heal you to full, cleanse hard damage, grant a 40 second Open guard perk and leave a fish at his feet. Later lines follow a seeded order and do not repeat until all have been heard.
+
 ## How it is built
 
 - **Deterministic from the seed.** The dungeon name, the last Warden, the opener and boss lines, each floor's card and note thread, and where the notes lie are all pure functions of the seed (and the floor count), built from `SeededRandom` only.
