@@ -62,7 +62,7 @@ to `~/.ewanc26/hollowfall/settings.json`. Everything the game saves lives in tha
 | Pause menu | Esc | Start |
 | Debug overlay (fps, position, speed) | F3 | none |
 
-Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, master, effects and ambience volume, render distance, inverted Y for mouse and
+Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, interface size (and whether it scales with the window), master, effects and ambience volume, render distance, inverted Y for mouse and
 gamepad, and controller prompts. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
 Nintendo letters, with the bottom and right buttons swapped), or you can pick a style.
 

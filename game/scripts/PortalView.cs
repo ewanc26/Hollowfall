@@ -224,7 +224,9 @@ public partial class PortalView : Node3D
         var mainViewport = viewer.GetViewport();
         _viewport.Msaa3D = mainViewport.Msaa3D;
         _viewport.ScreenSpaceAA = mainViewport.ScreenSpaceAA;
-        var size = new Vector2I(Math.Max(64, (int)mainViewport.GetVisibleRect().Size.X), Math.Max(64, (int)mainViewport.GetVisibleRect().Size.Y));
+        // The real pixels of the window, not the visible rect: the interface can be scaled, and the portal image must not be.
+        var pixels = mainViewport.GetWindow()?.Size ?? new Vector2I((int)mainViewport.GetVisibleRect().Size.X, (int)mainViewport.GetVisibleRect().Size.Y);
+        var size = new Vector2I(Math.Max(64, pixels.X), Math.Max(64, pixels.Y));
         if (_viewport.Size != size) _viewport.Size = size;
         _viewport.RenderTargetUpdateMode = SubViewport.UpdateMode.Always;
     }

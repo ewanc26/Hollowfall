@@ -7,6 +7,7 @@ using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Textures;
 using Hollowfall.Core.World;
+using Hollowfall.Core.Ui;
 
 namespace Hollowfall.Game;
 
@@ -70,6 +71,8 @@ public partial class Main : Node3D
         // The event is static and outlives this scene; a handler left on it would call into a freed AudioDirector.
         if (_uiSound != null) Menus.UiSound -= _uiSound;
         _uiSound = null;
+        // The window outlives a scene reload too.
+        if (GetWindow() is { } window) window.SizeChanged -= ApplyUiScale;
     }
 
     public override void _Ready()
@@ -79,6 +82,8 @@ public partial class Main : Node3D
         if (adopted > 0) GD.Print($"Hollowfall: copied {adopted} saved file(s) into {Data.Root}");
         Settings = GameSettings.Load(SettingsPath);
         InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
+        ApplyUiScale();
+        GetWindow().SizeChanged += ApplyUiScale;
 
         string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : Settings.Seed;
         World = new VoxelWorld(TerrainGenerator.SeedFromString(seedText));
@@ -218,7 +223,27 @@ public partial class Main : Node3D
     {
         InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
         _view.ViewRadius = Settings.ViewRadius;
+        ApplyUiScale();
     }
+
+    /// <summary>
+    /// Sizes the whole interface from the window: laid out for 1280 by 720, scaled by <see cref="UiScaling"/> so it keeps its share
+    /// of the screen on a small laptop, a 4K display or a retina one, times the player's own multiplier. Only 2D is scaled; the
+    /// 3D view still renders at the window's real pixels.
+    /// </summary>
+    public void ApplyUiScale()
+    {
+        var window = GetWindow();
+        if (window == null) return;
+        double factor = UiScaling.Factor(window.Size.X, window.Size.Y, Settings.UiScale, Settings.AutoUiScale);
+        window.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+        window.ContentScaleSize = Vector2I.Zero; // no base size: the factor alone decides
+        window.ContentScaleFactor = (float)factor;
+        UiScaleApplied = factor;
+    }
+
+    /// <summary>The interface scale in force, for tests and the debug overlay.</summary>
+    public double UiScaleApplied { get; private set; } = 1.0;
 
     /// <summary>The button labels to show: for a gamepad, those of the connected controller unless the player chose a style.</summary>
     public ControllerStyle PromptStyle
