@@ -31,13 +31,14 @@ public static class SoundMap
         ChestOpened => SoundId.ChestOpen,
         ChestLocked => SoundId.ChestLocked,
         TrapSprung => SoundId.TrapStrike,
+        MeteorImpact => SoundId.Meteor,
         _ => null,
     };
 
     /// <summary>How loud a sound is relative to the others, 0 to 1. Gunfire is loud; menu ticks are not.</summary>
     public static double Gain(SoundId id) => id switch
     {
-        SoundId.ShotgunShot or SoundId.Explosion or SoundId.Death => 1.0,
+        SoundId.ShotgunShot or SoundId.Explosion or SoundId.Death or SoundId.Meteor => 1.0,
         SoundId.RevolverShot or SoundId.Kill or SoundId.FloorComplete => 0.9,
         SoundId.UiMove => 0.35,
         SoundId.Ambience => 0.5,

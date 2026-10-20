@@ -31,6 +31,7 @@ public enum StyleBonus
     Quickdraw,
     Exploded,
     FinishedOff,
+    Meteor,
 }
 
 /// <summary>How worn a weapon's novelty is: stale weapons earn less style, which pushes you to mix them.</summary>
@@ -79,6 +80,7 @@ public sealed class StyleMeter
         [StyleBonus.Quickdraw] = 50,
         [StyleBonus.Exploded] = 45,
         [StyleBonus.FinishedOff] = 50,
+        [StyleBonus.Meteor] = 180,
     };
 
     private readonly List<double> _killTimes = [];

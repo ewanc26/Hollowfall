@@ -95,7 +95,14 @@ public partial class PlayerController : Node3D
 
     public Vec3 EyePosition => new(Body.X, Body.Y + EyeHeight, Body.Z);
 
-    public PlayerView View => new(new Vec3(Body.X, Body.Y, Body.Z), EyePosition, Forward, !Body.OnGround, false);
+    private bool _crossedThisStep;
+
+    public PlayerView View => new(new Vec3(Body.X, Body.Y, Body.Z), EyePosition, Forward, !Body.OnGround, false,
+        PortalWalker.Velocity(Body), _crossedThisStep);
+
+    /// <summary>Keeps <paramref name="fraction"/> of the current velocity (a Meteor impact costs some speed).</summary>
+    public void KeepSpeed(double fraction) =>
+        Body.Teleport(Body.X, Body.Y, Body.Z, Body.VelocityX * fraction, Body.VelocityY * fraction, Body.VelocityZ * fraction);
 
     /// <summary>True the frame the respawn action was pressed.</summary>
     public bool RespawnRequested => InputMapper.JustPressed(GameAction.Respawn);
@@ -108,6 +115,7 @@ public partial class PlayerController : Node3D
     {
         _camera.Fov = (float)Settings.FieldOfView;
         ApplyStickLook(delta);
+        _crossedThisStep = false;
 
         bool live = !dead && Input.MouseMode == Input.MouseModeEnum.Captured || !dead && UsingGamepad;
         var actions = new PlayerActions(
@@ -159,6 +167,7 @@ public partial class PlayerController : Node3D
             var f = crossing.Forward.Normalized();
             _yaw = Math.Atan2(-f.X, -f.Z);
             _pitch = InputMath.ClampPitch(Math.Asin(Math.Clamp(f.Y, -1, 1)));
+            _crossedThisStep = true;
             Crossed?.Invoke(crossing);
         }
         else if (portals == null)

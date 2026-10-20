@@ -29,6 +29,7 @@ public enum SoundId
     UiMove,
     UiSelect,
     Ambience,
+    Meteor,
 }
 
 /// <summary>
@@ -74,6 +75,7 @@ public static class Synth
             SoundId.Death => Mix(1.3, (t, i) => (Sweep(t, 220, 38, 1.3) * 0.7 + Noise(i, 10) * 0.2) * Decay(t, 2.6)),
             SoundId.UiMove => Mix(0.05, (t, _) => Sine(t, 920) * Decay(t, 70) * 0.5),
             SoundId.UiSelect => Mix(0.14, (t, _) => Sine(t, Lerp(700, 1050, t / 0.14)) * Decay(t, 22) * 0.5),
+            SoundId.Meteor => Mix(0.55, (t, i) => Sweep(t, 220, 38, 0.55) * Decay(t, 7) * 0.8 + Noise(i, 11) * Decay(t, 38) * 0.45 + Sine(t, 70) * Decay(t, 12) * 0.4),
             SoundId.Ambience => Ambience(),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
