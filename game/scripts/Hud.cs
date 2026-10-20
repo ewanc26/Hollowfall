@@ -19,6 +19,13 @@ public partial class Hud : CanvasLayer
     private HintBar _hint = null!;
     private Control _tealMark = null!, _violetMark = null!;
     private TextureRect _rankIcon = null!;
+    private Control _crossCluster = null!;
+    private Label _floorStairs = null!, _floorKills = null!, _floorTime = null!;
+    private PanelContainer _floorPanel = null!;
+    private ShaderMaterial _vignette = null!;
+    private readonly List<Control> _avoid = [];
+    private readonly List<Rect2> _openings = [];
+    private bool _debug;
     private PanelContainer _result = null!;
     private Label _resultText = null!;
     private double _bannerTime, _flashTime, _flashTotal, _hitTime, _resultTime;
@@ -31,11 +38,53 @@ public partial class Hud : CanvasLayer
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
-        _flash = new ColorRect { Color = new Color(1, 0, 0, 0), MouseFilter = Control.MouseFilterEnum.Ignore };
+        // Damage and parry flashes are a vignette: strongest at the screen edges and fully clear in the middle, so they
+        // never tint what is in view, including the picture inside a portal.
+        _vignette = new ShaderMaterial
+        {
+            Shader = new Shader
+            {
+                Code = """
+                    shader_type canvas_item;
+                    uniform vec4 tint : source_color = vec4(1.0, 0.0, 0.0, 0.0);
+                    void fragment() {
+                        vec2 d = (UV - vec2(0.5)) * vec2(1.0, 0.8);
+                        float edge = smoothstep(0.28, 0.78, length(d));
+                        COLOR = vec4(tint.rgb, tint.a * edge);
+                    }
+                    """,
+            },
+        };
+        _flash = new ColorRect { Color = Colors.White, Material = _vignette, MouseFilter = Control.MouseFilterEnum.Ignore };
         _flash.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         root.AddChild(_flash);
 
         _info = Text(root, new Vector2(12, 8), 16);
+        _info.Visible = false;
+
+        // Top-right: where you are in the dungeon and how the floor is going.
+        _floorPanel = new PanelContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+        _floorPanel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight, Control.LayoutPresetMode.Minsize, 14);
+        _floorPanel.GrowHorizontal = Control.GrowDirection.Begin;
+        _floorPanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.04f, 0.04f, 0.06f, 0.62f),
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6,
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            ContentMarginLeft = 12,
+            ContentMarginRight = 14,
+            ContentMarginTop = 8,
+            ContentMarginBottom = 8,
+        });
+        var floorRows = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        floorRows.AddThemeConstantOverride("separation", 3);
+        _floorPanel.AddChild(floorRows);
+        _floorStairs = FloorRow(floorRows, GameIcons.Stairs);
+        _floorKills = FloorRow(floorRows, GameIcons.Kills);
+        _floorTime = FloorRow(floorRows, GameIcons.Time);
+        root.AddChild(_floorPanel);
 
         // Bottom-left stack: bonuses, style meter, health bar and the controls hint. Everything is anchored, so it
         // stays put whatever the window size.
@@ -69,6 +118,9 @@ public partial class Hud : CanvasLayer
 
         _hint = new HintBar();
         stack.AddChild(_hint);
+        _avoid.Add(stack);
+        _avoid.Add(_floorPanel);
+        _avoid.Add(_info);
 
         // Centre: crosshair, hit marker and the banner.
         var crossCentre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -84,9 +136,12 @@ public partial class Hud : CanvasLayer
         cross.MoveChild(_tealMark, 0);
         cross.AddChild(_violetMark);
         crossCentre.AddChild(cross);
+        _crossCluster = cross;
+        _avoid.Add(cross);
         _hitMarker = Text(crossCentre, Vector2.Zero, 34);
         _hitMarker.Text = "×";
-        _hitMarker.Modulate = new Color(1, 1, 1, 0);
+        _hitMarker.SelfModulate = new Color(1, 1, 1, 0);
+        _avoid.Add(_hitMarker);
 
         var bannerTop = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         bannerTop.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopWide, Control.LayoutPresetMode.Minsize, 0);
@@ -94,6 +149,9 @@ public partial class Hud : CanvasLayer
         root.AddChild(bannerTop);
         _banner = Text(bannerTop, Vector2.Zero, 40);
         _banner.HorizontalAlignment = HorizontalAlignment.Center;
+        _banner.AddThemeFontOverride("font", UiFonts.Display);
+        _avoid.Add(_banner);
+        _avoid.Add(_awards);
 
         var resultCentre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         resultCentre.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -104,6 +162,7 @@ public partial class Hud : CanvasLayer
         _resultText.AddThemeFontSizeOverride("font_size", 24);
         _result.AddChild(_resultText);
         resultCentre.AddChild(_result);
+        _avoid.Add(_result);
     }
 
     /// <summary>A bar made of a dark back, an optional extra fill (hard damage) and the main fill, all sized by the HUD.</summary>
@@ -115,6 +174,63 @@ public partial class Hud : CanvasLayer
         var extra = Bar(group, Vector2.Zero, new Vector2(0, height), new Color(0.95f, 0.6f, 0.1f, 0.9f));
         var fill = Bar(group, Vector2.Zero, new Vector2(BarWidth, height), new Color(0.85f, 0.12f, 0.12f, 0.95f));
         return (group, back, extra, fill);
+    }
+
+    private static Label FloorRow(Control parent, string icon)
+    {
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 8);
+        row.AddChild(Glyphs.Icon(icon, 22));
+        var label = Text(row, Vector2.Zero, 22);
+        label.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+        parent.AddChild(row);
+        return label;
+    }
+
+    /// <summary>The debug overlay (position, speed, frame rate) is off unless asked for, to keep the screen clear.</summary>
+    public void SetDebug(bool on)
+    {
+        _debug = on;
+        _info.Visible = on;
+    }
+
+    public bool DebugOn => _debug;
+
+    /// <summary>How visible the crosshair is (it fades while it would sit on a portal opening). For tests.</summary>
+    public float CrosshairAlpha => _crossCluster.Modulate.A;
+
+    /// <summary>Shows the dungeon progress panel, or hides it on the surface.</summary>
+    public void SetFloorInfo(int floor, int floors, int kills, int enemies, double elapsed, double par)
+    {
+        _floorPanel.Visible = floor >= 0;
+        if (floor < 0) return;
+        _floorStairs.Text = $"Floor {floor + 1} / {floors}";
+        _floorKills.Text = $"{kills} / {enemies}";
+        _floorTime.Text = $"{Clock(elapsed)}  /  {Clock(par)}";
+        _floorTime.AddThemeColorOverride("font_color", elapsed <= par ? Colors.White : new Color(1f, 0.55f, 0.45f));
+    }
+
+    private static string Clock(double seconds) => $"{(int)seconds / 60}:{(int)seconds % 60:D2}";
+
+    /// <summary>
+    /// Tells the HUD where portal openings are on screen. Anything that would be drawn over one fades out, so the view
+    /// through a portal is never covered by the HUD.
+    /// </summary>
+    public void SetOpenings(IReadOnlyList<Rect2> screenRects)
+    {
+        _openings.Clear();
+        _openings.AddRange(screenRects.Select(r => r.Grow(10)));
+    }
+
+    private void FadeOverOpenings(double delta)
+    {
+        foreach (var control in _avoid)
+        {
+            bool covers = control.Visible && _openings.Any(o => o.Intersects(control.GetGlobalRect()));
+            float target = covers ? 0f : 1f;
+            float a = Mathf.MoveToward(control.Modulate.A, target, (float)(delta * 10));
+            control.Modulate = new Color(1, 1, 1, a);
+        }
     }
 
     private static Label Text(Control parent, Vector2 pos, int size)
@@ -201,13 +317,14 @@ public partial class Hud : CanvasLayer
         if (_flashTime > 0)
         {
             _flashTime -= delta;
-            _flash.Color = new Color(_flashColour, (float)(_flashColour.A * Math.Max(0, _flashTime / _flashTotal)));
+            _vignette.SetShaderParameter("tint", new Color(_flashColour, (float)(_flashColour.A * Math.Max(0, _flashTime / _flashTotal))));
         }
         if (_hitTime > 0)
         {
             _hitTime -= delta;
-            _hitMarker.Modulate = new Color(1, 1, 1, _hitTime > 0 ? 1f : 0f);
+            _hitMarker.SelfModulate = new Color(1, 1, 1, _hitTime > 0 ? 1f : 0f);
         }
+        FadeOverOpenings(delta);
         if (_bannerTime > 0)
         {
             _bannerTime -= delta;

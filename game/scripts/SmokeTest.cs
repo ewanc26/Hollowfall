@@ -153,6 +153,44 @@ public partial class SmokeTest : Node
             bool ok = enemyDrawn && portalsDrawn && linked;
             if (ok) { _passed++; GD.Print($"  ok   {name}"); }
             else { _failed++; GD.PrintErr($"  FAIL {name}: enemyDrawn={enemyDrawn} portalsDrawn={portalsDrawn} linked={linked}"); }
+
+            await CheckHudStaysOffPortalsAsync(main, combat);
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// The HUD must never cover the view through a portal: with a portal dead ahead, the crosshair fades out, and it comes
+    /// back when you look away.
+    /// </summary>
+    private async Task CheckHudStaysOffPortalsAsync(Main main, CombatView combat)
+    {
+        const string name = "the HUD fades off a portal opening and returns when you look away";
+        try
+        {
+            var portal = combat.Sim.Portals.Teal ?? throw new InvalidOperationException("no teal portal");
+            var n = portal.Frame.Normal;
+            var at = portal.Frame.Center + n * 3;
+            var hud = main.GetNode<Hud>("Hud");
+
+            // Stand in front of the portal looking straight at it.
+            main.Player.PlaceAt(new Vector3((float)at.X, (float)(portal.Frame.Center.Y - 2.62), (float)at.Z), Math.Atan2(n.X, n.Z));
+            for (int i = 0; i < 40; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            float onPortal = hud.CrosshairAlpha;
+
+            // Face along the wall instead: both portals leave the screen (the other one is straight behind) and the crosshair returns.
+            double dx = -n.Z, dz = n.X;
+            main.Player.PlaceAt(new Vector3((float)at.X, (float)(portal.Frame.Center.Y - 2.62), (float)at.Z), Math.Atan2(-dx, -dz));
+            for (int i = 0; i < 40; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            float away = hud.CrosshairAlpha;
+
+            bool ok = onPortal < 0.1f && away > 0.9f;
+            if (ok) { _passed++; GD.Print($"  ok   {name}"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: alpha on portal {onPortal:F2}, looking away {away:F2}"); }
         }
         catch (Exception e)
         {

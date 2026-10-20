@@ -30,6 +30,7 @@ public static class GlyphSet
         var files = new List<(string, string)>();
         foreach (var (id, svg) in Glyphs()) files.Add(($"game/assets/glyphs/{id}.svg", svg));
         files.Add(("game/icon.svg", AppIcon()));
+        files.Add(("game/assets/logo.svg", Logo()));
         files.Add(("docs/banner.svg", Banner(1280, 320)));
         files.Add(("docs/social-preview.svg", Banner(1280, 640)));
         return files;
@@ -302,12 +303,25 @@ public static class GlyphSet
         <path d="M72 86 L63 100 L79 98 Z" fill="{Amber}"/>
         """);
 
-    /// <summary>
-    /// HOLLOWFALL in blocky geometric letters, between two portals. Each letter is a stroked path in a 40 x 56 cell.
-    /// </summary>
-    private static string Banner(int width, int height)
+    /// <summary>The wordmark on a transparent background with a bar under it, for the title screen.</summary>
+    private static string Logo()
     {
-        string[] letters = ["H", "O", "L", "L", "O", "W", "F", "A", "L", "L"];
+        var (shapes, letters) = Wordmark();
+        const double cell = 40, gap = 26, scale = 1.0;
+        double total = (letters.Length * cell + (letters.Length - 1) * gap) * scale;
+        double padX = 14, width = total + padX * 2, height = 56 + 40;
+        var body = new StringBuilder();
+        for (int i = 0; i < letters.Length; i++)
+        {
+            double x = padX + i * (cell + gap) * scale;
+            body.AppendLine($"<g transform=\"translate({F(x)} 8)\">{Stroke(shapes[letters[i]], Ink, 9, " stroke-linecap=\"square\"").Replace(" stroke-linecap=\"round\"", "")}</g>");
+        }
+        body.AppendLine($"<rect x=\"{F(padX)}\" y=\"{F(56 + 22)}\" width=\"{F(total)}\" height=\"5\" fill=\"{Amber}\"/>");
+        return Svg((int)Math.Ceiling(width), (int)height, body.ToString());
+    }
+
+    private static (Dictionary<string, string> Shapes, string[] Letters) Wordmark()
+    {
         var shapes = new Dictionary<string, string>
         {
             ["H"] = "M0 0 V56 M40 0 V56 M0 28 H40",
@@ -317,6 +331,15 @@ public static class GlyphSet
             ["F"] = "M0 56 V0 H40 M0 26 H30",
             ["A"] = "M0 56 L20 0 L40 56 M8 36 H32",
         };
+        return (shapes, ["H", "O", "L", "L", "O", "W", "F", "A", "L", "L"]);
+    }
+
+    /// <summary>
+    /// HOLLOWFALL in blocky geometric letters, between two portals. Each letter is a stroked path in a 40 x 56 cell.
+    /// </summary>
+    private static string Banner(int width, int height)
+    {
+        var (shapes, letters) = Wordmark();
 
         const double cell = 40, gap = 26;
         double scale = height >= 500 ? 2.1 : 1.45;

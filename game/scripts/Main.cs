@@ -283,16 +283,18 @@ public partial class Main : Node3D
         _view.Focus = new Vector3((float)b.X, (float)b.Y, (float)b.Z);
         Combat?.UpdatePortalViews(_player.Camera);
 
+        if (InputMapper.JustPressed(GameAction.DebugInfo)) _hud.SetDebug(!_hud.DebugOn);
+
         if (Combat == null) return;
         var sim = Combat.Sim;
         int floor = sim.CurrentFloor;
-        string floorInfo = floor < 0
-            ? "surface"
-            : $"floor {floor + 1}/{Combat.Site.FloorCount}   kills {sim.KillsOn(floor)}/{sim.EnemiesOn(floor)}   par {sim.TargetsFor(floor).ParTimeSeconds:F0}s";
+        _hud.SetOpenings(Combat.PortalScreenRects(_player.Camera));
+        if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds);
+        else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
+
         string info =
-            $"{Engine.GetFramesPerSecond()} fps   {floorInfo}\n" +
-            $"x {b.X:F1}  y {b.Y:F1}  z {b.Z:F1}   speed {b.Speed:F1}   {(_player.Flying ? "FLYING" : b.OnGround ? "walking" : "airborne")}" +
-            "";
+            $"{Engine.GetFramesPerSecond()} fps   x {b.X:F1}  y {b.Y:F1}  z {b.Z:F1}   speed {b.Speed:F1}   " +
+            $"{(_player.Flying ? "FLYING" : b.OnGround ? "walking" : "airborne")}   in {World.GetBlock((int)Math.Floor(b.X), (int)Math.Floor(b.Y), (int)Math.Floor(b.Z))}";
         _hud.Update(delta, sim, sim.Portals, info, Hints(), PromptStyle);
     }
 }

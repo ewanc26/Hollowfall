@@ -658,6 +658,26 @@ public class CombatSimTests
     }
 
     [Fact]
+    public void FloorTimersRunWhileYouAreOnAFloorAndFreezeWhenItIsDone()
+    {
+        var (_, site, sim, _) = FindEncounter();
+        Assert.Equal(0, sim.ElapsedOn(0)); // not entered yet
+
+        var inFloor0 = InRoom(site, site.Floors[0].EntranceRoom);
+        Run(sim, inFloor0, 60);
+        double t = sim.ElapsedOn(0);
+        Assert.InRange(t, 0.9, 1.1);
+        Run(sim, inFloor0, 60);
+        Assert.InRange(sim.ElapsedOn(0), t + 0.9, t + 1.1);
+
+        Run(sim, InRoom(site, site.Floors[1].EntranceRoom, floor: 1), 2); // down to floor 1: floor 0 is complete
+        double frozen = sim.ElapsedOn(0);
+        Run(sim, InRoom(site, site.Floors[1].EntranceRoom, floor: 1), 120);
+        Assert.Equal(frozen, sim.ElapsedOn(0), 6);
+        Assert.True(sim.ElapsedOn(1) > 1.5);
+    }
+
+    [Fact]
     public void FloorIndexAtMapsHeightsToFloors()
     {
         var (_, site, _, _) = FindEncounter();

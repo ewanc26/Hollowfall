@@ -224,7 +224,11 @@ public partial class Menus : CanvasLayer
     private Control BuildTitle()
     {
         var (screen, col) = Panel(460, 360);
-        col.AddChild(Heading("HOLLOWFALL", 48));
+        var logo = Glyphs.LoadTexture("res://assets/logo.svg");
+        if (logo != null)
+            col.AddChild(new TextureRect { Texture = logo, CustomMinimumSize = new Vector2(400, 90), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
+        else
+            col.AddChild(Heading("HOLLOWFALL", 48));
         col.AddChild(new Label { Text = "A procedural dungeon crawler.\nMove fast. Heal by hurting things.", HorizontalAlignment = HorizontalAlignment.Center });
         col.AddChild(MakeButton("Play", () => { Close(); ResumeRequested?.Invoke(); }));
         col.AddChild(MakeButton("Controls", () => OpenFrom(MenuScreen.Title, MenuScreen.Controls)));

@@ -78,6 +78,15 @@ public partial class CombatView : Node3D
         }
     }
 
+    /// <summary>Where portal openings are on screen for this camera, so the HUD can stay off them.</summary>
+    public List<Rect2> PortalScreenRects(Camera3D viewer)
+    {
+        var rects = new List<Rect2>();
+        foreach (var pv in _portals.Values)
+            if (Sim.Portals.Linked && pv.ScreenRect(viewer) is { } rect) rects.Add(rect);
+        return rects;
+    }
+
     /// <summary>Updates what each portal shows. Call once per rendered frame with the viewer's camera.</summary>
     public void UpdatePortalViews(Camera3D viewer)
     {
