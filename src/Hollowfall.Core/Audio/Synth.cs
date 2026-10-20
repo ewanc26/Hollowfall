@@ -47,6 +47,7 @@ public enum SoundId
 
     // ---- the Wulver (appended; new sounds go below this line) ----
     WulverGreeting,
+    WulverGift,
 }
 
 /// <summary>
@@ -107,6 +108,7 @@ public static class Synth
             SoundId.NoteRead => Mix(0.4, (t, i) => Noise(i, 31) * Math.Sin(Math.PI * Math.Min(1, t / 0.4)) * (0.55 + 0.45 * Math.Sin(t * 70)) * 0.35 + Sine(t, 330) * Decay(t, 32) * 0.12),
             SoundId.TitleCard => Mix(2.2, (t, _) => (Sine(t, 110) * 0.5 * Decay(t, 2.2) + Sine(t, 165) * 0.3 * Decay(t, 3) + Sine(t, 277) * 0.18 * Decay(t, 5)) * Math.Min(1, t / 0.04)),
             SoundId.WulverGreeting => Mix(1.7, (t, i) => ((Sine(t, 196) * 0.45 + Sine(t, 294) * 0.25 + Sine(t, 392) * 0.12) * Decay(t, 2.6) + (t > 0.35 ? (Sine(t - 0.35, 247) * 0.3 + Sine(t - 0.35, 370) * 0.12) * Decay(t - 0.35, 2.8) : 0) + Noise(i, 32) * Math.Sin(Math.PI * Math.Min(1, t / 0.5)) * 0.03) * Math.Min(1, t / 0.12) * (1 + 0.04 * Math.Sin(Tau * 4.5 * t)) * 0.8),
+            SoundId.WulverGift => Mix(1.6, (t, _) => Chime(t, 523.25, 0) + Chime(t, 659.25, 0.11) + Chime(t, 783.99, 0.22) + Chime(t, 1046.5, 0.36) * 0.8),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
@@ -135,6 +137,14 @@ public static class Synth
     private static double Square(double t, double hz) => Math.Sin(Tau * hz * t) >= 0 ? 1 : -1;
 
     private static double Decay(double t, double rate) => t < 0 ? 0 : Math.Exp(-rate * t);
+
+    /// <summary>One soft bell note that starts at <paramref name="start"/> seconds: a sine and a quiet octave above it, with a short attack and a long fade.</summary>
+    private static double Chime(double t, double hz, double start)
+    {
+        double u = t - start;
+        if (u < 0) return 0;
+        return (Sine(u, hz) * 0.3 + Sine(u, hz * 2) * 0.07) * Decay(u, 3.4) * Math.Min(1, u / 0.008);
+    }
 
     private static double Lerp(double a, double b, double f) => a + (b - a) * Math.Clamp(f, 0, 1);
 

@@ -35,6 +35,18 @@ public partial class StoryUi : CanvasLayer
     private Control _dialogue = null!;
     private Label _dialogueSpeaker = null!, _dialogueText = null!, _dialogueHint = null!;
     private VBoxContainer _dialogueChoices = null!;
+    private PanelContainer _dialoguePanel = null!;
+    private ColorRect _glow = null!;
+    private ShaderMaterial _glowMaterial = null!;
+    private double _glowTime = -1;
+
+    /// <summary>How long the warm glow of a gift takes to fade, and how strong it is at first.</summary>
+    public const double GlowSeconds = 1.8;
+
+    public const float GlowStrength = 0.55f;
+
+    /// <summary>How strong the gift glow is now, 0 to <see cref="GlowStrength"/> (for tests and screenshots).</summary>
+    public float GlowAlpha => _glowTime < 0 ? 0 : (float)(GlowStrength * Math.Sin(Math.PI * Math.Min(1, _glowTime / GlowSeconds)));
     private Action<int>? _onChoose;
     private Control _crawl = null!;
     private ColorRect _crawlBack = null!;
@@ -132,6 +144,26 @@ public partial class StoryUi : CanvasLayer
         promptCentre.AddChild(_prompt);
         _promptBox = _prompt;
 
+        // A warm vignette for a gift: it swells at the screen's edge and fades, and leaves the middle of the view clear.
+        _glowMaterial = new ShaderMaterial
+        {
+            Shader = new Shader
+            {
+                Code = """
+                    shader_type canvas_item;
+                    uniform vec4 tint : source_color = vec4(1.0, 0.72, 0.3, 0.0);
+                    void fragment() {
+                        vec2 d = (UV - vec2(0.5)) * vec2(1.0, 0.8);
+                        float edge = smoothstep(0.2, 0.75, length(d));
+                        COLOR = vec4(tint.rgb, tint.a * edge);
+                    }
+                    """,
+            },
+        };
+        _glow = new ColorRect { Color = Colors.White, Material = _glowMaterial, MouseFilter = Control.MouseFilterEnum.Ignore };
+        _glow.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        root.AddChild(_glow);
+
         BuildReader(root);
         BuildCrawl(root);
         BuildDialogue(root);
@@ -212,12 +244,13 @@ public partial class StoryUi : CanvasLayer
         // A panel low on the screen, so the speaker stays in view above it. It takes the mouse and focus; the rest of the screen does not.
         var anchor = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
         anchor.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomWide, Control.LayoutPresetMode.Minsize, 0);
-        anchor.OffsetBottom = -62;
+        anchor.OffsetBottom = -58;
         anchor.GrowVertical = Control.GrowDirection.Begin;
         root.AddChild(anchor);
         _dialogue = anchor;
 
-        var panel = new PanelContainer { CustomMinimumSize = new Vector2(860, 0) };
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(1000, 0) };
+        _dialoguePanel = panel;
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(0.06f, 0.05f, 0.05f, 0.93f),
@@ -230,24 +263,24 @@ public partial class StoryUi : CanvasLayer
             CornerRadiusBottomRight = 4,
             CornerRadiusTopLeft = 4,
             CornerRadiusTopRight = 4,
-            ContentMarginLeft = 28,
-            ContentMarginRight = 28,
-            ContentMarginTop = 18,
-            ContentMarginBottom = 14,
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 10,
+            ContentMarginBottom = 8,
         });
         anchor.AddChild(panel);
 
         var column = new VBoxContainer();
-        column.AddThemeConstantOverride("separation", 8);
+        column.AddThemeConstantOverride("separation", 4);
         panel.AddChild(column);
 
         _dialogueSpeaker = new Label { HorizontalAlignment = HorizontalAlignment.Left };
-        _dialogueSpeaker.AddThemeFontSizeOverride("font_size", 30);
+        _dialogueSpeaker.AddThemeFontSizeOverride("font_size", 26);
         _dialogueSpeaker.AddThemeColorOverride("font_color", Gold);
         column.AddChild(_dialogueSpeaker);
 
-        _dialogueText = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(800, 0) };
-        _dialogueText.AddThemeFontSizeOverride("font_size", 26);
+        _dialogueText = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(950, 0) };
+        _dialogueText.AddThemeFontSizeOverride("font_size", 22);
         _dialogueText.AddThemeColorOverride("font_color", Paper);
         _dialogueText.AddThemeConstantOverride("line_spacing", 3);
         column.AddChild(_dialogueText);
@@ -255,7 +288,7 @@ public partial class StoryUi : CanvasLayer
         column.AddChild(new HSeparator());
 
         _dialogueChoices = new VBoxContainer();
-        _dialogueChoices.AddThemeConstantOverride("separation", 4);
+        _dialogueChoices.AddThemeConstantOverride("separation", 3);
         column.AddChild(_dialogueChoices);
 
         _dialogueHint = new Label { HorizontalAlignment = HorizontalAlignment.Right };
@@ -278,8 +311,8 @@ public partial class StoryUi : CanvasLayer
         CornerRadiusTopRight = 3,
         ContentMarginLeft = 14,
         ContentMarginRight = 14,
-        ContentMarginTop = 5,
-        ContentMarginBottom = 5,
+        ContentMarginTop = 3,
+        ContentMarginBottom = 3,
     };
 
     private void BuildCrawl(Control root)
@@ -350,6 +383,9 @@ public partial class StoryUi : CanvasLayer
         _speaker.Visible = false;
         _captionBox.Modulate = new Color(1, 1, 1, 0);
     }
+
+    /// <summary>A brief warm glow at the edges of the screen, for a gift. It runs while the game is paused behind a conversation.</summary>
+    public void ShowGiftGlow() => _glowTime = 0;
 
     /// <summary>The prompt over a readable note; null hides it.</summary>
     public void SetPrompt(string? text)
@@ -422,6 +458,20 @@ public partial class StoryUi : CanvasLayer
     public bool DialogueOpen => _page == Page.Dialogue;
 
     /// <summary>
+    /// Where the top edge of the open choice panel is, as a fraction of the screen's height from the top (1 when it is not open), so the
+    /// camera can keep the speaker in the clear space above it.
+    /// </summary>
+    public double DialoguePanelTop
+    {
+        get
+        {
+            if (_page != Page.Dialogue || !IsInsideTree()) return 1;
+            double h = Math.Max(GetViewport().GetVisibleRect().Size.Y, 1);
+            return Math.Clamp(_dialoguePanel.GetGlobalRect().Position.Y / h, 0, 1);
+        }
+    }
+
+    /// <summary>
     /// Opens the choice panel and pauses the game: the speaker's name above their line, then a button for each thing the player can say.
     /// The first button has focus, so the keyboard and a gamepad work as in the menus. <paramref name="onChoose"/> gets the index of the
     /// button pressed; Interact or the menu button closes the panel.
@@ -451,7 +501,7 @@ public partial class StoryUi : CanvasLayer
         {
             int index = i;
             var b = new Button { Text = choices[i], Alignment = HorizontalAlignment.Left, FocusMode = Control.FocusModeEnum.All };
-            b.AddThemeFontSizeOverride("font_size", 22);
+            b.AddThemeFontSizeOverride("font_size", 19);
             b.AddThemeColorOverride("font_color", Paper);
             b.AddThemeStyleboxOverride("normal", ButtonBox(new Color(0.12f, 0.11f, 0.11f), new Color(0.3f, 0.27f, 0.24f)));
             b.AddThemeStyleboxOverride("hover", ButtonBox(new Color(0.2f, 0.17f, 0.13f), new Color(0.7f, 0.55f, 0.3f)));
@@ -529,6 +579,13 @@ public partial class StoryUi : CanvasLayer
             for (int i = 0; i < _paragraphs.Count; i++)
                 _paragraphs[i].Modulate = new Color(1, 1, 1, (float)Math.Clamp((_crawlTime - CrawlStart - i * CrawlGap) / CrawlFade, 0, 1));
             _crawlHint.Modulate = new Color(1, 1, 1, CrawlComplete ? 1 : 0);
+        }
+
+        if (_glowTime >= 0)
+        {
+            _glowTime += delta;
+            if (_glowTime >= GlowSeconds) _glowTime = -1;
+            _glowMaterial.SetShaderParameter("tint", new Color(1f, 0.72f, 0.3f, GlowAlpha));
         }
 
         // Cards and captions wait while the game is paused behind a page or a menu.

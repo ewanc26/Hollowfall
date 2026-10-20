@@ -203,6 +203,13 @@ public partial class Main : Node3D
         _menus.MainMenuRequested += () => Restart(skipTitle: false);
         _menus.JournalProvider = () => (plan.Title, _story.Journal());
         AddChild(_menus);
+        if (_wulver != null)
+        {
+            var framing = new ConversationCamera { Name = "ConversationCamera" };
+            framing.Initialize(_player, _storyUi);
+            AddChild(framing);
+            _wulver.Framing = framing;
+        }
         AddChild(_storyUi); // after the menus, so it sees a press first and can close a note without opening the pause menu
         _menus.MenuOpenChanged += open => _storyUi.SetMenuOpen(open);
 
@@ -445,7 +452,7 @@ public partial class Main : Node3D
         _demoFrame++;
         if (_wulverView == null) return;
         var s = _wulverView.Spot;
-        double away = demo switch { "wulver_wide" => 8, "wulver_talk" or "wulver_maker" => 2.4, _ => 4.0 };
+        double away = demo switch { "wulver_wide" => 8, "wulver_talk" or "wulver_maker" or "wulver_gift" => 2.4, _ => 4.0 };
         if (_demoFrame is 5 or 40)
         {
             double fx = -Math.Sin(s.Yaw), fz = -Math.Cos(s.Yaw);
@@ -458,9 +465,17 @@ public partial class Main : Node3D
             int ground = World.Generator.SampleColumn((int)Math.Floor(px), (int)Math.Floor(pz)).Height;
             _player.PlaceAt(new Vector3((float)px, ground + 1.2f, (float)pz), Math.Atan2(px - s.X, pz - s.Z));
         }
-        if (demo is "wulver_talk" or "wulver_maker" && _demoFrame == 60)
+        if (demo == "wulver_gift" && _demoFrame == 55) Combat?.Sim.Vitals.Damage(45); // so the heal shows
+        if (demo is "wulver_talk" or "wulver_maker" or "wulver_gift" && _demoFrame == 60)
         {
             _wulver?.Talk();
+            if (demo == "wulver_gift")
+            {
+                // What is this place, then the gift, then take it: the gift is handed over about 1.2 seconds in.
+                GetTree().CreateTimer(0.4, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(1);
+                GetTree().CreateTimer(0.8, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(1);
+                GetTree().CreateTimer(1.2, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(0);
+            }
             if (demo == "wulver_maker")
             {
                 // The game is paused while the panel is open, so the presses are timed on the real clock: who are you, then claim the hill.
