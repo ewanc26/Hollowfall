@@ -261,6 +261,7 @@ public partial class Main : Node3D
             var view = _player.View;
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             Combat.Step(delta, view, actions);
+            foreach (var impact in Combat.LastEvents.OfType<MeteorImpact>()) _player.KeepSpeed(impact.SpeedKept);
         }
     }
 

@@ -296,6 +296,10 @@ public partial class Hud : CanvasLayer
             case Parried:
                 Flash(new Color(0.5f, 0.85f, 1f, 0.45f), 0.25);
                 break;
+            case MeteorImpact meteor:
+                Flash(new Color(1f, 0.55f, 0.15f, 0.4f), 0.3);
+                ShowBanner(meteor.LongFall ? "METEOR x2" : "METEOR", 0.9);
+                break;
             case EnemyHit hit:
                 _hitTime = 0.12;
                 _hitMarker.AddThemeColorOverride("font_color", hit.Killed ? new Color(1f, 0.25f, 0.2f) : hit.Zone == HitZone.Head ? new Color(1f, 0.9f, 0.2f) : Colors.White);

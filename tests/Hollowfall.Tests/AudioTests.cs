@@ -124,6 +124,7 @@ public class SoundMapTests
             new EnemyKilled(1, EnemyKind.Husk), new PlayerHurt(1, 1), new PlayerDied(), new Parried(ParryKind.Melee, 0),
             new ProjectileFired(1, V), new ProjectileGone(1, true, V), new EncounterStarted(0, 0, 1), new EncounterCleared(0, 0),
             new KeyCollected(0), new ChestOpened(0, 1, false), new ChestLocked(0), new TrapSprung(0, 1),
+            new MeteorImpact(1, 30, 75, 180, false, 0.7),
         };
         var used = events.Select(SoundMap.For).Where(s => s != null).Select(s => s!.Value).ToHashSet();
         // Floor completion needs a result object; UI and ambience sounds are played by the host directly.

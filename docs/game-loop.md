@@ -47,6 +47,7 @@ still is dangerous. The game was designed around fast pace, constant action and 
 | Hard damage | 35% of each hit becomes a temporary cap on health that drains after a delay. |
 | Style meter | Eight ranks with passive decay, bonuses, movement and freshness multipliers, damage knocks you down a rank. |
 | Parry | Time-limited window, telegraphed attacks, full heal, style, projectile reflection. |
+| Meteor | Leave a portal at 18+ blocks per second and, for 0.6 s, touching an enemy hits it for speed x 2.5 (max 120) and awards style (180, doubled after a 20+ block fall), at a 30% speed cost and no self-damage. Tuned in `MeteorTuning`. |
 | Arenas | Dungeon rooms are arenas. Entering one with enemies locks its doors until it is cleared. |
 | Ranking | Each dungeon floor is scored on time, kills and style, D to S plus a P rank, with a restart penalty. |
 | Procedural | A seed gives the same dungeon, enemies and loot, so ranks are comparable and seeds can be shared. |

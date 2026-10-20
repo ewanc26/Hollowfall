@@ -6,7 +6,8 @@ using Hollowfall.Core.World;
 namespace Hollowfall.Core.Combat;
 
 /// <summary>Where the player is and what they are doing this tick. The host owns movement; the sim owns combat.</summary>
-public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding);
+/// <remarks><paramref name="Velocity"/> and <paramref name="Crossed"/> (true on the step the player came out of a portal) drive the Meteor.</remarks>
+public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding, Vec3 Velocity = default, bool Crossed = false);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
 public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false);
@@ -64,6 +65,7 @@ public sealed class CombatSim
     private readonly Dictionary<string, double> _cooldowns = [];
     private readonly Interactables _items;
     private double _parryWindow, _parryCooldown;
+    private readonly MeteorTracker _meteor = new();
     private int _nextId = 1;
 
     /// <summary>The player's portal pair. The host moves the player through it with <see cref="PortalWalker"/>.</summary>
@@ -176,6 +178,7 @@ public sealed class CombatSim
         if (CurrentFloor >= 0) Map.Reveal(CurrentFloor, view.Feet.X, view.Feet.Z);
         _items.Tick(dt, view, actions.Interact);
         TriggerEncounters(view);
+        UpdateMeteor(dt, view);
 
         if (actions.Parry && _parryCooldown <= 0 && _parryWindow <= 0) _parryWindow = ParryWindowSeconds;
         if (_parryWindow > 0)
@@ -318,6 +321,7 @@ public sealed class CombatSim
         Style.Reset();
         Portals.Clear();
         _parryWindow = _parryCooldown = 0;
+        _meteor.Reset();
     }
 
     // ---- weapons ----------------------------------------------------------------------------
@@ -467,6 +471,19 @@ public sealed class CombatSim
         e.Timer = ParryStunSeconds;
         _events.Add(new Parried(kind, healed));
         DamageEnemy(e, ParryDamage * (kind == ParryKind.Shotgun ? 1.5 : 1.0), HitZone.Torso, e.Feet + new Vec3(0, 1, 0), "parry", false);
+    }
+
+    // ---- meteor (momentum kills) --------------------------------------------------------------
+
+    private void UpdateMeteor(double dt, PlayerView view)
+    {
+        foreach (var hit in _meteor.Update(dt, Time, view, _enemies))
+        {
+            DamageEnemy(hit.Enemy, hit.Damage, HitZone.Torso, hit.Enemy.Feet + new Vec3(0, hit.Enemy.Spec.Height / 2, 0), "meteor", view.Airborne);
+            double points = Style.Award(StyleBonus.Meteor, extraMultiplier: hit.LongFall ? MeteorTuning.LongFallMultiplier : 1.0);
+            // Never touches Vitals: the impact cannot hurt the player. The host applies SpeedKept to the body.
+            _events.Add(new MeteorImpact(hit.Enemy.Id, hit.Speed, hit.Damage, points, hit.LongFall, MeteorTuning.SpeedKept));
+        }
     }
 
     // ---- enemies and projectiles ------------------------------------------------------------

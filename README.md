@@ -73,6 +73,11 @@ opening, with room in front of it). Walk, fall or shoot into one and you come ou
 speed, so a fall into a floor portal becomes a launch out of a wall. Your shots and enemy projectiles fly through
 too, including ones you parry.
 
+**Meteor.** Leave a portal at 18 blocks per second or more and for 0.6 seconds you are the weapon: touching an enemy within
+1.2 blocks hits it for speed x 2.5 damage (at most 120), awards the Meteor style bonus (180 points, doubled after a fall of
+more than 20 blocks), costs you 30% of your speed and never hurts you. Hitting a wall ends the window. The numbers live in
+`MeteorTuning`.
+
 Environment variables: `HOLLOWFALL_SEED` picks the world (default `voxel`),
 `HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, and `HOLLOWFALL_DEMO=portals` runs a scripted
 portal setup for screenshots.

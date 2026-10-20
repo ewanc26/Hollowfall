@@ -52,3 +52,6 @@ public sealed record ChestOpened(int SpawnIndex, double Healed, bool WasLocked) 
 public sealed record ChestLocked(int SpawnIndex) : CombatEvent;
 
 public sealed record TrapSprung(int SpawnIndex, double Damage) : CombatEvent;
+
+/// <summary>The player hit an enemy at speed. The host scales the player's velocity by <see cref="SpeedKept"/>.</summary>
+public sealed record MeteorImpact(int Id, double Speed, double Damage, double Points, bool LongFall, double SpeedKept) : CombatEvent;
