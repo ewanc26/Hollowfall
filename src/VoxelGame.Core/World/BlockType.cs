@@ -35,4 +35,7 @@ public static class BlockInfo
 
     /// <summary>Plants are walk-through decorations that sit on top of the ground.</summary>
     public static bool IsPlant(BlockType b) => b == BlockType.TallGrass || b == BlockType.Flower;
+
+    /// <summary>Hides the faces of neighbouring blocks: a solid, full, non-see-through cube.</summary>
+    public static bool Occludes(BlockType b) => IsSolid(b) && b != BlockType.Leaves;
 }
