@@ -14,6 +14,7 @@ public sealed class TerrainGenerator
     public const int SeaLevel = 48;
     private const int BedrockLayers = 2;
     private const int TreeMargin = 2; // canopy radius
+    private const double RiverWidth = 0.03;
 
     public long Seed { get; }
 
@@ -25,6 +26,7 @@ public sealed class TerrainGenerator
     private readonly PerlinNoise _caveA;
     private readonly PerlinNoise _caveB;
     private readonly PerlinNoise _detail;
+    private readonly PerlinNoise _river;
     private readonly (OreSpec Spec, PerlinNoise Noise)[] _ores;
 
     public TerrainGenerator(long seed)
@@ -38,6 +40,7 @@ public sealed class TerrainGenerator
         _caveA = new PerlinNoise(SeedHash.Derive(seed, 6));
         _caveB = new PerlinNoise(SeedHash.Derive(seed, 7));
         _detail = new PerlinNoise(SeedHash.Derive(seed, 8));
+        _river = new PerlinNoise(SeedHash.Derive(seed, 9));
         _ores = OreSpec.Defaults.Select(o => (o, new PerlinNoise(SeedHash.Derive(seed, o.Salt)))).ToArray();
     }
 
@@ -74,7 +77,22 @@ public sealed class TerrainGenerator
                    + mountains * 42
                    + detail * 1.5;
 
+        // Rivers follow the zero-crossings of a noise field: |noise| small => channel.
+        // They fade out toward the sea and thin out in mountains.
+        double riverWidth = RiverWidth * (1 - 0.7 * mountainMask);
+        double channel = (1 - Smooth(0, riverWidth, Math.Abs(_river.Fbm(wx / 300.0, wz / 300.0, 3))))
+                         * Smooth(-0.05, 0.15, continent);
+        const double bed = SeaLevel - 3;
+        bool carved = false;
+        if (channel > 0 && h > bed)
+        {
+            h += (bed - h) * channel;
+            carved = channel > 0.5;
+        }
+
         int height = Math.Clamp((int)Math.Round(h), BedrockLayers + 1, Chunk.Height - 2);
+        if (carved && height <= SeaLevel)
+            return new ColumnInfo(height, Biome.River);
         return new ColumnInfo(height, ClassifyBiome(wx, wz, height));
     }
 
@@ -166,6 +184,8 @@ public sealed class TerrainGenerator
                 return top ? (h < SeaLevel - 6 ? BlockType.Gravel : BlockType.Sand) : BlockType.Sand;
             case Biome.Beach:
                 return top ? BlockType.Sand : BlockType.Sandstone;
+            case Biome.River:
+                return top ? BlockType.Gravel : BlockType.Dirt;
             case Biome.Desert:
                 return top ? BlockType.Sand : BlockType.Sandstone;
             case Biome.Mountains:
