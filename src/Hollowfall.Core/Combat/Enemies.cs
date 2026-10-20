@@ -7,6 +7,13 @@ public enum EnemyKind
     Husk,
     Spitter,
     Warden,
+
+    // ---- the Folk, wanderers and vermin (phase 1 of the relationship system; append new kinds below) ----
+    Brownie,
+    Selkie,
+    Kelpie,
+    BeanNighe,
+    Hare,
 }
 
 public enum EnemyState
@@ -41,6 +48,11 @@ public sealed record EnemySpec(
     {
         EnemyKind.Husk => new(EnemyKind.Husk, 30, 3.4, 1.6, 20, 0.45, 1.1, 0, 0, 0, 0),
         EnemyKind.Spitter => new(EnemyKind.Spitter, 20, 2.2, 0, 0, 0.6, 2.4, 15, 6, 12, 1, 0.38, 1.5),
+        EnemyKind.Brownie => new(EnemyKind.Brownie, 14, 2.6, 0, 0, 0.5, 1.5, 0, 0, 0, 0, 0.28, 0.95),
+        EnemyKind.Selkie => new(EnemyKind.Selkie, 40, 3.4, 1.6, 14, 0.5, 1.4, 0, 0, 0, 0, 0.35, 1.65),
+        EnemyKind.Kelpie => new(EnemyKind.Kelpie, 90, 4.2, 2.2, 28, 0.55, 1.8, 0, 0, 0, 0, 0.5, 1.9),
+        EnemyKind.BeanNighe => new(EnemyKind.BeanNighe, 30, 1.6, 0, 0, 0.5, 1.5, 0, 0, 0, 0, 0.3, 1.55),
+        EnemyKind.Hare => new(EnemyKind.Hare, 6, 5.0, 0, 0, 0.5, 1.5, 0, 0, 0, 0, 0.2, 0.55),
         _ => new(EnemyKind.Warden, 260, 2.8, 2.2, 35, 0.7, 2.0, 18, 5, 11, 3, 0.5, 2.3),
     };
 }
@@ -71,6 +83,12 @@ public sealed class Enemy
     public double Health { get; internal set; }
     public EnemyState State { get; internal set; }
     internal double Timer { get; set; }
+
+    /// <summary>
+    /// What this one wants and remembers (faction, temperament, personality, memory). Null when the relationship system is off,
+    /// and then the enemy chases as it always has.
+    /// </summary>
+    public Relations.Mind? Mind { get; internal set; }
 
     /// <summary>Whether a closing portal has already cut this enemy (the Sever bonus is earned once).</summary>
     public bool Severed { get; internal set; }

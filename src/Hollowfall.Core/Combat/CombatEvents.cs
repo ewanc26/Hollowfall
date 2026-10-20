@@ -70,3 +70,29 @@ public sealed record PitEdgeReached(Dungeon.LinkKind Kind) : CombatEvent;
 
 /// <summary>A portal was replaced or removed. Fired for every closure, whether or not anything was caught in it.</summary>
 public sealed record PortalClosed(Portals.PortalColor Color, Vec3 Position, Vec3 Normal, Vec3 Up) : CombatEvent;
+
+// ---- relationships (phase 1 of the RPG systems; append new events below) ----
+
+/// <summary>The player's standing with a faction crossed into another tier. The host shows a toast.</summary>
+public sealed record ReputationChanged(Relations.Faction Faction, Relations.ReputationTier Old, Relations.ReputationTier New) : CombatEvent;
+
+/// <summary>A creature was hurt or frightened enough to start warning and fighting back.</summary>
+public sealed record EntityProvoked(int Id, Relations.Faction Faction) : CombatEvent;
+
+/// <summary>A creature forgot its anger and settled down.</summary>
+public sealed record EntityCalmed(int Id, Relations.Faction Faction) : CombatEvent;
+
+/// <summary>A creature saw (or heard about) <paramref name="SourceId"/> being hurt and took it to heart.</summary>
+public sealed record WitnessAlerted(int Id, int SourceId, Relations.Faction Faction) : CombatEvent;
+
+/// <summary>A creature now fights on the player's side.</summary>
+public sealed record EntityAllied(int Id, Relations.Faction Faction) : CombatEvent;
+
+/// <summary>A creature gave the player something for their standing.</summary>
+public sealed record BoonGiven(int Id, string Boon, double Amount) : CombatEvent;
+
+/// <summary>A Bean Nighe warned of an ambush: the next encounter room will hold an extra wave.</summary>
+public sealed record OmenSensed(int Id) : CombatEvent;
+
+/// <summary>An armed omen came true: <paramref name="Extra"/> more enemies joined the encounter.</summary>
+public sealed record OmenFulfilled(int Floor, int RoomId, int Extra) : CombatEvent;
