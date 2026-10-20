@@ -104,15 +104,18 @@ public sealed class TerrainGenerator
         var chunk = new Chunk(chunkX, chunkZ);
         int ox = chunk.WorldMinX, oz = chunk.WorldMinZ;
 
+        // Sample each column once, including the margin that neighbouring trees reach over.
+        const int span = Chunk.Size + 2 * TreeMargin;
+        var cols = new ColumnInfo[span * span];
+        for (int i = 0; i < span; i++)
+            for (int j = 0; j < span; j++)
+                cols[i * span + j] = SampleColumn(ox - TreeMargin + i, oz - TreeMargin + j);
+
         for (int lx = 0; lx < Chunk.Size; lx++)
             for (int lz = 0; lz < Chunk.Size; lz++)
-            {
-                int wx = ox + lx, wz = oz + lz;
-                var col = SampleColumn(wx, wz);
-                FillColumn(chunk, lx, lz, wx, wz, col);
-            }
+                FillColumn(chunk, lx, lz, ox + lx, oz + lz, cols[(lx + TreeMargin) * span + lz + TreeMargin]);
 
-        PlaceVegetation(chunk);
+        PlaceVegetation(chunk, cols, span);
         return chunk;
     }
 
@@ -158,7 +161,7 @@ public sealed class TerrainGenerator
         }
     }
 
-    private void PlaceVegetation(Chunk chunk)
+    private void PlaceVegetation(Chunk chunk, ColumnInfo[] cols, int span)
     {
         int ox = chunk.WorldMinX, oz = chunk.WorldMinZ;
 
@@ -167,7 +170,7 @@ public sealed class TerrainGenerator
             for (int wz = oz - TreeMargin; wz < oz + Chunk.Size + TreeMargin; wz++)
             {
                 ulong h = SeedHash.Hash(Seed, wx, wz, 100);
-                var col = SampleColumn(wx, wz);
+                var col = cols[(wx - ox + TreeMargin) * span + (wz - oz + TreeMargin)];
                 if (col.Height <= SeaLevel + 1 || col.Height + 10 >= Chunk.Height) continue;
 
                 double roll = SeedHash.ToUnit(h);
