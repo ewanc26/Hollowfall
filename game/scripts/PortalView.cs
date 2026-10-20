@@ -15,6 +15,12 @@ public partial class PortalView : Node3D
     /// <summary>Portal quads live on their own render layer so portal cameras do not draw portals inside portals.</summary>
     public const uint PortalLayer = 1u << 1;
 
+    /// <summary>
+    /// A plain glowing frame, drawn only by portal cameras, so portals seen through other portals show up as frames
+    /// instead of vanishing into the wall. (Full recursion would need each view to be drawn from its own camera.)
+    /// </summary>
+    public const uint FrameLayer = 1u << 2;
+
     private const string ShaderCode = """
         shader_type spatial;
         render_mode unshaded, cull_back;
@@ -35,6 +41,7 @@ public partial class PortalView : Node3D
 
     private readonly Color _colour;
     private MeshInstance3D _quad = null!;
+    private MeshInstance3D _frameQuad = null!;
     private ShaderMaterial _material = null!;
     private SubViewport _viewport = null!;
     private Camera3D _camera = null!;
@@ -64,6 +71,19 @@ public partial class PortalView : Node3D
         _quad.MaterialOverride = _material;
         AddChild(_quad);
 
+        var frameMaterial = new ShaderMaterial { Shader = new Shader { Code = ShaderCode } };
+        frameMaterial.SetShaderParameter("rim", _colour);
+        frameMaterial.SetShaderParameter("linked", 0.0f);
+        _frameQuad = new MeshInstance3D
+        {
+            Mesh = new QuadMesh { Size = new Vector2((float)Portal.Width, (float)Portal.Height) },
+            Transform = new Transform3D(basis, V(f.Center + f.Normal * 0.008)),
+            Layers = FrameLayer,
+            MaterialOverride = frameMaterial,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        };
+        AddChild(_frameQuad);
+
         _viewport = new SubViewport
         {
             Size = new Vector2I(960, 540),
@@ -72,7 +92,7 @@ public partial class PortalView : Node3D
             Msaa3D = Viewport.Msaa.Disabled,
         };
         AddChild(_viewport);
-        _camera = new Camera3D { Current = true, CullMask = 1, Far = 300, Fov = 80 };
+        _camera = new Camera3D { Current = true, CullMask = 1 | FrameLayer, Far = 300, Fov = 80 };
         _viewport.AddChild(_camera);
         _material.SetShaderParameter("view_tex", _viewport.GetTexture());
     }
@@ -116,9 +136,18 @@ public partial class PortalView : Node3D
         _camera.GlobalPosition = origin;
         _camera.LookAt(look, V(upv));
 
-        // The camera sits inside the wall behind the exit portal: its near plane must start at the portal's plane.
-        var (_, _, behind) = exit.Frame.ToLocal(pos);
-        _camera.Near = (float)Math.Clamp(Math.Abs(behind), 0.05, 40);
+        // The camera sits inside the wall behind the exit portal, so its near plane must start at the portal's opening.
+        // Seen at an angle, the closest corner of the opening (measured along the view direction) is the right distance:
+        // it clips the wall in front of the camera without cutting into what the opening shows.
+        var fwdUnit = V(fwd).Normalized();
+        double nearest = double.MaxValue;
+        foreach (var (sr, su) in new[] { (-0.5, -1.0), (0.5, -1.0), (0.5, 1.0), (-0.5, 1.0) })
+        {
+            var corner = exit.Frame.Center + exit.Frame.Right * sr + exit.Frame.Up * su;
+            double depth = (V(corner) - origin).Dot(fwdUnit);
+            if (depth > 0) nearest = Math.Min(nearest, depth);
+        }
+        _camera.Near = (float)Math.Clamp(nearest == double.MaxValue ? 0.05 : nearest * 0.98, 0.05, 40);
         _camera.Fov = viewer.Fov;
 
         var size = new Vector2I(Math.Max(64, (int)viewer.GetViewport().GetVisibleRect().Size.X), Math.Max(64, (int)viewer.GetViewport().GetVisibleRect().Size.Y));

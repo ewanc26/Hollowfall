@@ -19,14 +19,14 @@ public static class PortalWalker
     /// one with its velocity turned. Returns the crossing (with the turned facing) when one happened.
     /// </summary>
     public static Crossing? Step(PlayerBody body, PortalSystem portals, double dt, double moveX, double moveZ, bool jump,
-        Func<int, int, int, BlockType> blockAt, Vec3 forward)
+        Func<int, int, int, BlockType> blockAt, Vec3 forward, double speed = PlayerBody.WalkSpeed)
     {
         var before = Centre(body);
 
         // Use the velocity the body had going in: if it lands on the bottom of the opening in the same step,
         // the physics zeroes its speed, but the speed it dived in with is what must come out the other side.
         var v = Velocity(body);
-        body.Step(dt, moveX, moveZ, jump, portals.WithHoles(blockAt));
+        body.Step(dt, moveX, moveZ, jump, portals.WithHoles(blockAt), speed);
 
         if (portals.TryCross(before, Centre(body), v, forward) is not { } crossing) return null;
 

@@ -482,7 +482,6 @@ public sealed class CombatSim
 
     private void Chase(Enemy e, double dt, PlayerView view, Vec3 toPlayer, double flat)
     {
-        double dx = flat < 1e-6 ? 0 : toPlayer.X / flat, dz = flat < 1e-6 ? 0 : toPlayer.Z / flat;
         var spec = e.Spec;
 
         if (spec.MeleeRange > 0 && flat <= spec.MeleeRange && Math.Abs(toPlayer.Y) < 2)
@@ -491,9 +490,35 @@ public sealed class CombatSim
             return;
         }
 
-        if (!spec.IsRanged)
+        // Where to walk: straight at the player, or, if a portal makes the player closer, at the player's reflection
+        // behind the portal's face, which carries the enemy through the portal and out beside them.
+        var goal = view.Feet;
+        bool viaPortal = false;
+        if (Portals.Linked)
         {
-            e.Body.Step(dt, dx, dz, jump: false, Blocks, spec.Speed);
+            double direct = e.Feet.DistanceTo(view.Feet);
+            foreach (var entrance in new[] { Portals.Blue!, Portals.Orange! })
+            {
+                var exit = Portals.Other(entrance)!;
+                var mirrored = PortalTransform.Point(exit, entrance, view.Feet);
+                double via = e.Feet.DistanceTo(mirrored);
+                var face = entrance.Frame.Center + entrance.Frame.Normal * 0.5;
+                if (via + 1.5 < direct && RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.0, 0), face))
+                {
+                    goal = mirrored;
+                    direct = via + 1.5;
+                    viaPortal = true;
+                }
+            }
+        }
+
+        double gx = goal.X - e.Feet.X, gz = goal.Z - e.Feet.Z;
+        double glen = Math.Sqrt(gx * gx + gz * gz);
+        double dx = glen < 1e-6 ? 0 : gx / glen, dz = glen < 1e-6 ? 0 : gz / glen;
+
+        if (!spec.IsRanged || viaPortal)
+        {
+            Walk(e, dt, dx, dz);
             return;
         }
 
@@ -505,7 +530,14 @@ public sealed class CombatSim
         }
 
         double dir = flat < spec.PreferredMin && sees ? -1 : 1;
-        e.Body.Step(dt, dx * dir, dz * dir, jump: false, Blocks, spec.Speed);
+        Walk(e, dt, dx * dir, dz * dir);
+    }
+
+    /// <summary>Moves an enemy, letting it walk through portal openings and come out of the other one.</summary>
+    private void Walk(Enemy e, double dt, double dx, double dz)
+    {
+        var crossing = PortalWalker.Step(e.Body, Portals, dt, dx, dz, false, Blocks, new Vec3(dx, 0, dz), e.Spec.Speed);
+        if (crossing is { } c) _events.Add(new PortalTraversed("enemy", c.Entered.Color));
     }
 
     private void BeginWindup(Enemy e)
