@@ -28,6 +28,9 @@ public sealed class StoryDirector
     private double _endingDelay = -1;
     private bool _endingShown;
 
+    /// <summary>Whether the ending card has been shown (for tests).</summary>
+    public bool EndingShown => _endingShown;
+
     public StoryDirector(StoryPlan plan, StoryProgress progress, string seedName, string savePath, IReadOnlyList<NoteSpot> spots, int bossRoomId, StoryUi ui, NotesView? notes, Action<SoundId> play)
     {
         _plan = plan;
