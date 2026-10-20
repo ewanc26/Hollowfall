@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Storage;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
@@ -46,17 +47,17 @@ public partial class Main : Node3D
     public GameSettings Settings { get; private set; } = new();
     public Menus Menus => _menus;
 
-    /// <summary>Where settings and bindings are saved. Override with HOLLOWFALL_SETTINGS (used by tests).</summary>
-    public static string SettingsPath =>
-        System.Environment.GetEnvironmentVariable("HOLLOWFALL_SETTINGS") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://settings.json");
+    /// <summary>
+    /// Everything the game saves lives in one folder, ~/.ewanc26/hollowfall (HOLLOWFALL_HOME moves it). The per-file variables
+    /// HOLLOWFALL_SETTINGS, HOLLOWFALL_RECORDS, HOLLOWFALL_STORY and HOLLOWFALL_RELATIONS still win, and the smoke test uses them.
+    /// </summary>
+    public static DataHome Data { get; } = DataHome.ForCurrentUser();
 
-    /// <summary>Where personal bests are saved; HOLLOWFALL_RECORDS overrides it (tests and screenshots use that).</summary>
-    public static string RecordsPath =>
-        System.Environment.GetEnvironmentVariable("HOLLOWFALL_RECORDS") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://records.json");
+    public static string SettingsPath => Data.SettingsPath;
 
-    /// <summary>Where the notes you have read are saved; HOLLOWFALL_STORY overrides it (tests and screenshots use that).</summary>
-    public static string StoryPath =>
-        System.Environment.GetEnvironmentVariable("HOLLOWFALL_STORY") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://story.json");
+    public static string RecordsPath => Data.RecordsPath;
+
+    public static string StoryPath => Data.StoryPath;
 
     public StoryDirector Story => _story;
     public StoryUi StoryUi => _storyUi;
@@ -73,6 +74,9 @@ public partial class Main : Node3D
 
     public override void _Ready()
     {
+        // Pick up anything an earlier version saved in the engine's own user folder, once.
+        int adopted = Data.AdoptLegacy(ProjectSettings.GlobalizePath("user://"));
+        if (adopted > 0) GD.Print($"Hollowfall: copied {adopted} saved file(s) into {Data.Root}");
         Settings = GameSettings.Load(SettingsPath);
         InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
 

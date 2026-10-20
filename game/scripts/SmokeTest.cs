@@ -26,6 +26,7 @@ public partial class SmokeTest : Node
         // Never touch the real settings or records files from a test run, and never let the caller's seed override the settings file.
         string settingsPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-{System.Environment.ProcessId}.json");
         string recordsPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-records-{System.Environment.ProcessId}.json");
+        System.Environment.SetEnvironmentVariable("HOLLOWFALL_HOME", System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-home-{System.Environment.ProcessId}"));
         System.Environment.SetEnvironmentVariable("HOLLOWFALL_SETTINGS", settingsPath);
         string storyPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-story-{System.Environment.ProcessId}.json");
         System.Environment.SetEnvironmentVariable("HOLLOWFALL_STORY", storyPath);

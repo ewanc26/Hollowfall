@@ -43,7 +43,7 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft.
 
 The game starts at a title screen, and Esc (or Start on a gamepad) opens the pause menu. Every binding below can be
 changed under Controls, for the keyboard and mouse and for a gamepad separately, and the options under Settings are saved
-to `user://settings.json` (Godot's user data folder).
+to `~/.ewanc26/hollowfall/settings.json`. Everything the game saves lives in that one folder: `settings.json`, `records.json`, `story.json`, and the best replays in `replays/`. `HOLLOWFALL_HOME` moves the folder, and a first run copies anything an earlier version saved in Godot's own user folder (the old files are left where they were).
 
 | Action | Keyboard and mouse | Gamepad |
 |---|---|---|
