@@ -1,3 +1,5 @@
+using Hollowfall.Core.Terrain;
+using Hollowfall.Core.Textures;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Core.Meshing;
@@ -77,6 +79,12 @@ public static class ChunkMesher
         float cx = lx + 0.5f + 0.5f * f.Nx, cz = lz + 0.5f + 0.5f * f.Nz;
         float cy = (water ? (y + top) * 0.5f : y + 0.5f) + 0.5f * f.Ny * (water ? (top - y) : 1f);
 
+        // Which picture, and how it is turned: a hash of the block's place flips tiles so repeats are less obvious.
+        var rect = BlockTextures.Rect(BlockTextures.TileFor(b, faceIndex));
+        uint spin = (uint)SeedHash.Hash(0, wx, wz, y);
+        bool flipU = !water && (spin & 1) != 0, flipV = !water && faceIndex is 2 or 3 && (spin & 2) != 0;
+        bool sideFace = f.Ny == 0;
+
         Span<int> idx = stackalloc int[4];
         Span<int> ao = stackalloc int[4];
         for (int c = 0; c < 4; c++)
@@ -94,8 +102,25 @@ public static class ChunkMesher
             ao[c] = s1 == 1 && s2 == 1 ? 0 : 3 - (s1 + s2 + cn);
 
             float shade = f.Shade * AoCurve[ao[c]];
+            // Texture space: on walls up is up, and the other axis runs along the wall.
+            float along, up;
+            if (sideFace)
+            {
+                bool uVertical = f.Uy != 0;
+                up = uVertical ? du * f.Uy : dv * f.Vy;
+                along = uVertical ? dv : du;
+            }
+            else
+            {
+                along = du;
+                up = dv;
+            }
+            float s = (along + 1) * 0.5f, t = sideFace ? 1f - (up + 1) * 0.5f : (up + 1) * 0.5f;
+            if (flipU) s = 1f - s;
+            if (flipV) t = 1f - t;
             idx[c] = buf.AddVertex(px, py, pz, f.Nx, f.Ny, f.Nz,
-                colour.R * shade, colour.G * shade, colour.B * shade, water ? 0.72f : 1f);
+                colour.R * shade, colour.G * shade, colour.B * shade, water ? 0.72f : 1f,
+                rect.U0 + (rect.U1 - rect.U0) * s, rect.V0 + (rect.V1 - rect.V0) * t);
         }
 
         if (ao[0] + ao[2] >= ao[1] + ao[3])
@@ -114,6 +139,7 @@ public static class ChunkMesher
     private static void AddPlant(MeshBuffer buf, int lx, int y, int lz, BlockType b)
     {
         var colour = BlockPalette.Color(b, 0);
+        var rect = BlockTextures.Rect(BlockTextures.TileFor(b, 0));
         float h = b == BlockType.Flower ? 0.6f : 0.85f;
         const float inset = 0.1f;
         (float X0, float Z0, float X1, float Z1)[] diagonals =
@@ -128,10 +154,10 @@ public static class ChunkMesher
                 float dx = x1 - x0, dz = z1 - z0;
                 float len = MathF.Sqrt(dx * dx + dz * dz);
                 float nx = -dz / len * (side == 0 ? 1 : -1), nz = dx / len * (side == 0 ? 1 : -1);
-                int a = buf.AddVertex(x0, y, z0, nx, 0, nz, colour.R * 0.9f, colour.G * 0.9f, colour.B * 0.9f);
-                int bb = buf.AddVertex(x1, y, z1, nx, 0, nz, colour.R * 0.9f, colour.G * 0.9f, colour.B * 0.9f);
-                int c = buf.AddVertex(x1, y + h, z1, nx, 0, nz, colour.R, colour.G, colour.B);
-                int d = buf.AddVertex(x0, y + h, z0, nx, 0, nz, colour.R, colour.G, colour.B);
+                int a = buf.AddVertex(x0, y, z0, nx, 0, nz, colour.R * 0.9f, colour.G * 0.9f, colour.B * 0.9f, 1f, rect.U0, rect.V1);
+                int bb = buf.AddVertex(x1, y, z1, nx, 0, nz, colour.R * 0.9f, colour.G * 0.9f, colour.B * 0.9f, 1f, rect.U1, rect.V1);
+                int c = buf.AddVertex(x1, y + h, z1, nx, 0, nz, colour.R, colour.G, colour.B, 1f, rect.U1, rect.V0);
+                int d = buf.AddVertex(x0, y + h, z0, nx, 0, nz, colour.R, colour.G, colour.B, 1f, rect.U0, rect.V0);
                 if (side == 0)
                 {
                     buf.AddTriangle(a, bb, c);

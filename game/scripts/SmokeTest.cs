@@ -85,6 +85,15 @@ public partial class SmokeTest : Node
             return mesh != null && mesh.GetSurfaceCount() >= 1 && mesh.GetAabb().Size.Y > 1;
         });
 
+        Check("the block atlas uploads and chunk surfaces carry texture coordinates", () =>
+        {
+            var atlas = ChunkMeshBuilder.Atlas;
+            var mesh = ChunkMeshBuilder.ToArrayMesh(ChunkMesher.Build(0, 0, (_, y, _) => y < 5 ? BlockType.Stone : BlockType.Air));
+            if (mesh == null || atlas.GetWidth() != Hollowfall.Core.Textures.BlockTextures.Width) return false;
+            var uvs = mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+            return uvs.Length > 0 && uvs.Any(u => u != Vector2.Zero);
+        });
+
         Check("an all-air chunk converts to no mesh", () =>
             ChunkMeshBuilder.ToArrayMesh(ChunkMesher.Build(0, 0, (_, _, _) => BlockType.Air)) == null);
 

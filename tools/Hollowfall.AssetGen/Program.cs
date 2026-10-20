@@ -1,4 +1,5 @@
 using Hollowfall.AssetGen;
+using Hollowfall.Core.Textures;
 
 // Usage: dotnet run --project tools/Hollowfall.AssetGen [repository root]
 // Writes every generated SVG. Run it after changing GlyphSet; a test fails if the committed files are out of date.
@@ -19,4 +20,11 @@ foreach (var (path, content) in GlyphSet.All())
     written++;
 }
 Console.WriteLine($"{GlyphSet.All().Count} files, {written} written");
+
+// A preview of the block texture atlas, enlarged so the pixels can be judged. The game builds the atlas itself at run time.
+var (preview, pw, ph) = PngWriter.Upscale(BlockTextures.Rgba, BlockTextures.Width, BlockTextures.Height, 8);
+string previewPath = Path.Combine(root, "docs", "texture-atlas.png");
+Directory.CreateDirectory(Path.GetDirectoryName(previewPath)!);
+File.WriteAllBytes(previewPath, PngWriter.Encode(preview, pw, ph));
+Console.WriteLine($"docs/texture-atlas.png ({pw} x {ph})");
 return 0;
