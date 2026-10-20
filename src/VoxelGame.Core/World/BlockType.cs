@@ -26,6 +26,7 @@ public enum BlockType : byte
     SecretDoor,
     Pillar,
     Stairs,
+    Gate,
 }
 
 public static class BlockInfo

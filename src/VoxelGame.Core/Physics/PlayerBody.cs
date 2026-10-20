@@ -38,7 +38,7 @@ public sealed class PlayerBody
     /// Advances the body by <paramref name="dt"/> seconds. <paramref name="moveX"/> and <paramref name="moveZ"/> are the
     /// desired horizontal direction (any length up to 1; longer vectors are normalised).
     /// </summary>
-    public void Step(double dt, double moveX, double moveZ, bool jump, Func<int, int, int, BlockType> blockAt)
+    public void Step(double dt, double moveX, double moveZ, bool jump, Func<int, int, int, BlockType> blockAt, double speed = WalkSpeed)
     {
         double len = Math.Sqrt(moveX * moveX + moveZ * moveZ);
         if (len > 1) { moveX /= len; moveZ /= len; }
@@ -47,12 +47,12 @@ public sealed class PlayerBody
         {
             double h = Math.Min(dt, MaxSubstep);
             dt -= h;
-            Substep(h, moveX, moveZ, jump, blockAt);
+            Substep(h, moveX, moveZ, jump, blockAt, speed);
             jump = false; // one jump press per call, however many substeps it spans
         }
     }
 
-    private void Substep(double dt, double moveX, double moveZ, bool jump, Func<int, int, int, BlockType> blockAt)
+    private void Substep(double dt, double moveX, double moveZ, bool jump, Func<int, int, int, BlockType> blockAt, double speed)
     {
         if (jump && OnGround)
         {
@@ -63,8 +63,8 @@ public sealed class PlayerBody
         VelocityY = Math.Max(VelocityY - Gravity * dt, -TerminalSpeed);
 
         bool wasOnGround = OnGround;
-        MoveHorizontal(moveX * WalkSpeed * dt, 0, wasOnGround, blockAt);
-        MoveHorizontal(0, moveZ * WalkSpeed * dt, wasOnGround, blockAt);
+        MoveHorizontal(moveX * speed * dt, 0, wasOnGround, blockAt);
+        MoveHorizontal(0, moveZ * speed * dt, wasOnGround, blockAt);
         MoveVertical(VelocityY * dt, blockAt);
     }
 

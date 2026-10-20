@@ -76,6 +76,16 @@ public sealed class DungeonSite
     public bool Contains(int wx, int wz) =>
         wx >= OriginX && wx < OriginX + FloorLayout.Size && wz >= OriginZ && wz < OriginZ + FloorLayout.Size;
 
+    /// <summary>The floor whose interior contains this world position, or -1 (surface, rock or outside the footprint).</summary>
+    public int FloorIndexAt(double wx, double y, double wz)
+    {
+        if (!Contains((int)Math.Floor(wx), (int)Math.Floor(wz))) return -1;
+        int topOfFloors = FloorY(0) + FloorSpacing - 1;
+        int by = (int)Math.Floor(y);
+        if (by > topOfFloors || by < LowestY) return -1;
+        return (topOfFloors - by) / FloorSpacing;
+    }
+
     public (int X, int Y, int Z) ToWorld(int floor, int localX, int localZ) =>
         (OriginX + localX, FloorY(floor) + 1, OriginZ + localZ);
 
