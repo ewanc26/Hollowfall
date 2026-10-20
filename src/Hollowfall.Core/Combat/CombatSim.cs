@@ -1,5 +1,6 @@
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Portals;
+using Hollowfall.Core.Relations;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
@@ -67,6 +68,13 @@ public sealed class CombatSim
     private double _parryWindow, _parryCooldown;
     private readonly MeteorTracker _meteor = new();
     private int _nextId = 1;
+    private readonly HashSet<int> _populated = [];
+
+    /// <summary>
+    /// The relationship system: factions, the player's reputation, and the memories of creatures. Null until
+    /// <see cref="EnableRelations"/>; with none, every enemy chases as it always has and no creatures appear.
+    /// </summary>
+    public RelationSystem? Relations { get; private set; }
 
     // Pits: the last safe place the player stood, the fall being recovered from, and the hints already given this run.
     private Vec3? _safeSpot;
@@ -109,6 +117,35 @@ public sealed class CombatSim
         {
             _floors[k] = new FloorProgress();
             BuildEncounters(k);
+        }
+    }
+
+    /// <summary>
+    /// Switches the relationship system on: creatures of the Folk, wanderers and vermin appear as their floors are reached,
+    /// hurting and killing changes your standing, and witnesses remember. Call once, before play.
+    /// </summary>
+    public RelationSystem EnableRelations(Reputation? start = null)
+    {
+        Relations ??= new RelationSystem(_world.Seed, (a, b) => RayCast.HasLineOfSight(Blocks, a, b), _events.Add, start);
+        foreach (var e in _enemies) Adopt(e);
+        if (CurrentFloor >= 0) PopulateFloor(CurrentFloor);
+        return Relations;
+    }
+
+    private Enemy Adopt(Enemy e)
+    {
+        if (Relations != null && e.Mind == null) e.Mind = Relations.CreateMind(e.Kind, e.Feet);
+        return e;
+    }
+
+    private void PopulateFloor(int floor)
+    {
+        if (Relations == null || !_populated.Add(floor)) return;
+        foreach (var sp in _site.Spawns.Where(s => s.Kind == SpawnKind.Creature && s.Floor == floor))
+        {
+            var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of((EnemyKind)sp.Variant), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), floor, sp.RoomId));
+            _enemies.Add(enemy);
+            _events.Add(new EnemySpawned(enemy.Id, enemy.Kind, enemy.Feet));
         }
     }
 
@@ -188,6 +225,12 @@ public sealed class CombatSim
         TrackPits(dt, view);
         if (CurrentFloor >= 0) Map.Reveal(CurrentFloor, view.Feet.X, view.Feet.Z);
         _items.Tick(dt, view, actions.Interact);
+        if (Relations != null)
+        {
+            Relations.Tick(dt);
+            if (actions.Interact) TryBoon(view);
+            SenseOmen(view);
+        }
         Vitals.HitHealScale = _items.Perks.HealScale;
         TriggerEncounters(view);
         UpdateMeteor(dt, view);
@@ -219,7 +262,7 @@ public sealed class CombatSim
     /// <summary>Adds an enemy outside any encounter, for tests, debugging and scripted fights.</summary>
     public Enemy SpawnEnemy(EnemyKind kind, Vec3 feet, int floor = 0, int roomId = -1)
     {
-        var enemy = new Enemy(_nextId++, EnemySpec.Of(kind), feet, floor, roomId);
+        var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of(kind), feet, floor, roomId));
         _enemies.Add(enemy);
         _events.Add(new EnemySpawned(enemy.Id, kind, feet));
         return enemy;
@@ -235,6 +278,7 @@ public sealed class CombatSim
         // Finishing a floor means getting down to the next one.
         if (CurrentFloor >= 0 && floor > CurrentFloor) CompleteFloor(CurrentFloor);
         CurrentFloor = floor;
+        PopulateFloor(floor);
 
         var p = _floors[floor];
         if (!p.Started)
@@ -370,11 +414,12 @@ public sealed class CombatSim
         foreach (var sp in enc.Spawns)
         {
             var kind = sp.Kind == SpawnKind.Boss ? EnemyKind.Warden : (sp.X + sp.Z) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
-            var enemy = new Enemy(_nextId++, EnemySpec.Of(kind), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), enc.Floor, enc.RoomId);
+            var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of(kind), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), enc.Floor, enc.RoomId));
             _enemies.Add(enemy);
             enc.Enemies.Add(enemy);
             _events.Add(new EnemySpawned(enemy.Id, kind, enemy.Feet));
         }
+        if (Relations is { OmenArmed: true } relations) SpringOmen(enc, relations);
         _events.Add(new EncounterStarted(enc.Floor, enc.RoomId, enc.Enemies.Count));
     }
 
@@ -424,6 +469,12 @@ public sealed class CombatSim
         }
         _enemies.Clear();
         _projectiles.Clear();
+        if (Relations != null)
+        {
+            Relations.OmenArmed = false;
+            _populated.Clear();
+            if (CurrentFloor >= 0) PopulateFloor(CurrentFloor);
+        }
         Vitals.Reset();
         Style.Reset();
         // The meter restarts from zero, so unfinished floors measure style from zero too, and kills in rooms that must be
@@ -501,7 +552,7 @@ public sealed class CombatSim
 
             Vitals.HealFromHit(zone, distance, weapon.PelletHeal);
             bool firstOnThisEnemy = hitThisShot.Add(target.Id);
-            if (firstOnThisEnemy)
+            if (firstOnThisEnemy && !Innocent(target))
             {
                 if (zone == HitZone.Head) Style.Award(StyleBonus.Headshot, weapon.Name);
                 else if (zone == HitZone.Limb) Style.Award(StyleBonus.LimbHit, weapon.Name);
@@ -535,7 +586,12 @@ public sealed class CombatSim
     private void Close(Portal old)
     {
         _events.Add(new PortalClosed(old.Color, old.Frame.Center, old.Frame.Normal, old.Frame.Up));
-        SeverRules.Apply(old, _enemies, Style, _events.Add, e => _floors[e.Floor].Kills++);
+        SeverRules.Apply(old, _enemies, Style, _events.Add, e =>
+        {
+            if (!IsCreature(e)) _floors[e.Floor].Kills++;
+            Relations?.PlayerHurt(e, e.Spec.Health, true, _enemies, Time);
+            OnDeath(e);
+        });
     }
 
     private Vec3 Spread(Vec3 forward, double radians)
@@ -555,12 +611,14 @@ public sealed class CombatSim
         e.Health -= damage;
         bool killed = e.Health <= 0;
         _events.Add(new EnemyHit(e.Id, zone, damage, killed, point));
+        Relations?.PlayerHurt(e, damage, killed, _enemies, Time);
         if (!killed) return;
 
         e.State = EnemyState.Dead;
-        _floors[e.Floor].Kills++;
-        Style.RegisterKill(weapon, airborne);
+        if (!IsCreature(e)) _floors[e.Floor].Kills++;
+        if (!IsCreature(e) || e.Mind is { Species.Pacifist: false }) Style.RegisterKill(weapon, airborne);
         _events.Add(new EnemyKilled(e.Id, e.Kind));
+        OnDeath(e);
     }
 
     // ---- parry ------------------------------------------------------------------------------
@@ -631,6 +689,10 @@ public sealed class CombatSim
         var toPlayer = view.Feet - e.Feet;
         double flat = Math.Sqrt(toPlayer.X * toPlayer.X + toPlayer.Z * toPlayer.Z);
 
+        // With the relationship system on, creatures decide what to do from their disposition; the Hollow's own never do.
+        bool creature = IsCreature(e);
+        if (creature) Think(e, dt, view, flat);
+
         switch (e.State)
         {
             case EnemyState.Stunned:
@@ -640,7 +702,8 @@ public sealed class CombatSim
 
             case EnemyState.Windup:
                 e.Timer -= dt;
-                if (e.Timer <= 0) ResolveAttack(e, view, flat);
+                if (creature && e.Mind!.Intent != Intent.Attack) e.State = EnemyState.Chasing; // it thought better of it
+                else if (e.Timer <= 0) ResolveAttack(e, view, flat);
                 break;
 
             case EnemyState.Recover:
@@ -649,9 +712,204 @@ public sealed class CombatSim
                 break;
 
             default:
-                Chase(e, dt, view, toPlayer, flat);
+                if (creature) Act(e, dt, view, toPlayer, flat);
+                else Chase(e, dt, view, toPlayer, flat);
                 break;
         }
+    }
+
+    // ---- creatures (the relationship system) ---------------------------------------------------
+
+    public const double AllyStrikeDamage = 10;
+    public const double AllyStrikeCooldown = 1.1;
+    public const double AllyStrikeReach = 1.9;
+    public const double BoonReach = 2.8;
+    public const double BoonHeal = 25;
+
+    /// <summary>Whether an enemy is one of the Folk, a wanderer or vermin: it thinks for itself and is not part of any encounter.</summary>
+    private bool IsCreature(Enemy e) => Relations != null && e.Mind is { Species.AlwaysHostile: false };
+
+    private void Think(Enemy e, double dt, PlayerView view, double flat)
+    {
+        var m = e.Mind!;
+        double dist = e.Feet.DistanceTo(view.Feet);
+        double approach = double.IsNaN(m.LastDistance) || dt <= 0 ? 0 : (m.LastDistance - dist) / dt;
+        m.LastDistance = dist;
+        m.StrikeCooldown = Math.Max(0, m.StrikeCooldown - dt);
+        bool sees = dist <= 40 && RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.0, 0), view.Eye);
+        double fromHome = Math.Sqrt(Math.Pow(view.Feet.X - m.Home.X, 2) + Math.Pow(view.Feet.Z - m.Home.Z, 2));
+        double hostile = m.Disposition == Disposition.Allied && NearestHostile(e, Brain.AssistRange) is { } h ? e.Feet.DistanceTo(h.Feet) : double.PositiveInfinity;
+
+        var events = m.Update(dt, Relations!.Reputation.Tier(m.Faction), new Perception(dist, approach, sees, fromHome, hostile));
+        if (events.HasFlag(MindEvents.Provoked)) _events.Add(new EntityProvoked(e.Id, m.Faction));
+        if (events.HasFlag(MindEvents.Calmed)) _events.Add(new EntityCalmed(e.Id, m.Faction));
+        if (events.HasFlag(MindEvents.Allied)) _events.Add(new EntityAllied(e.Id, m.Faction));
+    }
+
+    private Enemy? NearestHostile(Enemy from, double range)
+    {
+        Enemy? best = null;
+        double bestDistance = range;
+        foreach (var other in _enemies)
+        {
+            if (other.Dead || other == from || other.Mind is not { } om || FactionGraph.Between(om.Faction, Faction.Delver) != Stance.Enemy) continue;
+            double d = from.Feet.DistanceTo(other.Feet);
+            if (d < bestDistance && RayCast.HasLineOfSight(Blocks, from.Feet + new Vec3(0, 1.0, 0), other.Feet + new Vec3(0, 1.0, 0))) { best = other; bestDistance = d; }
+        }
+        return best;
+    }
+
+    private void Act(Enemy e, double dt, PlayerView view, Vec3 toPlayer, double flat)
+    {
+        var m = e.Mind!;
+        switch (m.Intent)
+        {
+            case Intent.Attack:
+                if (e.Spec.MeleeDamage > 0 || e.Spec.IsRanged) Chase(e, dt, view, toPlayer, flat);
+                break;
+
+            case Intent.Flee:
+                Flee(e, dt, view);
+                break;
+
+            case Intent.Follow:
+                if (flat > 0.1) Walk(e, dt, toPlayer.X / flat, toPlayer.Z / flat, 0.9);
+                break;
+
+            case Intent.Assist:
+                Assist(e, dt);
+                break;
+
+            case Intent.Warn:
+                break; // squared up, holding its ground
+
+            default:
+                Wander(e, dt);
+                break;
+        }
+    }
+
+    private void Flee(Enemy e, double dt, PlayerView view)
+    {
+        double dx = e.Feet.X - view.Feet.X, dz = e.Feet.Z - view.Feet.Z;
+        double len = Math.Sqrt(dx * dx + dz * dz);
+        if (len < 1e-6) { dx = 1; dz = 0; len = 1; }
+        dx /= len;
+        dz /= len;
+
+        var before = e.Feet;
+        Walk(e, dt, dx, dz, 1.25);
+        if (e.Feet.DistanceTo(before) >= 0.25 * e.Spec.Speed * dt) return;
+
+        // Cornered against a wall: slide along it, one way and then the other.
+        foreach (double angle in new[] { 1.2, -1.2 })
+        {
+            double c = Math.Cos(angle), s = Math.Sin(angle);
+            Walk(e, dt, dx * c - dz * s, dx * s + dz * c, 1.25);
+            if (e.Feet.DistanceTo(before) >= 0.25 * e.Spec.Speed * dt) return;
+        }
+    }
+
+    private void Wander(Enemy e, double dt)
+    {
+        var m = e.Mind!;
+        int slot = (int)Math.Floor(Time / 3.0 + e.Id * 1.7);
+        if ((slot & 1) == 1) return; // pausing
+
+        double hx = m.Home.X - e.Feet.X, hz = m.Home.Z - e.Feet.Z;
+        double home = Math.Sqrt(hx * hx + hz * hz);
+        if (home > 3.5) { Walk(e, dt, hx / home, hz / home, 0.4); return; }
+        double angle = Terrain.SeedHash.ToUnit(Terrain.SeedHash.Hash(_world.Seed, e.Id, slot, 941)) * Math.PI * 2;
+        Walk(e, dt, Math.Cos(angle), Math.Sin(angle), 0.35);
+    }
+
+    private void Assist(Enemy e, double dt)
+    {
+        if (NearestHostile(e, Brain.AssistRange) is not { } target) return;
+        double dx = target.Feet.X - e.Feet.X, dz = target.Feet.Z - e.Feet.Z;
+        double flat = Math.Sqrt(dx * dx + dz * dz);
+        if (flat > AllyStrikeReach * 0.8) { Walk(e, dt, dx / flat, dz / flat, 1.1); return; }
+        if (e.Mind!.StrikeCooldown > 0) return;
+        e.Mind.StrikeCooldown = AllyStrikeCooldown;
+
+        // An ally's blow is not the player's: no blood, no style, no change of standing.
+        target.Health -= AllyStrikeDamage;
+        bool killed = target.Health <= 0;
+        _events.Add(new EnemyHit(target.Id, HitZone.Torso, AllyStrikeDamage, killed, target.Feet + new Vec3(0, target.Spec.Height / 2, 0)));
+        if (!killed) return;
+        target.State = EnemyState.Dead;
+        if (!IsCreature(target)) _floors[target.Floor].Kills++;
+        _events.Add(new EnemyKilled(target.Id, target.Kind));
+        OnDeath(target);
+    }
+
+    /// <summary>Hurting a pacifist earns no style: there is no flair in it.</summary>
+    private bool Innocent(Enemy e) => IsCreature(e) && e.Mind!.Species.Pacifist;
+
+    private void OnDeath(Enemy e)
+    {
+        // A Bean Nighe who can no longer wring out her cloth warns of nothing.
+        if (Relations != null && e.Mind is { Species.Kind: EnemyKind.BeanNighe }) Relations.OmenArmed = false;
+    }
+
+    /// <summary>Interact beside a Brownie while the Brownies think well of you: it repays you once with a warm hearth.</summary>
+    private void TryBoon(PlayerView view)
+    {
+        if (Relations!.Reputation.Tier(Faction.Brownies) < ReputationTier.Friendly) return;
+        foreach (var e in _enemies)
+        {
+            if (e.Dead || e.Mind is not { Species.Kind: EnemyKind.Brownie, BoonGiven: false } m) continue;
+            double dx = e.Feet.X - view.Feet.X, dz = e.Feet.Z - view.Feet.Z;
+            if (Math.Sqrt(dx * dx + dz * dz) > BoonReach || Math.Abs(e.Feet.Y - view.Feet.Y) > 2) continue;
+            m.BoonGiven = true;
+            m.Memory.Gift();
+            double healed = Vitals.Heal(BoonHeal);
+            Vitals.Cleanse();
+            _events.Add(new BoonGiven(e.Id, "warmth", healed));
+            return;
+        }
+    }
+
+    /// <summary>A Bean Nighe near the player is a warning: the next encounter will hold an extra wave.</summary>
+    private void SenseOmen(PlayerView view)
+    {
+        if (Relations!.OmenArmed) return;
+        foreach (var e in _enemies)
+        {
+            if (e.Dead || e.Mind is not { Species.Kind: EnemyKind.BeanNighe } || e.Floor != CurrentFloor) continue;
+            double dx = e.Feet.X - view.Feet.X, dz = e.Feet.Z - view.Feet.Z;
+            if (Math.Sqrt(dx * dx + dz * dz) > RelationSystem.OmenRadius) continue;
+            Relations.OmenArmed = true;
+            _events.Add(new OmenSensed(e.Id));
+            return;
+        }
+    }
+
+    private void SpringOmen(Encounter enc, RelationSystem relations)
+    {
+        relations.OmenArmed = false;
+        var layout = _site.Floors[enc.Floor];
+        var room = layout.Rooms[enc.RoomId];
+        var used = enc.Spawns.Select(sp => (sp.X, sp.Z)).ToHashSet();
+        var cells = new List<(int X, int Z)>();
+        for (int z = room.Bounds.Z; z < room.Bounds.Bottom; z++)
+            for (int x = room.Bounds.X; x < room.Bounds.Right; x++)
+                if (layout.CellAt(x, z) == CellKind.Floor && layout.RoomIdAt(x, z) == room.Id && !SpawnPlanner.NearStairs(layout, x, z) && !used.Contains((_site.OriginX + x, _site.OriginZ + z)))
+                    cells.Add((x, z));
+        new SeededRandom(_world.Seed, enc.Floor, enc.RoomId, 950).Shuffle(cells);
+
+        int extra = Math.Min(cells.Count, Math.Clamp((enc.Spawns.Count + 1) / 2 + 1, 2, 4));
+        for (int i = 0; i < extra; i++)
+        {
+            var (wx, wy, wz) = _site.ToWorld(enc.Floor, cells[i].X, cells[i].Z);
+            var kind = (wx + wz) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
+            var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of(kind), new Vec3(wx + 0.5, wy, wz + 0.5), enc.Floor, enc.RoomId));
+            _enemies.Add(enemy);
+            enc.Enemies.Add(enemy);
+            _events.Add(new EnemySpawned(enemy.Id, kind, enemy.Feet));
+        }
+        _floors[enc.Floor].Enemies += extra;
+        _events.Add(new OmenFulfilled(enc.Floor, enc.RoomId, extra));
     }
 
     private void Chase(Enemy e, double dt, PlayerView view, Vec3 toPlayer, double flat)
@@ -708,10 +966,10 @@ public sealed class CombatSim
     }
 
     /// <summary>Moves an enemy, letting it walk through portal openings and come out of the other one.</summary>
-    private void Walk(Enemy e, double dt, double dx, double dz)
+    private void Walk(Enemy e, double dt, double dx, double dz, double speedScale = 1)
     {
         (dx, dz) = KeepOffPits(e, dx, dz);
-        var crossing = PortalWalker.Step(e.Body, Portals, dt, dx, dz, false, Blocks, new Vec3(dx, 0, dz), e.Spec.Speed);
+        var crossing = PortalWalker.Step(e.Body, Portals, dt, dx, dz, false, Blocks, new Vec3(dx, 0, dz), e.Spec.Speed * speedScale);
         if (crossing is { } c) _events.Add(new PortalTraversed("enemy", c.Entered.Color));
     }
 

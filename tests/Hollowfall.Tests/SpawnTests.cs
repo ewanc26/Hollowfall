@@ -68,8 +68,12 @@ public class SpawnTests
             foreach (var sp in s.Spawns)
             {
                 var role = roleOf(sp);
-                Assert.NotEqual(RoomRole.Entrance, role);
-                Assert.NotEqual(RoomRole.Safe, role);
+                // Creatures (the Folk, wanderers and vermin) are the one thing that lives in the quiet rooms.
+                if (sp.Kind != SpawnKind.Creature)
+                {
+                    Assert.NotEqual(RoomRole.Entrance, role);
+                    Assert.NotEqual(RoomRole.Safe, role);
+                }
                 if (sp.Kind == SpawnKind.Boss) Assert.Equal(RoomRole.Boss, role);
                 if (sp.Kind == SpawnKind.Trap) Assert.Equal(RoomRole.Trap, role);
             }

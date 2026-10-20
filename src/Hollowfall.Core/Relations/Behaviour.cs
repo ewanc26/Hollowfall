@@ -261,12 +261,16 @@ public sealed class Mind
     public Memory Memory { get; } = new();
     public Vec3 Home { get; }
     public Disposition Disposition { get; private set; }
-    public Intent Intent => _brain.Intent;
+    public Intent Intent => Species.AlwaysHostile ? Intent.Attack : _brain.Intent;
     public double WarnLeft => _brain.WarnLeft;
     public bool Provoked { get; private set; }
     public bool Scared { get; private set; }
     public bool Known { get; private set; }
     public bool BoonGiven { get; internal set; }
+
+    // Bookkeeping the sim keeps for the creature: the player's distance last tick (for approach speed) and an ally's strike timer.
+    internal double LastDistance { get; set; } = double.NaN;
+    internal double StrikeCooldown { get; set; }
 
     /// <summary>When it was last hurt by the player, in sim seconds (so a volley of pellets counts once).</summary>
     public double LastHurtAt { get; internal set; } = double.NegativeInfinity;

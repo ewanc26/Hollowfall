@@ -176,6 +176,7 @@ static void PrintDungeon(TerrainGenerator gen, bool showSpawns)
                     SpawnKind.Boss => 'M',
                     SpawnKind.Loot => '*',
                     SpawnKind.Key => 'k',
+                    SpawnKind.Creature => 'f',
                     _ => 't',
                 };
 
@@ -210,5 +211,5 @@ static void PrintDungeon(TerrainGenerator gen, bool showSpawns)
     Console.WriteLine("Rooms by role: " + string.Join(", ", roles.Select(g => $"{g.Key}={g.Count()}")));
     Console.WriteLine("Spawns: " + string.Join(", ", site.Spawns.GroupBy(sp => sp.Kind).Select(g => $"{g.Key}={g.Count()}")));
     Console.WriteLine("Legend: # wall  . floor  + door  S secret door  o pillar  < entrance  > stairs down  B boss  $ treasure  ^ trap  S safe room  e entrance room centre  r/l/c/v rect/L/circle/cavern room (centre)"
-    + (showSpawns ? "\nSpawns: m monster  M boss  * loot  k key  t trap" : ""));
+    + (showSpawns ? "\nSpawns: m monster  M boss  * loot  k key  t trap  f creature (folk, wanderer, vermin)" : ""));
 }
