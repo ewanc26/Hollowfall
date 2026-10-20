@@ -61,6 +61,40 @@ public class DungeonSiteTests
     }
 
     [Fact]
+    public void DungeonsAppearInRoughlyAFifthOfRegions()
+    {
+        int regions = 0, sites = 0;
+        foreach (long seed in new long[] { 1, 2, 3, 4 })
+        {
+            var map = new TerrainGenerator(seed).Dungeons!;
+            for (int rx = -4; rx < 4; rx++)
+                for (int rz = -4; rz < 4; rz++, regions++)
+                    if (map.GetSite(rx, rz) != null) sites++;
+        }
+        Assert.InRange(sites / (double)regions, 0.10, 0.35);
+    }
+
+    [Fact]
+    public void ParallelGenerationMatchesSequentialGeneration()
+    {
+        var (seed, site) = Sites.Value[0];
+        int cx0 = (site.OriginX >> 4) - 1, cz0 = (site.OriginZ >> 4) - 1;
+        var coords = Enumerable.Range(0, 64).Select(i => (X: cx0 + i % 8, Z: cz0 + i / 8)).ToArray();
+
+        var sequential = new TerrainGenerator(seed);
+        var expected = coords.Select(c => TestHelpers.Checksum(sequential.GenerateChunk(c.X, c.Z))).ToArray();
+
+        // A fresh generator, so the lazy dungeon cache is first filled by racing threads.
+        var parallel = new TerrainGenerator(seed);
+        var actual = new ulong[coords.Length];
+        Parallel.For(0, coords.Length, new ParallelOptions { MaxDegreeOfParallelism = 8 },
+            i => actual[i] = TestHelpers.Checksum(parallel.GenerateChunk(coords[i].X, coords[i].Z)));
+
+        Assert.Equal(expected, actual);
+        Assert.Same(parallel.Dungeons!.GetSite(site.RegionX, site.RegionZ), parallel.Dungeons.GetSite(site.RegionX, site.RegionZ));
+    }
+
+    [Fact]
     public void SitesAreDeterministicAndCached()
     {
         var a = new TerrainGenerator(5).Dungeons!;
@@ -87,7 +121,7 @@ public class DungeonSiteTests
             var g = new TerrainGenerator(seed);
             Assert.InRange(s.OriginX, s.RegionX * DungeonMap.RegionSize, (s.RegionX + 1) * DungeonMap.RegionSize - FloorLayout.Size);
             Assert.InRange(s.OriginZ, s.RegionZ * DungeonMap.RegionSize, (s.RegionZ + 1) * DungeonMap.RegionSize - FloorLayout.Size);
-            Assert.True(s.SurfaceY > TerrainGenerator.SeaLevel + 2);
+            Assert.InRange(s.SurfaceY, TerrainGenerator.SeaLevel + 3, DungeonMap.MaxEntranceY);
             Assert.Equal(g.SampleColumn(s.EntranceX, s.EntranceZ).Height, s.SurfaceY);
             Assert.True(s.LowestY >= 6);
         }
