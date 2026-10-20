@@ -58,12 +58,12 @@ public class TerrainTests
         {
             var c = g.GenerateChunk(cx, 0);
             for (int x = 0; x < Chunk.Size; x++)
-            for (int z = 0; z < Chunk.Size; z++)
-            {
-                Assert.Equal(BlockType.Bedrock, c[x, 0, z]);
-                if (g.SampleColumn(c.WorldMinX + x, z).Height < TerrainGenerator.SeaLevel)
-                    Assert.Equal(BlockType.Water, c[x, TerrainGenerator.SeaLevel, z]);
-            }
+                for (int z = 0; z < Chunk.Size; z++)
+                {
+                    Assert.Equal(BlockType.Bedrock, c[x, 0, z]);
+                    if (g.SampleColumn(c.WorldMinX + x, z).Height < TerrainGenerator.SeaLevel)
+                        Assert.Equal(BlockType.Water, c[x, TerrainGenerator.SeaLevel, z]);
+                }
         }
     }
 

@@ -105,12 +105,12 @@ public sealed class TerrainGenerator
         int ox = chunk.WorldMinX, oz = chunk.WorldMinZ;
 
         for (int lx = 0; lx < Chunk.Size; lx++)
-        for (int lz = 0; lz < Chunk.Size; lz++)
-        {
-            int wx = ox + lx, wz = oz + lz;
-            var col = SampleColumn(wx, wz);
-            FillColumn(chunk, lx, lz, wx, wz, col);
-        }
+            for (int lz = 0; lz < Chunk.Size; lz++)
+            {
+                int wx = ox + lx, wz = oz + lz;
+                var col = SampleColumn(wx, wz);
+                FillColumn(chunk, lx, lz, wx, wz, col);
+            }
 
         PlaceVegetation(chunk);
         return chunk;
@@ -164,27 +164,27 @@ public sealed class TerrainGenerator
 
         // Scan beyond the border so canopies of neighbouring trees spill in consistently.
         for (int wx = ox - TreeMargin; wx < ox + Chunk.Size + TreeMargin; wx++)
-        for (int wz = oz - TreeMargin; wz < oz + Chunk.Size + TreeMargin; wz++)
-        {
-            ulong h = SeedHash.Hash(Seed, wx, wz, 100);
-            var col = SampleColumn(wx, wz);
-            if (col.Height <= SeaLevel + 1 || col.Height + 10 >= Chunk.Height) continue;
-
-            double roll = SeedHash.ToUnit(h);
-            int treeHeight = 4 + (int)((h >> 3) % 3);
-
-            switch (col.Biome)
+            for (int wz = oz - TreeMargin; wz < oz + Chunk.Size + TreeMargin; wz++)
             {
-                case Biome.Forest when roll < 0.018:
-                case Biome.Plains when roll < 0.0015:
-                    PlaceTree(chunk, wx - ox, col.Height + 1, wz - oz, treeHeight);
-                    break;
-                case Biome.Desert when roll < 0.004:
-                    for (int i = 0; i < 1 + (int)((h >> 5) % 3); i++)
-                        chunk[wx - ox, col.Height + 1 + i, wz - oz] = BlockType.Cactus;
-                    break;
+                ulong h = SeedHash.Hash(Seed, wx, wz, 100);
+                var col = SampleColumn(wx, wz);
+                if (col.Height <= SeaLevel + 1 || col.Height + 10 >= Chunk.Height) continue;
+
+                double roll = SeedHash.ToUnit(h);
+                int treeHeight = 4 + (int)((h >> 3) % 3);
+
+                switch (col.Biome)
+                {
+                    case Biome.Forest when roll < 0.018:
+                    case Biome.Plains when roll < 0.0015:
+                        PlaceTree(chunk, wx - ox, col.Height + 1, wz - oz, treeHeight);
+                        break;
+                    case Biome.Desert when roll < 0.004:
+                        for (int i = 0; i < 1 + (int)((h >> 5) % 3); i++)
+                            chunk[wx - ox, col.Height + 1 + i, wz - oz] = BlockType.Cactus;
+                        break;
+                }
             }
-        }
     }
 
     private static void PlaceTree(Chunk chunk, int lx, int baseY, int lz, int trunk)
@@ -194,13 +194,13 @@ public sealed class TerrainGenerator
         {
             int r = dy >= 0 ? 1 : 2;
             for (int dx = -r; dx <= r; dx++)
-            for (int dz = -r; dz <= r; dz++)
-            {
-                if (r == 2 && Math.Abs(dx) == 2 && Math.Abs(dz) == 2) continue; // round corners
-                int x = lx + dx, y = top + dy, z = lz + dz;
-                if (Chunk.InBounds(x, y, z) && chunk[x, y, z] == BlockType.Air)
-                    chunk[x, y, z] = BlockType.Leaves;
-            }
+                for (int dz = -r; dz <= r; dz++)
+                {
+                    if (r == 2 && Math.Abs(dx) == 2 && Math.Abs(dz) == 2) continue; // round corners
+                    int x = lx + dx, y = top + dy, z = lz + dz;
+                    if (Chunk.InBounds(x, y, z) && chunk[x, y, z] == BlockType.Air)
+                        chunk[x, y, z] = BlockType.Leaves;
+                }
         }
         for (int i = 0; i < trunk; i++)
             if (Chunk.InBounds(lx, baseY + i, lz))
