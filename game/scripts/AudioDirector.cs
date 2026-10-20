@@ -2,6 +2,8 @@ using Godot;
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Physics;
+using Hollowfall.Core.World;
 
 namespace Hollowfall.Game;
 
@@ -20,6 +22,7 @@ public partial class AudioDirector : Node
     private AudioStreamPlayer _ambience = null!;
     private double _ambienceLevel;
     private int _next;
+    private readonly Stride _stride = new();
 
     public GameSettings Settings { get; set; } = new();
 
@@ -73,16 +76,18 @@ public partial class AudioDirector : Node
 
     private float EffectDb(SoundId id) => Mathf.LinearToDb((float)Math.Max(1e-4, Settings.MasterVolume * Settings.EffectsVolume * SoundMap.Gain(id)));
 
-    /// <summary>Plays a sound in the head, or from <paramref name="at"/> in the world.</summary>
-    public void Play(SoundId id, Vector3? at = null)
+    /// <summary>Plays a sound in the head, or from <paramref name="at"/> in the world, optionally quieter (<paramref name="volume"/>, 0 to 1) or at another pitch.</summary>
+    public void Play(SoundId id, Vector3? at = null, float volume = 1f, float pitch = 1f)
     {
         if (!IsInsideTree() || Settings.MasterVolume * Settings.EffectsVolume <= 0.001) return;
         int voice = _next++ % Voices;
+        float db = EffectDb(id) + Mathf.LinearToDb(Math.Max(volume, 1e-4f));
         if (at is { } position)
         {
             var player = _spatial[voice];
             player.Stream = _streams[id];
-            player.VolumeDb = EffectDb(id);
+            player.VolumeDb = db;
+            player.PitchScale = pitch;
             player.GlobalPosition = position;
             player.Play();
         }
@@ -90,7 +95,8 @@ public partial class AudioDirector : Node
         {
             var player = _flat[voice];
             player.Stream = _streams[id];
-            player.VolumeDb = EffectDb(id);
+            player.VolumeDb = db;
+            player.PitchScale = pitch;
             player.Play();
         }
     }
@@ -109,6 +115,26 @@ public partial class AudioDirector : Node
         };
         Play(id, at);
     }
+
+    /// <summary>
+    /// Footsteps: call once per physics step while the game runs (not while paused, which is why this is not in <see cref="_Process"/>).
+    /// The stride timer and the choice of sound are Core's; this finds the block underfoot and plays the result.
+    /// </summary>
+    public void Walk(double delta, PlayerBody body, bool notWalking, Func<int, int, int, BlockType> blockAt)
+    {
+        var kind = _stride.Update(delta, body.VelocityX, body.VelocityZ, body.VelocityY, body.OnGround, !notWalking);
+        if (kind == StepKind.None) return;
+
+        int x = (int)Math.Floor(body.X), z = (int)Math.Floor(body.Z);
+        var below = blockAt(x, (int)Math.Floor(body.Y - 0.05), z);
+        var atFeet = blockAt(x, (int)Math.Floor(body.Y + 0.1), z);
+        var id = Footsteps.SoundFor(Footsteps.Underfoot(below, atFeet));
+        LastStep = id;
+        Play(id, null, (float)_stride.Volume, (float)_stride.Pitch);
+    }
+
+    /// <summary>The sound the last footstep asked for, for tests and the showcase.</summary>
+    public SoundId? LastStep { get; private set; }
 
     private static Vector3 V(Vec3 v) => new((float)v.X, (float)v.Y, (float)v.Z);
 

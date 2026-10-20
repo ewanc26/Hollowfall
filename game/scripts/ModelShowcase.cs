@@ -6,7 +6,7 @@ namespace Hollowfall.Game;
 
 /// <summary>
 /// A lineup of every model on a plinth, for checking the art: HOLLOWFALL_SHOWCASE picks the page (enemies, poses, weapons,
-/// props). Run it with <c>godot --path game res://scenes/Showcase.tscn</c>, or record frames with the movie writer.
+/// props, effects). Run it with <c>godot --path game res://scenes/Showcase.tscn</c>, or record frames with the movie writer.
 /// </summary>
 public partial class ModelShowcase : Node3D
 {
@@ -39,6 +39,7 @@ public partial class ModelShowcase : Node3D
             Mesh = new BoxMesh { Size = new Vector3(30, 0.2f, 14) },
             Position = new Vector3(0, -0.1f, 0),
             MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.2f, 0.2f, 0.24f), Roughness = 1f },
+            Name = "Floor",
         };
         AddChild(floor);
 
@@ -50,6 +51,7 @@ public partial class ModelShowcase : Node3D
             case "poses": BuildPoses(); break;
             case "weapons": BuildWeapons(); break;
             case "props": BuildProps(); break;
+            case "effects": AddChild(new EffectsShowcase(_camera)); break;
             default: BuildEnemies(); break;
         }
     }

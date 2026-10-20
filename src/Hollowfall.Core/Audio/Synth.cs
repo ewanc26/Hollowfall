@@ -31,6 +31,15 @@ public enum SoundId
     UiSelect,
     Ambience,
     Meteor,
+    StepStone,
+    StepBrick,
+    StepDirt,
+    StepGrass,
+    StepSand,
+    StepGravel,
+    StepSnow,
+    StepWood,
+    StepWater,
 }
 
 /// <summary>
@@ -79,6 +88,15 @@ public static class Synth
             SoundId.UiSelect => Mix(0.14, (t, _) => Sine(t, Lerp(700, 1050, t / 0.14)) * Decay(t, 22) * 0.5),
             SoundId.Meteor => Mix(0.55, (t, i) => Sweep(t, 220, 38, 0.55) * Decay(t, 7) * 0.8 + Noise(i, 11) * Decay(t, 38) * 0.45 + Sine(t, 70) * Decay(t, 12) * 0.4),
             SoundId.Ambience => Ambience(),
+            SoundId.StepStone => Mix(0.13, (t, i) => Noise(i, 50) * Decay(t, 80) * 0.35 + Sine(t, 150) * Decay(t, 55) * 0.6),
+            SoundId.StepBrick => Mix(0.17, (t, i) => Sine(t, 108) * Decay(t, 32) * 0.55 + Sine(t, 216) * Decay(t, 42) * 0.3 + Noise(i, 51) * Decay(t, 95) * 0.3),
+            SoundId.StepDirt => Step(0.15, 52, 700, 38, 0.9, 85, 45),
+            SoundId.StepGrass => StepHiss(0.18, 53, 1300, 24, 0.9),
+            SoundId.StepSand => StepHiss(0.22, 54, 4200, 15, 0.6),
+            SoundId.StepGravel => StepCrunch(0.2, 55, 2600, 16, 70, 0.9),
+            SoundId.StepSnow => StepCrunch(0.18, 56, 1800, 22, 150, 0.7),
+            SoundId.StepWood => Mix(0.16, (t, i) => Sine(t, 205) * Decay(t, 48) * 0.5 + Sine(t, 410) * Decay(t, 62) * 0.25 + Noise(i, 57) * Decay(t, 120) * 0.3),
+            SoundId.StepWater => Splash(0.32),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
@@ -179,6 +197,42 @@ public static class Synth
             }
             return sum * 0.28;
         });
+
+    /// <summary>A soft footfall: low-passed noise with a dull thump under it.</summary>
+    private static float[] Step(double seconds, int salt, double cutoff, double decay, double gain, double thumpHz, double thumpDecay)
+    {
+        var body = OnePole(Mix(seconds, (_, i) => Noise(i, salt)), cutoff);
+        return Mix(seconds, (t, i) => (body[i] * 2.6 * Decay(t, decay) + Sine(t, thumpHz) * Decay(t, thumpDecay) * 0.5) * gain);
+    }
+
+    /// <summary>Brushing through grass or sand: noise with the lows taken out and a soft attack, so it hisses instead of thumping.</summary>
+    private static float[] StepHiss(double seconds, int salt, double highpass, double decay, double gain)
+    {
+        var raw = Mix(seconds, (_, i) => Noise(i, salt));
+        var low = OnePole(raw, highpass);
+        return Mix(seconds, (t, i) => (raw[i] - low[i]) * (1 - Math.Exp(-t * 220)) * Decay(t, decay) * gain * 0.9);
+    }
+
+    /// <summary>Gravel and snow: noise chopped into grains, each grain a little different, with a low crush under it.</summary>
+    private static float[] StepCrunch(double seconds, int salt, double lowpass, double decay, int grain, double gain)
+    {
+        var raw = OnePole(Mix(seconds, (_, i) => Noise(i, salt)), lowpass);
+        return Mix(seconds, (t, i) =>
+        {
+            double g = 0.35 + 0.65 * SeedHash.ToUnit(SeedHash.Hash(salt, i / grain, 0, 3));
+            return (raw[i] * 3.0 * g * Decay(t, decay) + Sine(t, 95) * Decay(t, 50) * 0.25) * gain;
+        });
+    }
+
+    /// <summary>A wading splash: a rush of mid noise and a couple of rising bubbles.</summary>
+    private static float[] Splash(double seconds)
+    {
+        var body = OnePole(Mix(seconds, (_, i) => Noise(i, 58)), 1800);
+        return Mix(seconds, (t, i) =>
+            body[i] * 2.4 * (1 - Math.Exp(-t * 120)) * Decay(t, 11)
+            + Sine(t, Lerp(300, 720, t / 0.12)) * Decay(t, 30) * 0.22
+            + (t > 0.09 ? Sine(t - 0.09, Lerp(420, 900, (t - 0.09) / 0.12)) * Decay(t - 0.09, 28) * 0.16 : 0));
+    }
 
     /// <summary>A low drone: three slow tones that beat against each other. Every frequency fits whole cycles into the loop, so it joins up without a click.</summary>
     private static float[] Ambience() =>
