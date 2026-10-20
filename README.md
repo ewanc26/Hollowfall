@@ -17,6 +17,7 @@ or player yet. The game is a procedural voxel dungeon crawler.
 
 - `src/VoxelGame.Core` — world data, terrain and dungeon generation (no engine dependency).
 - `src/VoxelGame.Cli` — prints a top-down map and block statistics for a seed.
+- `game` — the Godot 4 (.NET) shell. Thin C# scripts that connect the engine to Core.
 - `tests/VoxelGame.Tests` — xunit tests, including determinism checks.
 
 ## Terrain
@@ -26,6 +27,13 @@ in any order or on any thread and always agree at their borders. All
 randomness comes from a SplitMix64 hash rather than `System.Random`, and noise
 is seeded Perlin with fractal layering. Biomes are chosen from height,
 temperature and humidity; caves come from two intersecting 3D noise fields.
+
+## Language
+
+The game is written entirely in C#. Godot is used as the engine shell only: no
+GDScript, no GDExtension, and every script attached to a scene must be a `.cs`
+file. `dotnet test` enforces this. Game logic lives in `VoxelGame.Core`, which has no
+Godot dependency, so it stays unit-testable.
 
 ## Dungeons
 
@@ -39,6 +47,14 @@ produced as data. Run `dotnet run --project src/VoxelGame.Cli -c Release -- <see
 to see a floor plan.
 
 ## Building
+
+Godot 4.7 (.NET build) is needed to run the game itself:
+
+```bash
+./run-smoke-test.sh   # builds the Godot project and runs the headless smoke test
+```
+
+The core library and its tests need only the .NET SDK:
 
 ```bash
 dotnet build

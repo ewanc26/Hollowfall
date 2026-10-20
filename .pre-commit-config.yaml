@@ -8,3 +8,10 @@ repos:
         language: system
         pass_filenames: false
         types: [c#]
+  - repo: local
+    hooks:
+      - id: no-gdscript
+        name: C# only (no GDScript or GDExtension)
+        language: fail
+        entry: All game code is C#. Rewrite this file in C# (see AGENTS.md).
+        files: '\.(gd|gdextension)$'

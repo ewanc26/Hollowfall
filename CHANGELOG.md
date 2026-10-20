@@ -6,6 +6,8 @@ Everything that changes for someone using VoxelGame goes here, newest first, in 
 
 ### Added
 
+- Godot 4.7 (.NET) project shell in `game/`, referencing `VoxelGame.Core`, with a headless smoke test (`run-smoke-test.sh`).
+- C#-only language policy for the whole repository, enforced by `LanguagePolicyTests` (no GDScript or GDExtension; scenes may only attach `.cs` scripts) and a pre-commit hook.
 - Dungeons: `VoxelGame.Core.Dungeon` builds seeded multi-floor dungeons. Each floor is a BSP layout of rect, L, circular and cavern rooms joined by 3-wide corridors, with doors, open loops and secret doors, and rule-based room roles (entrance, exit, boss, treasure, trap, safe). Floors are stacked 8 blocks apart and joined by spiral stairs; floor 0 is entered from a paved plaza on the surface.
 - `DungeonMap` places at most one dungeon per 384-block region on dry, solid ground. `TerrainGenerator` stamps it into chunks (pass `enableDungeons: false` to turn this off), so chunks inside a dungeon footprint differ from earlier worlds.
 - Dungeon blocks: stone brick, brick floor, door, secret door, pillar and stairs.
