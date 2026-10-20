@@ -128,8 +128,8 @@ public class SoundMapTests
             new EnemySevered(1, EnemyKind.Husk, PortalColor.Teal, 30, true, V, 250),
         };
         var used = events.Select(SoundMap.For).Where(s => s != null).Select(s => s!.Value).ToHashSet();
-        // Floor completion needs a result object; UI and ambience sounds are played by the host directly.
-        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.Ambience }.Concat(Footsteps.StepSounds);
+        // Floor completion needs a result object; UI, ambience, footsteps and story sounds (reading a note, a title card) are played by the host directly.
+        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.Ambience, SoundId.NoteRead, SoundId.TitleCard }.Concat(Footsteps.StepSounds);
         foreach (var id in Enum.GetValues<SoundId>().Except(exempt)) Assert.Contains(id, used);
     }
 
