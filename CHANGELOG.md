@@ -18,6 +18,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Environment textures, drawn by code (`BlockTextures`): a 16 by 16 pixel tile for every surface (stone, dirt, grass top and side, sand, sandstone, snow, water, gravel pebbles, bark and log rings, leaves, cactus ribs, ore flecks, grass blades, flowers, dungeon bricks, flagstones, fluted pillars, steps, iron gates and doors), packed into one atlas. Tiles are light-and-shade patterns tinted by each block's palette colour and ambient occlusion, wrap at their edges, and are flipped by block position to hide repeats. A secret door uses exactly the wall's tile. `docs/texture-atlas.png` is a preview, written by `tools/Hollowfall.AssetGen`.
 - A minimap under the floor panel (`FloorMap`): it fills in by line of sight as you explore, secret doors look like wall until found, and the exit stairs show once seen.
 - Choose a world: the title screen has a seed box (any text or a number) and a Random button that makes names like `amber-hollow-914`; the seed is saved in settings, and the pause menu has a Main menu button.
 - Personal bests (`RunRecords`): each floor's best grade, points and time per seed is saved to `records.json`, and the floor-complete banner says whether it is a new best.

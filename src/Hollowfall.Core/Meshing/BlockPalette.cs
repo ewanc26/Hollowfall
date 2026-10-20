@@ -2,7 +2,7 @@ using Hollowfall.Core.World;
 
 namespace Hollowfall.Core.Meshing;
 
-/// <summary>Flat colours per block and face until textures exist.</summary>
+/// <summary>The base colour of each block and face. It tints the block's texture, which supplies the pattern.</summary>
 public static class BlockPalette
 {
     public readonly record struct Rgb(float R, float G, float B);
@@ -21,9 +21,7 @@ public static class BlockPalette
         BlockType.Log => face is FaceTop or FaceBottom ? new(0.62f, 0.50f, 0.32f) : new(0.38f, 0.28f, 0.17f),
         BlockType.Leaves => new(0.16f, 0.44f, 0.16f),
         BlockType.Cactus => new(0.24f, 0.52f, 0.28f),
-        BlockType.CoalOre => new(0.28f, 0.28f, 0.30f),
-        BlockType.IronOre => new(0.74f, 0.55f, 0.43f),
-        BlockType.GoldOre => new(0.94f, 0.78f, 0.24f),
+        BlockType.CoalOre or BlockType.IronOre or BlockType.GoldOre => new(0.50f, 0.50f, 0.52f), // stone; the flecks are in the texture
         BlockType.TallGrass => new(0.42f, 0.70f, 0.28f),
         BlockType.Flower => new(0.90f, 0.35f, 0.48f),
         BlockType.StoneBrick or BlockType.SecretDoor => new(0.43f, 0.42f, 0.45f),

@@ -24,6 +24,19 @@ A model is a set of named parts, each with a pivot at its joint. Geometry is pos
 
 Arms and legs have their pivot at the top and hang below it; feet touch y=0 at rest. A child follows its parent, so a leaning torso carries the head and arms. Poses are procedural (`EnemyView`): they move parts from the rest position the model defines, so there are no animation files and nothing to fall out of date. `ModelRigTests` checks the rules above, and the smoke test poses every enemy in the engine and checks the joints move and children follow.
 
+## Environment textures
+
+Blocks wear 16 by 16 pixel tiles drawn by `BlockTextures` (no image files), packed into one atlas (`docs/texture-atlas.png` is an enlarged preview; regenerate it with `dotnet run --project tools/Hollowfall.AssetGen`).
+
+- **Patterns, not colours.** A tile is light and shade around 0.85 white. The block's palette colour and ambient occlusion tint it, so grass can change colour by biome without new art, and `Gain` brings the average back to the palette colour.
+- **Chunky and low contrast.** Two scales of noise, a few specks and one clear idea per surface (mortar, strata, bark furrows, pebbles). They are meant to sit with the flat-shaded models.
+- **Seamless.** Natural tiles use noise that wraps, so neighbours join; a test compares the step across the tile edge with the steps inside it.
+- **Variation.** The mesher flips tiles by block position so repeats are harder to spot, and half-pixel insets stop filtering from reading a neighbouring tile.
+- **Readability.** The dungeon's brick, flagstone, pillar, steps, gate and door are tested to look different from one another. A secret door shares the wall's tile exactly, so only a shot or a parry finds it.
+- **Cutouts.** Only grass blades and flowers have see-through pixels, and they use an alpha-tested material.
+
+To add a surface: add a `Tile`, paint it in `Paint`, map blocks to it in `TileFor`, give the block a palette colour, and the tests cover the rest.
+
 ## Props
 
 Chests stand where loot spawns, keys turn in the air, spike traps fill trap rooms, and wall torches (`PropPlacer`, a pure function of the seed) light every room. Only the six torches nearest the player cast light.
