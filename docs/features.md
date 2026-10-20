@@ -223,10 +223,32 @@ quantised to 16 bits, and the action bits). Playing it back reproduces the run e
 
 **Why it is ours.** Determinism is the hidden asset of this codebase; almost no action game can offer verified replays.
 
-**Build on.** The tests already assert determinism for terrain, dungeons, physics and combat (a fixed seed gives the same
-events). Add `ReplayRecorder` and `ReplayPlayer` in Core and a test that a recorded run replays to identical events and score.
-**Risks:** keep worker-thread meshing and chunk loading out of anything the sim reads (it already is), and version the
-format. **Effort:** medium, and it is the best value on this page.
+**Status: recording, replay and ghosts are built** (`Hollowfall.Core.Replay`); verified scores, dailies and sharing are not.
+
+- **What is recorded.** The simulation reads only a `PlayerView` and `PlayerActions` per 1/60 s tick, plus the host's calls to
+  `Respawn()`, so that is what a run is: `ReplayRecorder.Capture` quantises each tick (feet and eye offset in 1/1024 block,
+  look direction as three 16-bit components, the action and movement flags) and *returns the quantised values*, which the game
+  feeds to `CombatSim`. A live run and its replay therefore see identical input. The decoded view uses only division and a
+  square root, so it is exact on every machine.
+- **File format** (`ReplayCodec`, `.hfr`): magic, format and sim version, seed text, dungeon region, floor, end tick, the
+  result (grade, points, seconds), then runs of identical ticks stored as zig-zag varint deltas of only the fields that changed,
+  and an FNV-1a checksum. Standing still costs nothing; sprinting and turning costs about 1 KB a second. Runs are capped at
+  20 minutes (`RunReplay.MaxTicks`) and files at 2 MiB; a longer run stops recording and is not saved. The stored run is the
+  prefix from tick 0 to the tick the floor was completed, because simulation state depends on all that came before.
+- **Replaying and verifying.** `ReplayRunner.Play` feeds a replay to a fresh `CombatSim` and returns `StateHash` (vitals, style,
+  floor progress, keys, portals, enemies and projectiles, rounded to 1e-4 so it is portable). `ReplayRunner.Verify` re-simulates
+  a replay and checks it completes its floor on its last tick with the grade, points and time it claims, and refuses a replay
+  recorded under a different `RunReplay.SimVersion`. **Bump `SimVersion` whenever a change to `CombatSim`, `StyleMeter` or
+  `Interactables` alters a run's outcome**: older files still load (a ghost only needs the positions) but are no longer verifiable.
+- **Ghosts.** `ReplayStore` keeps the best run per seed and floor (`replays/` next to `records.json`, at most 64 files, atomic
+  writes, loaded defensively and bounded). The game shows it as a translucent Husk (`ReplayDirector`), started and paced by
+  the time you have spent on that floor, hidden when it finishes or you complete the floor.
+- **Tests.** Golden bytes for the format, the same seed and inputs giving the same final state twice and across parallel threads,
+  live play equal to the replay of its decoded file, respawns replayed, fake grades rejected, fuzzed and truncated files never throwing.
+
+**Not done yet.** Portal markers in the ghost, a replay string for sharing, a settings toggle for the ghost, and the daily
+seed and leaderboard. Keep worker-thread meshing and chunk loading out of anything the sim reads (it already is).
+**Effort for what is left:** small, and it is the best value on this page.
 
 ## 5. Recommended build order
 

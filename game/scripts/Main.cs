@@ -20,6 +20,7 @@ public partial class Main : Node3D
     private Menus _menus = null!;
     private ViewModels _weapons = null!;
     private PropsView? _props;
+    private ReplayDirector? _replay;
     private AudioDirector _audio = null!;
     private RunRecords _records = new();
     private string _seedName = "";
@@ -95,6 +96,9 @@ public partial class Main : Node3D
             _props = new PropsView { Name = "Props" };
             _props.Initialize(site, Combat.Sim.Items);
             AddChild(_props);
+            _replay = new ReplayDirector { Name = "Replay" };
+            _replay.Initialize(Combat.Sim, site, seedText, RecordsPath);
+            AddChild(_replay);
         }
 
         // The weapons in your hands, drawn under the HUD.
@@ -262,6 +266,7 @@ public partial class Main : Node3D
             var view = _player.View;
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
+            if (_replay != null) (view, actions) = _replay.Capture(delta, view, actions);
             Combat.Step(delta, view, actions);
             foreach (var impact in Combat.LastEvents.OfType<MeteorImpact>()) _player.KeepSpeed(impact.SpeedKept);
         }
@@ -320,6 +325,7 @@ public partial class Main : Node3D
         var combat = Combat!;
         int floor = Math.Max(combat.Sim.CurrentFloor, 0);
         combat.Sim.Respawn();
+        _replay?.NoteRespawn();
         var site = combat.Site;
         _player.PlaceAt(combat.Sim.CurrentFloor < 0 ? new Vector3(site.EntranceX + DungeonSite.PlazaRadius + 0.5f, site.SurfaceY + 1, site.EntranceZ + 0.5f) : FloorSpawn(site, floor), 0);
         _hud.ShowBanner("", 0);
@@ -340,6 +346,7 @@ public partial class Main : Node3D
                 break;
             case FloorCompleted f:
                 {
+                    _replay?.OnFloorCompleted(f);
                     var (isBest, previous) = _records.Submit(_seedName, f.Floor, f.Result, f.Seconds);
                     if (isBest) _records.TrySave(RecordsPath);
                     string note = isBest ? (previous == null ? "first clear" : $"NEW BEST  (was {previous.Value.Grade})") : $"best {_records.Best(_seedName, f.Floor)!.Value.Grade}";

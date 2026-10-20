@@ -65,7 +65,7 @@ computed from the floor itself (enemy count and path length) instead of being ha
 3. **Clear.** Doors open, loot and the floor key become available, and the rank for the floor keeps counting.
 4. **Descend.** The exit stairs on each floor need that floor's key. The last floor ends at the boss.
 5. **Score.** At the end of each floor you see time, kills and style ranks and the combined letter.
-6. **Repeat on a new seed**, or retry the same one for a better rank.
+6. **Repeat on a new seed**, or retry the same one for a better rank. Your best run of each floor is recorded and replayed as a translucent ghost to race (see `docs/features.md` 4.3).
 
 ## Build order
 
