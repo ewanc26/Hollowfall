@@ -6,6 +6,7 @@ Everything that changes for someone using VoxelGame goes here, newest first, in 
 
 ### Added
 
+- Coal, iron and gold ore veins from per-ore 3D noise, each limited to a depth band (`OreSpec`). Worlds generated before this change differ.
 - Seeded terrain generator: Perlin/fBm heightmap, six biomes, caves, trees and cacti over 16×128×16 chunks.
 - `VoxelGame.Cli`, a seed inspector that prints a top-down map, block counts and biome statistics.
 - Determinism tests covering seed stability, generation order and chunk borders.

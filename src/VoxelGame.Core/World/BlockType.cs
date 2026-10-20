@@ -15,6 +15,9 @@ public enum BlockType : byte
     Log,
     Leaves,
     Cactus,
+    CoalOre,
+    IronOre,
+    GoldOre,
 }
 
 public static class BlockInfo
