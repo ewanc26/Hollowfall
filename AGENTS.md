@@ -40,6 +40,14 @@ Agents manipulate the engine through the `godot` MCP server in `.mcp.json` (Codi
 - Do not auto-approve its tools; running a project executes its code.
 - Bump the pinned version in `.mcp.json` deliberately, after checking the server still starts and lists its tools.
 
+## Saved data
+
+All saved data lives in one folder, `~/.ewanc26/hollowfall` (`Hollowfall.Core.Storage.DataHome`; `HOLLOWFALL_HOME` moves it).
+
+- A new saved file gets its path from `DataHome` (add a name and a path property there, and an optional per-file environment variable for tests). Never write to Godot's `user://` folder or any other place.
+- Save atomically, load defensively (a damaged or hand-edited file must never stop the game), and keep sizes bounded.
+- Tests and the smoke test point every file at a temporary path with the per-file variables, so they never touch the real folder.
+
 ## Working rules
 
 - Inspect the README, manifests, CI workflows, and nearby code before editing.
