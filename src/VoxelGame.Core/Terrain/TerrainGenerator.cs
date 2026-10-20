@@ -173,6 +173,22 @@ public sealed class TerrainGenerator
 
         for (int y = h + 1; y <= SeaLevel; y++)
             chunk[lx, y, lz] = BlockType.Water;
+
+        PlacePlant(chunk, lx, lz, wx, wz, col);
+    }
+
+    private void PlacePlant(Chunk chunk, int lx, int lz, int wx, int wz, ColumnInfo col)
+    {
+        if (col.Height <= SeaLevel || col.Height + 1 >= Chunk.Height) return;
+        if (chunk[lx, col.Height, lz] != BlockType.Grass) return;
+
+        double grass = col.Biome == Biome.Plains ? 0.22 : col.Biome == Biome.Forest ? 0.08 : 0;
+        double flower = col.Biome == Biome.Plains ? 0.025 : col.Biome == Biome.Forest ? 0.008 : 0;
+        double roll = SeedHash.ToUnit(SeedHash.Hash(Seed, wx, wz, 101));
+        if (roll < flower)
+            chunk[lx, col.Height + 1, lz] = BlockType.Flower;
+        else if (roll < flower + grass)
+            chunk[lx, col.Height + 1, lz] = BlockType.TallGrass;
     }
 
     private static BlockType SurfaceBlock(Biome biome, bool top, int y, int h)

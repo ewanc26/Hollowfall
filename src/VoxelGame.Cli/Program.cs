@@ -98,6 +98,11 @@ static (int, int, int) Color(BlockType b) => b switch
     BlockType.Log => (100, 72, 40),
     BlockType.Leaves => (40, 110, 40),
     BlockType.Cactus => (60, 130, 70),
+    BlockType.CoalOre => (60, 60, 65),
+    BlockType.IronOre => (190, 140, 110),
+    BlockType.GoldOre => (240, 200, 60),
+    BlockType.TallGrass => (110, 180, 70),
+    BlockType.Flower => (230, 90, 120),
     BlockType.Bedrock => (40, 40, 40),
     _ => (0, 0, 0),
 };
