@@ -46,6 +46,22 @@ any chunk can be generated alone. Spawn points for monsters, loot and keys are
 produced as data. Run `dotnet run --project src/VoxelGame.Cli -c Release -- <seed> 1 --dungeon --spawns`
 to see a floor plan.
 
+## Agent control (MCP)
+
+Agents drive Godot through the off-the-shelf [Coding-Solo godot-mcp](https://github.com/Coding-Solo/godot-mcp)
+server (MIT, Node 18+), registered in `.mcp.json` as `godot` and pinned to `@coding-solo/godot-mcp@0.1.1`.
+It needs the Godot .NET editor; `GODOT_PATH` defaults to `/Applications/Godot_mono.app/Contents/MacOS/Godot`
+and can be overridden from your environment. Claude Code asks you to approve project servers, and needs a
+reload the first time. To add it by hand: `claude mcp add godot -e GODOT_PATH=/path/to/godot -- npx -y @coding-solo/godot-mcp@0.1.1`.
+
+It can open the editor, run and stop the game, return its console output and errors, create and save
+scenes, add nodes and read project info. Use it with `project path = game/`.
+
+It does not know about this game's world. To inspect generated terrain and dungeons, use the CLI
+(`dotnet run --project src/VoxelGame.Cli -c Release -- <seed> 1 --dungeon --spawns`, `--biomes`, `--stats`,
+`--dungeon-stats`) and the unit tests. Running a project executes its code, so only point the server at
+projects you trust, and approve its tools individually rather than auto-approving them.
+
 ## Building
 
 Godot 4.7 (.NET build) is needed to run the game itself:
