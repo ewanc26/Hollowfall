@@ -10,6 +10,22 @@ int radius = args.Length > 1 && int.TryParse(args[1], out var r) ? Math.Clamp(r,
 long seed = TerrainGenerator.SeedFromString(seedText);
 var gen = new TerrainGenerator(seed);
 
+if (args.Contains("--dungeon-stats"))
+{
+    // How common dungeons are and how deep their entrance shafts run, over a 16x16 block of regions.
+    var surfaces = new List<int>();
+    int regions = 0;
+    for (int rx = -8; rx < 8; rx++)
+        for (int rz = -8; rz < 8; rz++, regions++)
+            if (gen.Dungeons!.GetSite(rx, rz) is { } s)
+                surfaces.Add(s.SurfaceY);
+    surfaces.Sort();
+    Console.WriteLine($"dungeons in {regions} regions: {surfaces.Count} ({100.0 * surfaces.Count / regions:F0}%)");
+    if (surfaces.Count > 0)
+        Console.WriteLine($"entrance surface y: min {surfaces[0]}, median {surfaces[surfaces.Count / 2]}, p90 {surfaces[surfaces.Count * 9 / 10]}, max {surfaces[^1]}");
+    return;
+}
+
 if (args.Contains("--dungeon"))
 {
     PrintDungeon(gen, args.Contains("--spawns"));

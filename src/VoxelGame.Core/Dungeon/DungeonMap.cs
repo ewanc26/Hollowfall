@@ -15,6 +15,7 @@ public sealed class DungeonMap
 
     private const double PresenceChance = 0.7;
     private const int Attempts = 12;
+    public const int MaxEntranceY = 84; // keeps the entrance spiral under about 46 blocks
     private const int MinSurfaceAboveFloors = 52; // top floor ceiling is y=44: keep rock overhead
 
     private readonly TerrainGenerator _terrain;
@@ -62,7 +63,7 @@ public sealed class DungeonMap
         var entrance = _terrain.SampleColumn(ex, ez);
         surfaceY = entrance.Height;
         if (entrance.Biome is Biome.Ocean or Biome.River or Biome.Beach) return false;
-        if (surfaceY < TerrainGenerator.SeaLevel + 3 || surfaceY + 10 >= Core.World.Chunk.Height) return false;
+        if (surfaceY < TerrainGenerator.SeaLevel + 3 || surfaceY > MaxEntranceY) return false;
 
         // The plaza must be fairly flat and dry.
         foreach (var (dx, dz) in new[] { (-3, -3), (3, -3), (-3, 3), (3, 3), (-3, 0), (3, 0), (0, -3), (0, 3) })
