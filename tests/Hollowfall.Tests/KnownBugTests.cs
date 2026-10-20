@@ -32,34 +32,40 @@ public class KnownBugTests
 
     // ---- JSON loaders ------------------------------------------------------------------------
 
-    [Fact(Skip = "BUG: GameSettings.FromJson throws ArgumentException on a duplicated property name, although it promises never to throw (Bindings/GameSettings.cs: JsonNode.Parse only caught as JsonException)")]
+    [Fact]
     public void SettingsWithADuplicatedKeyStillLoad()
     {
         var s = GameSettings.FromJson("{\"masterVolume\":0.5,\"masterVolume\":0.2}");
         Assert.InRange(s.MasterVolume, 0, 1);
     }
 
-    [Fact(Skip = "BUG: RunRecords.FromJson throws ArgumentException on a duplicated property name, so a hand-edited records.json stops the game starting (Main._Ready calls RunRecords.Load)")]
+    [Fact]
     public void RecordsWithADuplicatedSeedStillLoad()
     {
         var r = RunRecords.FromJson("{\"seeds\":{\"a\":{\"0\":{\"grade\":\"S\",\"points\":14,\"seconds\":5}},\"a\":{}}}");
         Assert.NotNull(r);
     }
 
+    [Fact]
+    public void StoryProgressWithADuplicatedKeyStillLoads() =>
+        Assert.NotNull(Hollowfall.Core.Story.StoryProgress.FromJson("{\"seeds\":{},\"seeds\":{}}"));
+
     // ---- bindings ----------------------------------------------------------------------------
 
-    [Fact(Skip = "BUG: rebinding any action onto a stick axis used by Look reports Swapped but silently unbinds the Look action (BindingMap.Rebind: the displaced action cannot take the old button, so its slot is nulled)")]
+    [Fact]
     public void RebindingOntoALookAxisDoesNotLeaveLookUnbound()
     {
         var map = BindingMap.CreateDefault();
         var outcome = map.Rebind(GameAction.Jump, Binding.Axis("RightX", -1));
-        Assert.Equal(RebindOutcome.Swapped, outcome);
+        Assert.Equal(RebindOutcome.InUse, outcome);
         Assert.NotNull(map.Get(GameAction.LookLeft, Slot.Gamepad));
+        Assert.Equal(Binding.Axis("RightX", -1), map.Get(GameAction.LookLeft, Slot.Gamepad));
+        Assert.Equal(Binding.Key("Space"), map.Get(GameAction.Jump, Slot.KeyboardMouse));
     }
 
     // ---- run records -------------------------------------------------------------------------
 
-    [Fact(Skip = "BUG: RunRecords evicts by first insertion, not recency, so improving a record on an old seed does not protect it from being dropped once 100 other seeds exist")]
+    [Fact]
     public void ImprovingARecordKeepsItsSeedFromBeingEvicted()
     {
         var weak = new FloorResult(Grade.D, Grade.D, Grade.D, 0, 3, OverallGrade.D);
@@ -74,7 +80,7 @@ public class KnownBugTests
 
     // ---- interactables -----------------------------------------------------------------------
 
-    [Fact(Skip = "BUG: a spike trap hurts a player standing directly below it on a lower floor (Interactables.Tick checks feet.Y < s.Y + 0.6 with no lower bound; floors are stacked 8 blocks apart)")]
+    [Fact]
     public void ATrapDoesNotHurtAPlayerOnTheFloorBelow()
     {
         double damaged = 0;
@@ -84,7 +90,7 @@ public class KnownBugTests
         Assert.Equal(0, damaged);
     }
 
-    [Fact(Skip = "BUG: a trap marks itself as having struck even when the player took no damage (parry invulnerability), so standing on fully extended spikes costs nothing (Interactables.Tick adds to _struck before reading what _hurt returned)")]
+    [Fact]
     public void ATrapStrikesAgainOnceInvulnerabilityEnds()
     {
         double damaged = 0, clock = 0;
@@ -103,7 +109,7 @@ public class KnownBugTests
         Assert.True(damaged > 0, "the player stood on the spikes for the whole strike and never took damage");
     }
 
-    [Fact(Skip = "BUG: dungeons plan more locked chests (treasure and boss rooms) than keys (one per floor except the last), so some chests can never be opened (SpawnPlanner.Plan / Interactables.Open)")]
+    [Fact]
     public void EveryLockedChestCanBeOpened()
     {
         var (_, site) = FindSite();
@@ -112,9 +118,62 @@ public class KnownBugTests
         Assert.True(keys >= locked, $"{locked} locked chests but {keys} keys");
     }
 
+    [Fact]
+    public void EveryDungeonHasAKeyForEveryLockedChestOnEachFloor()
+    {
+        int sites = 0;
+        for (long seed = 1; seed < 12; seed++)
+        {
+            var world = new VoxelWorld(seed);
+            for (int rx = -2; rx <= 2; rx++)
+                for (int rz = -2; rz <= 2; rz++)
+                    if (world.Generator.Dungeons!.GetSite(rx, rz) is { } site)
+                    {
+                        sites++;
+                        foreach (var floor in site.Floors)
+                        {
+                            int locked = site.Spawns.Count(s => s.Floor == floor.Floor && s.Kind == SpawnKind.Loot && s.Tier >= s.Floor + 2);
+                            var keys = site.Spawns.Where(s => s.Floor == floor.Floor && s.Kind == SpawnKind.Key).ToList();
+                            Assert.True(keys.Count >= locked, $"seed {seed} floor {floor.Floor}: {locked} locked chests, {keys.Count} keys");
+                            // Keys never sit in the treasure room that holds the chests they open.
+                            Assert.All(keys, k => Assert.NotEqual(RoomRole.Treasure, floor.Rooms[k.RoomId].Role));
+                        }
+                    }
+        }
+        Assert.True(sites > 0);
+    }
+
+    [Fact]
+    public void ReplaysAreRecordedUnderSimVersionThree() => Assert.Equal(3, Hollowfall.Core.Replay.RunReplay.SimVersion);
+
+    [Fact]
+    public void KillsInARoomThatMustBeFoughtAgainDoNotSurviveARespawn()
+    {
+        var (world, site) = FindSite();
+        var sim = new CombatSim(world, site);
+        var room = site.Floors[0].EntranceRoom;
+        var (wx, wy, wz) = site.ToWorld(0, room.CenterX, room.CenterZ);
+        var origin = Stand(wx + 0.5, wy, wz + 0.5);
+        sim.Tick(Dt, origin, default);
+        int killed = 0;
+        foreach (var (dx, dz) in new[] { (2.0, 0.0), (-2.0, 0.0), (0.0, 2.0), (0.0, -2.0) })
+        {
+            var husk = sim.SpawnEnemy(EnemyKind.Husk, new Vec3(origin.Feet.X + dx, origin.Feet.Y, origin.Feet.Z + dz));
+            for (int i = 0; i < 900 && !husk.Dead; i++)
+            {
+                var aimed = origin with { Forward = (husk.Feet + new Vec3(0, 1.0, 0) - origin.Eye).Normalized() };
+                sim.Tick(Dt, aimed, i % 25 == 0 ? new PlayerActions(true, false, false) : default);
+            }
+            if (husk.Dead) { killed++; break; }
+        }
+        Assert.True(killed > 0 && sim.KillsOn(0) > 0, "could not set up a kill");
+        sim.Respawn();
+        Assert.Equal(0, sim.KillsOn(0));
+    }
+
     // ---- combat sim --------------------------------------------------------------------------
 
-    [Fact(Skip = "BUG: after a respawn the floor's style baseline is stale, so the floor's style grade goes negative (CombatSim.Respawn resets StyleMeter.TotalScore but FloorProgress.StartStyle is kept)")]
+    [Fact]
     public void StyleEarnedAfterARespawnStillCountsTowardTheFloorGrade()
     {
         var (world, site) = FindSite();

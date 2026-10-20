@@ -141,10 +141,12 @@ public sealed class Interactables
                 continue;
             }
             if (_struck.Contains(index)) continue;
-            if (Math.Abs(feet.X - (s.X + 0.5)) < TrapHalfSize + 0.3 && Math.Abs(feet.Z - (s.Z + 0.5)) < TrapHalfSize + 0.3 && feet.Y < s.Y + 0.6)
+            if (Math.Abs(feet.X - (s.X + 0.5)) < TrapHalfSize + 0.3 && Math.Abs(feet.Z - (s.Z + 0.5)) < TrapHalfSize + 0.3 && feet.Y < s.Y + 0.6 && feet.Y > s.Y - 1.5)
             {
-                _struck.Add(index);
+                // Only a hit that did damage counts as the strike; a player spared by invulnerability is hit once it ends.
                 double taken = _hurt(TrapDamage);
+                if (taken <= 0) continue;
+                _struck.Add(index);
                 _emit(new TrapSprung(index, taken));
             }
         }

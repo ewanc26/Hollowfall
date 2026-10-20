@@ -163,6 +163,9 @@ public enum RebindOutcome
     Reserved,
     WrongKind,
     Unchanged,
+
+    /// <summary>The input drives a look axis that could not take over what this action had; nothing changed.</summary>
+    InUse,
 }
 
 /// <summary>
@@ -222,6 +225,7 @@ public sealed class BindingMap
             // The other action takes over what this one had, or loses the binding if this one had none.
             if (previous != null && IsValid(other, previous.Value)) _slots[other][slot] = previous;
             else if (ActionInfo.Required(other) && previous == null) return RebindOutcome.Reserved;
+            else if (ActionInfo.AnalogOnlyOnGamepad(other)) return RebindOutcome.InUse; // a look axis cannot take a button, so refuse rather than unbind it
             else _slots[other][slot] = null;
             outcome = RebindOutcome.Swapped;
         }

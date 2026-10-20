@@ -160,8 +160,12 @@ public sealed class GameSettings
         if (string.IsNullOrWhiteSpace(json)) return s;
 
         JsonObject? root;
-        try { root = JsonNode.Parse(json) as JsonObject; }
-        catch (JsonException) { return s; }
+        try
+        {
+            // A repeated property name would otherwise throw later, when the tree is first read, so refuse it here.
+            root = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject;
+        }
+        catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException or FormatException) { return s; }
         if (root == null) return s;
 
         s.MouseSensitivity = Number(root, "mouseSensitivity", MouseSensitivityRange.Default);

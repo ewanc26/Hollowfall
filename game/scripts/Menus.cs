@@ -474,12 +474,23 @@ public partial class Menus : CanvasLayer
         footer.AddChild(MakeButton("Reset", () =>
         {
             var keep = _settings.Bindings.Clone();
+            string seed = _settings.Seed; // Reset is for options; the chosen world stays
             _settings.ResetToDefaults();
+            _settings.Seed = seed;
             _settings.Bindings.ResetToDefaults();
             foreach (var a in Enum.GetValues<GameAction>())
                 foreach (var slot in new[] { Slot.KeyboardMouse, Slot.Gamepad })
                     if (keep.Get(a, slot) is { } b) _settings.Bindings.Rebind(a, b);
             SettingsChanged?.Invoke();
+            // The sliders and checkboxes were built from the old values; build the screen again so they show the new ones.
+            var old = _screens[MenuScreen.Settings];
+            var parent = old.GetParent();
+            var fresh = BuildSettings();
+            fresh.Visible = false;
+            parent.AddChild(fresh);
+            _screens[MenuScreen.Settings] = fresh;
+            old.Visible = false;
+            old.QueueFree();
             Open(MenuScreen.Settings);
         }));
         footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
@@ -543,7 +554,10 @@ public partial class Menus : CanvasLayer
         string message = outcome switch
         {
             RebindOutcome.Ok => $"{ActionInfo.Label(action)} is now {BindingNames.Display(binding)}.",
+            RebindOutcome.Swapped when conflict is { } other && _settings.Bindings.Get(other, Hollowfall.Core.Input.BindingMap.SlotOf(binding)) == null =>
+                $"{BindingNames.Display(binding)} was used by {ActionInfo.Label(other)}, which is now unbound.",
             RebindOutcome.Swapped => $"{BindingNames.Display(binding)} was used by {ActionInfo.Label(conflict ?? action)}; the two swapped.",
+            RebindOutcome.InUse => $"{BindingNames.Display(binding)} is used by {ActionInfo.Label(conflict ?? action)}, which cannot take another input. Nothing changed.",
             RebindOutcome.Reserved => $"{BindingNames.Display(binding)} cannot be used for {ActionInfo.Label(action)}.",
             RebindOutcome.WrongKind => $"{ActionInfo.Label(action)} cannot use {BindingNames.Display(binding)}.",
             _ => "That binding is already set.",

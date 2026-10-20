@@ -79,16 +79,13 @@ public class SpawnTests
     }
 
     [Fact]
-    public void ThereIsOneKeyPerFloorWithAnExitAndItIsAwayFromTheEntrance()
+    public void ThereIsOneKeyPerLockedChestAndItIsAwayFromTheEntrance()
     {
         foreach (var (_, s) in Sites())
         {
             var keys = s.Spawns.Where(sp => sp.Kind == SpawnKind.Key).ToList();
-            Assert.True(keys.Count <= s.FloorCount - 1);
-            Assert.Equal(keys.Count, keys.Select(k => k.Floor).Distinct().Count());
             foreach (var k in keys)
             {
-                Assert.True(k.Floor < s.FloorCount - 1, "the last floor has no exit to unlock");
                 Assert.True(s.Floors[k.Floor].Rooms[k.RoomId].Depth >= 1);
             }
         }

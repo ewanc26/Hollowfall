@@ -38,6 +38,12 @@ public sealed class RunRecords
         var previous = Best(seed, floor);
         if (previous is { } p && !mine.Beats(p)) return (false, previous);
 
+        if (_bests.ContainsKey(seed))
+        {
+            // Improving a record makes its seed the most recent, so it is the last to be evicted.
+            _order.Remove(seed);
+            _order.Add(seed);
+        }
         if (!_bests.TryGetValue(seed, out var floors))
         {
             floors = [];
@@ -73,8 +79,12 @@ public sealed class RunRecords
         var records = new RunRecords();
         if (string.IsNullOrWhiteSpace(json)) return records;
         JsonObject? root;
-        try { root = JsonNode.Parse(json) as JsonObject; }
-        catch (JsonException) { return records; }
+        try
+        {
+            // A repeated property name would otherwise throw later, when the tree is first read, so refuse it here.
+            root = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject;
+        }
+        catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException or FormatException) { return records; }
         if (root?["seeds"] is not JsonObject seeds) return records;
 
         foreach (var (seed, node) in seeds)

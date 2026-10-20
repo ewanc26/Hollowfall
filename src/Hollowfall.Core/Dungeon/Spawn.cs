@@ -75,14 +75,19 @@ public static class SpawnPlanner
                 }
             }
 
-            // One key per floor that has an exit, hidden away from the entrance.
-            if (floor.ExitRoom != null)
+            // One key for every locked chest on the floor, left in rooms that are not treasure rooms and away from the
+            // entrance, so each locked chest can be opened by someone who explores.
+            int locked = spawns.Count(sp => sp.Kind == SpawnKind.Loot && sp.Floor == floor.Floor && sp.Tier >= sp.Floor + 2);
+            if (locked > 0)
             {
                 var keyRooms = floor.Rooms
-                    .Where(r => r.Role is RoomRole.Standard or RoomRole.Trap or RoomRole.Treasure && r.Depth >= 1)
+                    .Where(r => r.Role is RoomRole.Standard or RoomRole.Trap && r.Depth >= 1)
                     .OrderBy(r => r.Id)
                     .ToList();
-                if (keyRooms.Count > 0) Add(SpawnKind.Key, keyRooms[rng.Next(keyRooms.Count)], baseTier);
+                if (keyRooms.Count == 0)
+                    keyRooms = [.. floor.Rooms.Where(r => r.Role is RoomRole.Standard or RoomRole.Trap or RoomRole.Exit).OrderBy(r => r.Id)];
+                if (keyRooms.Count > 0)
+                    for (int i = 0; i < locked; i++) Add(SpawnKind.Key, keyRooms[rng.Next(keyRooms.Count)], baseTier);
             }
         }
         return spawns;

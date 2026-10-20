@@ -120,7 +120,8 @@ public partial class CombatView : Node3D
         EventRaised?.Invoke(e);
     }
 
-    private void RefreshPortals()
+    /// <summary>Makes the portal views match the sim's portals: new ones appear, replaced or cleared ones go.</summary>
+    public void RefreshPortals()
     {
         foreach (var color in new[] { PortalColor.Teal, PortalColor.Violet })
         {
