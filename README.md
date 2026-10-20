@@ -39,15 +39,25 @@ Open the Godot .NET editor on `game/`, or run it directly:
 
 You spawn on the plaza of the nearest dungeon, facing its stair shaft.
 
-| Input | Action |
-|---|---|
-| WASD, Space | Move, jump |
-| Mouse | Look (click to capture, Esc to release) |
-| Left / right mouse | Revolver / shotgun |
-| V | Parry (hit it while an enemy flashes yellow) |
-| Q / E | Place the blue / orange portal where you aim |
-| R | Respawn after dying |
-| F | Free-fly, for inspecting the world |
+The game starts at a title screen, and Esc (or Start on a gamepad) opens the pause menu. Every binding below can be
+changed under Controls, for the keyboard and mouse and for a gamepad separately, and the options under Settings are saved
+to `user://settings.json` (Godot's user data folder).
+
+| Action | Keyboard and mouse | Gamepad |
+|---|---|---|
+| Move | WASD | Left stick |
+| Look | Mouse | Right stick |
+| Jump | Space | A |
+| Revolver | Left click | RT |
+| Shotgun | Right click | LT |
+| Parry (hit it while an enemy flashes yellow) | V | X |
+| Blue / orange portal | Q / E | LB / RB |
+| Respawn | R | Y |
+| Free-fly (fly down) | F (Shift) | Right stick click (B) |
+| Pause menu | Esc | Start |
+
+Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, render distance, and inverted Y for
+mouse and gamepad.
 
 Terrain is shown as flat-coloured blocks with baked ambient occlusion, and you carry a torch for the dungeons.
 Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit

@@ -53,9 +53,9 @@ public class BindingMapTests
         Assert.Equal(Binding.Key("G"), m.Get(GameAction.Parry, Slot.KeyboardMouse));
         Assert.Equal(Binding.Button("X"), m.Get(GameAction.Parry, Slot.Gamepad)); // untouched
 
-        Assert.Equal(RebindOutcome.Ok, m.Rebind(GameAction.Parry, Binding.Button("B")));
+        Assert.Equal(RebindOutcome.Ok, m.Rebind(GameAction.Parry, Binding.Button("Back")));
         Assert.Equal(Binding.Key("G"), m.Get(GameAction.Parry, Slot.KeyboardMouse));
-        Assert.Equal(Binding.Button("B"), m.Get(GameAction.Parry, Slot.Gamepad));
+        Assert.Equal(Binding.Button("Back"), m.Get(GameAction.Parry, Slot.Gamepad));
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class GameSettingsTests : IDisposable
     {
         var s = new GameSettings { MouseSensitivity = 0.004, FieldOfView = 95, ViewRadius = 9, InvertMouseY = true, InvertPadY = true, Deadzone = 0.3, PadLookSpeed = 5 };
         s.Bindings.Rebind(GameAction.Parry, Binding.Key("G"));
-        s.Bindings.Rebind(GameAction.PortalOrange, Binding.Button("B"));
+        s.Bindings.Rebind(GameAction.PortalOrange, Binding.Button("Back"));
         s.Bindings.Unbind(GameAction.FlyToggle, Slot.KeyboardMouse);
 
         var back = GameSettings.FromJson(s.ToJson());
@@ -351,5 +351,36 @@ public class InputMathTests
     {
         var (x, z) = InputMath.WorldMove(1, 1, 0.3);
         Assert.Equal(1.0, Math.Sqrt(x * x + z * z), 6);
+    }
+}
+
+public class NoHardCodedInputTests
+{
+    [Fact]
+    public void GameplayScriptsAskForActionsNeverForKeys()
+    {
+        // Menus and InputMapper are the only places allowed to name keys: gameplay code reads actions, so rebinding works.
+        string scripts = Path.Combine(LanguagePolicy.FindRepoRoot(), "game", "scripts");
+        var allowed = new HashSet<string> { "InputMapper.cs", "Menus.cs", "SmokeTest.cs" };
+        var offenders = new List<string>();
+        foreach (var file in Directory.EnumerateFiles(scripts, "*.cs").Where(f => !allowed.Contains(Path.GetFileName(f))))
+        {
+            string text = File.ReadAllText(file);
+            if (System.Text.RegularExpressions.Regex.IsMatch(text, @"Input\.IsKeyPressed|Input\.IsPhysicalKeyPressed|(?<![\w.])Key\.[A-Z]|MouseButton\.|JoyButton\.|JoyAxis\."))
+                offenders.Add(Path.GetFileName(file));
+        }
+        Assert.Empty(offenders);
+    }
+
+    [Fact]
+    public void EveryActionIsHandledSomewhereInTheGame()
+    {
+        // A binding nobody reads is a dead setting. Each action must appear in the scripts (outside the mapper and menus).
+        string scripts = Path.Combine(LanguagePolicy.FindRepoRoot(), "game", "scripts");
+        string all = string.Concat(Directory.EnumerateFiles(scripts, "*.cs")
+            .Where(f => Path.GetFileName(f) is not ("InputMapper.cs" or "Menus.cs" or "SmokeTest.cs"))
+            .Select(File.ReadAllText));
+        foreach (var a in Enum.GetValues<GameAction>().Where(a => a != GameAction.Pause)) // pause is handled by the menus
+            Assert.Contains($"GameAction.{a}", all);
     }
 }

@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Input;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
@@ -16,6 +17,7 @@ public partial class Main : Node3D
     private WorldView _view = null!;
     private PlayerController _player = null!;
     private Hud _hud = null!;
+    private Menus _menus = null!;
     private string _where = "";
     private int _demoFrame;
     private readonly string? _demo = System.Environment.GetEnvironmentVariable("HOLLOWFALL_DEMO");
@@ -23,9 +25,18 @@ public partial class Main : Node3D
     public VoxelWorld World { get; private set; } = null!;
     public CombatView? Combat { get; private set; }
     public PlayerController Player => _player;
+    public GameSettings Settings { get; private set; } = new();
+    public Menus Menus => _menus;
+
+    /// <summary>Where settings and bindings are saved. Override with HOLLOWFALL_SETTINGS (used by tests).</summary>
+    public static string SettingsPath =>
+        System.Environment.GetEnvironmentVariable("HOLLOWFALL_SETTINGS") is { Length: > 0 } custom ? custom : ProjectSettings.GlobalizePath("user://settings.json");
 
     public override void _Ready()
     {
+        Settings = GameSettings.Load(SettingsPath);
+        InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
+
         string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : "voxel";
         World = new VoxelWorld(TerrainGenerator.SeedFromString(seedText));
 
@@ -44,10 +55,12 @@ public partial class Main : Node3D
 
         _view = new WorldView { Name = "World" };
         _view.Initialize(World);
+        _view.ViewRadius = Settings.ViewRadius;
         _view.Focus = feet;
         AddChild(_view);
 
         _player = new PlayerController { Name = "Player" };
+        _player.Settings = Settings;
         _player.Initialize(World, feet, yaw);
         AddChild(_player);
 
@@ -56,13 +69,50 @@ public partial class Main : Node3D
             Combat = new CombatView { Name = "Combat" };
             Combat.Initialize(new CombatSim(World, site), site, _view);
             Combat.EventRaised += OnCombatEvent;
+            Combat.EventRaised += e => _hud?.OnEvent(e);
             AddChild(Combat);
         }
 
         _hud = new Hud { Name = "Hud" };
         AddChild(_hud);
 
+        _menus = new Menus(Settings, SettingsPath) { Name = "Menus" };
+        _menus.SettingsChanged += ApplySettings;
+        _menus.MenuOpenChanged += open => _hud.Visible = !open;
+        _menus.RespawnRequested += () => { if (Combat != null) Respawn(); };
+        _menus.QuitRequested += () => GetTree().Quit();
+        AddChild(_menus);
+
+        // The game starts at the title screen, except headless (tests), scripted demos and when asked to skip it.
+        bool skipTitle = DisplayServer.GetName() == "headless" || _demo != null || System.Environment.GetEnvironmentVariable("HOLLOWFALL_SKIP_TITLE") == "1";
+        if (!skipTitle) _menus.Open(MenuScreen.Title);
+
+        // For screenshots and videos: HOLLOWFALL_MENU=title|pause|controls|settings opens that screen straight away.
+        if (System.Environment.GetEnvironmentVariable("HOLLOWFALL_MENU") is { } menu)
+            _menus.CallDeferred(Menus.MethodName.OpenFrom, (int)MenuScreen.Pause, (int)(menu switch
+            {
+                "title" => MenuScreen.Title,
+                "controls" => MenuScreen.Controls,
+                "settings" => MenuScreen.Settings,
+                _ => MenuScreen.Pause,
+            }));
+
         GD.Print($"Hollowfall: seed \"{seedText}\", spawn {where} at ({feet.X:F1}, {feet.Y:F1}, {feet.Z:F1})");
+    }
+
+    /// <summary>Applies changed settings and bindings to the running game.</summary>
+    private void ApplySettings()
+    {
+        InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
+        _view.ViewRadius = Settings.ViewRadius;
+    }
+
+    private string Hints()
+    {
+        var slot = _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse;
+        string Key(GameAction a) => BindingNames.Display(Settings.Bindings.Get(a, slot));
+        return $"{Key(GameAction.FirePrimary)} revolver   {Key(GameAction.FireSecondary)} shotgun   {Key(GameAction.Parry)} parry   " +
+               $"{Key(GameAction.PortalBlue)} blue portal   {Key(GameAction.PortalOrange)} orange portal   {Key(GameAction.Jump)} jump   {Key(GameAction.Pause)} menu";
     }
 
     private static Godot.Environment MakeEnvironment()
@@ -190,7 +240,7 @@ public partial class Main : Node3D
         switch (e)
         {
             case PlayerDied:
-                _hud.ShowBanner("YOU DIED\npress R to respawn", 3600);
+                _hud.ShowBanner($"YOU DIED\n{BindingNames.Display(Settings.Bindings.Get(GameAction.Respawn, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse))} to respawn", 3600);
                 break;
             case EncounterStarted s:
                 _hud.ShowBanner($"{s.Enemies} enemies: kill them to open the doors", 2.5);
@@ -221,8 +271,8 @@ public partial class Main : Node3D
             : $"floor {floor + 1}/{Combat.Site.FloorCount}   kills {sim.KillsOn(floor)}/{sim.EnemiesOn(floor)}   par {sim.TargetsFor(floor).ParTimeSeconds:F0}s";
         string info =
             $"{Engine.GetFramesPerSecond()} fps   {floorInfo}\n" +
-            $"x {b.X:F1}  y {b.Y:F1}  z {b.Z:F1}   speed {b.Speed:F1}   {(_player.Flying ? "FLYING" : b.OnGround ? "walking" : "airborne")}\n" +
-            "WASD move  Space jump  LMB revolver  RMB shotgun  V parry  Q blue portal  E orange portal  F fly  R respawn";
-        _hud.Update(delta, sim, sim.Portals, info);
+            $"x {b.X:F1}  y {b.Y:F1}  z {b.Z:F1}   speed {b.Speed:F1}   {(_player.Flying ? "FLYING" : b.OnGround ? "walking" : "airborne")}" +
+            "";
+        _hud.Update(delta, sim, sim.Portals, info, Hints());
     }
 }

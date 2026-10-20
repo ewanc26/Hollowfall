@@ -4,39 +4,94 @@ using Hollowfall.Core.Portals;
 
 namespace Hollowfall.Game;
 
-/// <summary>Health with hard damage, the style meter, recent bonuses, portal status and floor results.</summary>
+/// <summary>
+/// Health with hard damage, the style meter and recent bonuses, the crosshair with portal status and hit markers, a damage
+/// and parry flash, controls hints that follow the device you are using, and the end-of-floor result panel.
+/// </summary>
 public partial class Hud : CanvasLayer
 {
     private const float BarWidth = 320;
 
-    private ColorRect _healthFill = null!, _hardFill = null!, _styleFill = null!;
-    private Label _info = null!, _style = null!, _awards = null!, _banner = null!, _crosshair = null!;
-    private double _bannerTime;
+    private ColorRect _healthFill = null!, _hardFill = null!, _styleFill = null!, _styleBack = null!, _flash = null!;
+    private Label _info = null!, _hint = null!, _style = null!, _awards = null!, _banner = null!, _crosshair = null!, _hitMarker = null!, _health = null!;
+    private PanelContainer _result = null!;
+    private Label _resultText = null!;
+    private double _bannerTime, _flashTime, _flashTotal, _hitTime, _resultTime;
+    private Color _flashColour;
 
     public override void _Ready()
     {
+        Layer = 5;
         var root = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
+        _flash = new ColorRect { Color = new Color(1, 0, 0, 0), MouseFilter = Control.MouseFilterEnum.Ignore };
+        _flash.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        root.AddChild(_flash);
+
         _info = Text(root, new Vector2(12, 8), 16);
 
-        // Health: red fill, with the hard-damage ceiling shown in orange at the right end.
-        Bar(root, new Vector2(12, 650), new Vector2(BarWidth, 18), new Color(0.12f, 0.05f, 0.05f, 0.85f));
-        _hardFill = Bar(root, new Vector2(12, 650), new Vector2(0, 18), new Color(0.95f, 0.6f, 0.1f, 0.9f));
-        _healthFill = Bar(root, new Vector2(12, 650), new Vector2(BarWidth, 18), new Color(0.85f, 0.12f, 0.12f, 0.95f));
+        // Bottom-left stack: bonuses, style meter, health bar and the controls hint. Everything is anchored, so it
+        // stays put whatever the window size.
+        var stack = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        stack.AddThemeConstantOverride("separation", 4);
+        stack.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomLeft, Control.LayoutPresetMode.Minsize, 12);
+        stack.GrowVertical = Control.GrowDirection.Begin;
+        root.AddChild(stack);
 
-        _style = Text(root, new Vector2(12, 560), 22);
-        Bar(root, new Vector2(12, 592), new Vector2(BarWidth, 8), new Color(0.1f, 0.1f, 0.1f, 0.8f));
-        _styleFill = Bar(root, new Vector2(12, 592), new Vector2(0, 8), new Color(1f, 0.85f, 0.2f, 0.95f));
-        _awards = Text(root, new Vector2(12, 440), 15);
+        _awards = Text(stack, Vector2.Zero, 15);
+        _style = Text(stack, Vector2.Zero, 22);
+        var styleBar = BarGroup(stack, 8);
+        _styleBack = styleBar.Back;
+        _styleFill = styleBar.Fill;
 
-        _crosshair = Text(root, new Vector2(572, 330), 28);
-        _crosshair.Text = "+";
+        var healthRow = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        healthRow.AddThemeConstantOverride("separation", 10);
+        stack.AddChild(healthRow);
+        var healthBar = BarGroup(healthRow, 18);
+        _healthFill = healthBar.Fill;
+        _hardFill = healthBar.Extra;
+        _health = Text(healthRow, Vector2.Zero, 20);
 
-        _banner = Text(root, new Vector2(340, 190), 40);
+        _hint = Text(stack, Vector2.Zero, 14);
+
+        // Centre: crosshair, hit marker and the banner.
+        var crossCentre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        crossCentre.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        root.AddChild(crossCentre);
+        _crosshair = Text(crossCentre, Vector2.Zero, 28);
+        _hitMarker = Text(crossCentre, Vector2.Zero, 34);
+        _hitMarker.Text = "✕";
+        _hitMarker.Modulate = new Color(1, 1, 1, 0);
+
+        var bannerTop = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        bannerTop.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopWide, Control.LayoutPresetMode.Minsize, 0);
+        bannerTop.OffsetTop = 130;
+        root.AddChild(bannerTop);
+        _banner = Text(bannerTop, Vector2.Zero, 40);
         _banner.HorizontalAlignment = HorizontalAlignment.Center;
-        _banner.CustomMinimumSize = new Vector2(600, 0);
+
+        var resultCentre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        resultCentre.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        root.AddChild(resultCentre);
+        _result = new PanelContainer { CustomMinimumSize = new Vector2(420, 0), Visible = false };
+        _result.AddThemeStyleboxOverride("panel", new StyleBoxFlat { BgColor = new Color(0.03f, 0.03f, 0.05f, 0.92f), BorderColor = new Color(1f, 0.8f, 0.3f), BorderWidthBottom = 2, BorderWidthTop = 2, BorderWidthLeft = 2, BorderWidthRight = 2, ContentMarginBottom = 14, ContentMarginTop = 14, ContentMarginLeft = 20, ContentMarginRight = 20 });
+        _resultText = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        _resultText.AddThemeFontSizeOverride("font_size", 24);
+        _result.AddChild(_resultText);
+        resultCentre.AddChild(_result);
+    }
+
+    /// <summary>A bar made of a dark back, an optional extra fill (hard damage) and the main fill, all sized by the HUD.</summary>
+    private static (Control Group, ColorRect Back, ColorRect Extra, ColorRect Fill) BarGroup(Control parent, float height)
+    {
+        var group = new Control { CustomMinimumSize = new Vector2(BarWidth, height), MouseFilter = Control.MouseFilterEnum.Ignore };
+        parent.AddChild(group);
+        var back = Bar(group, Vector2.Zero, new Vector2(BarWidth, height), new Color(0.12f, 0.08f, 0.08f, 0.85f));
+        var extra = Bar(group, Vector2.Zero, new Vector2(0, height), new Color(0.95f, 0.6f, 0.1f, 0.9f));
+        var fill = Bar(group, Vector2.Zero, new Vector2(BarWidth, height), new Color(0.85f, 0.12f, 0.12f, 0.95f));
+        return (group, back, extra, fill);
     }
 
     private static Label Text(Control parent, Vector2 pos, int size)
@@ -64,29 +119,88 @@ public partial class Hud : CanvasLayer
         _bannerTime = seconds;
     }
 
-    public void Update(double delta, CombatSim sim, PortalSystem portals, string info)
+    private void Flash(Color colour, double seconds)
+    {
+        _flashColour = colour;
+        _flashTime = _flashTotal = seconds;
+    }
+
+    /// <summary>Reacts to what happened in combat: flashes, hit markers and the floor result panel.</summary>
+    public void OnEvent(CombatEvent e)
+    {
+        switch (e)
+        {
+            case PlayerHurt hurt:
+                Flash(new Color(0.9f, 0.05f, 0.05f, Math.Clamp((float)(0.25 + hurt.Damage / 60), 0.25f, 0.6f)), 0.35);
+                break;
+            case Parried:
+                Flash(new Color(0.5f, 0.85f, 1f, 0.45f), 0.25);
+                break;
+            case EnemyHit hit:
+                _hitTime = 0.12;
+                _hitMarker.AddThemeColorOverride("font_color", hit.Killed ? new Color(1f, 0.25f, 0.2f) : hit.Zone == HitZone.Head ? new Color(1f, 0.9f, 0.2f) : Colors.White);
+                break;
+            case FloorCompleted done:
+                _resultText.Text =
+                    $"FLOOR {done.Floor + 1} COMPLETE\n\nRANK  {done.Result.Overall}\n" +
+                    $"Time {done.Result.Time}    Kills {done.Result.Kills}    Style {done.Result.Style}" +
+                    (done.Result.Restarts > 0 ? $"\nRestarts {done.Result.Restarts}  (−{done.Result.Restarts} points)" : "");
+                _result.Visible = true;
+                _resultTime = 7;
+                break;
+        }
+    }
+
+    public void Update(double delta, CombatSim sim, PortalSystem portals, string info, string hint)
     {
         _info.Text = info;
+        _hint.Text = hint;
 
         var v = sim.Vitals;
         _healthFill.Size = new Vector2((float)(BarWidth * v.Health / PlayerVitals.MaxHealth), 18);
         float ceiling = (float)(BarWidth * v.Ceiling / PlayerVitals.MaxHealth);
-        _hardFill.Position = new Vector2(12 + ceiling, 650);
+        _hardFill.Position = new Vector2(ceiling, 0);
         _hardFill.Size = new Vector2(BarWidth - ceiling, 18);
+        _health.Text = $"{Math.Ceiling(v.Health):F0}";
 
         var style = sim.Style;
         _style.Text = style.Rank == StyleRank.None ? "" : style.Rank.ToString().ToUpperInvariant();
+        _style.AddThemeColorOverride("font_color", RankColour(style.Rank));
+        _styleFill.Color = RankColour(style.Rank);
         _styleFill.Size = new Vector2((float)(BarWidth * (style.Rank == StyleRank.None ? style.Points / 150.0 : style.RankProgress)), 8);
         _awards.Text = string.Join("\n", style.RecentAwards.TakeLast(5).Reverse().Select(a => $"+{a.Points:F0} {a.Bonus}"));
 
-        // Crosshair colour shows which portals exist: blue and orange halves light up as they are placed.
+        // The crosshair shows which portals exist: each half lights up as its portal is placed.
         _crosshair.Text = (portals.Blue != null ? "◖" : "·") + "+" + (portals.Orange != null ? "◗" : "·");
-        _crosshair.AddThemeColorOverride("font_color", portals.Linked ? new Color(0.9f, 1f, 0.9f) : Colors.White);
 
+        if (_flashTime > 0)
+        {
+            _flashTime -= delta;
+            _flash.Color = new Color(_flashColour, (float)(_flashColour.A * Math.Max(0, _flashTime / _flashTotal)));
+        }
+        if (_hitTime > 0)
+        {
+            _hitTime -= delta;
+            _hitMarker.Modulate = new Color(1, 1, 1, _hitTime > 0 ? 1f : 0f);
+        }
         if (_bannerTime > 0)
         {
             _bannerTime -= delta;
             if (_bannerTime <= 0) _banner.Text = "";
         }
+        if (_resultTime > 0)
+        {
+            _resultTime -= delta;
+            if (_resultTime <= 0) _result.Visible = false;
+        }
     }
+
+    private static Color RankColour(StyleRank r) => r switch
+    {
+        >= StyleRank.Legendary => new Color(1f, 0.2f, 0.9f),
+        >= StyleRank.Relentless => new Color(1f, 0.3f, 0.2f),
+        >= StyleRank.Savage => new Color(1f, 0.55f, 0.1f),
+        >= StyleRank.Brutal => new Color(1f, 0.8f, 0.2f),
+        _ => new Color(1f, 0.9f, 0.5f),
+    };
 }

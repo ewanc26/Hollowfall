@@ -7,13 +7,20 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 ### Changed
 
 - The game is now called Hollowfall. Namespaces, projects, the solution, the Godot project and the environment variables (`HOLLOWFALL_SEED`, `HOLLOWFALL_SPAWN_FLOOR`) were renamed from `VoxelGame`.
-
-### Changed
-
 - Dungeon entrances are only placed where the surface is at or below y=84 (`DungeonMap.MaxEntranceY`), so the entrance spiral never exceeds about 46 blocks. Dungeons are still in about a fifth of regions (17-22% across five seeds).
+
+### Fixed
+
+- Edited chunks (such as a locked door) are no longer unloaded and silently regenerated; `VoxelWorld.Unload` keeps them unless forced.
+- Portal cameras use a better near plane at angles, and portals seen inside other portals draw as frames.
 
 ### Added
 
+- Remappable controls for keyboard, mouse and gamepad. Core has `GameAction`, `BindingMap` (one keyboard/mouse and one gamepad binding per action, swap on conflict, Escape reserved for pause, required actions stay bound), clamped `GameSettings` with a defensive, atomically saved JSON store, and the dead-zone and look maths in `InputMath`. In Godot, `InputMapper` turns bindings into InputMap actions (physical keys, so WASD works on AZERTY).
+- Gamepad play: left stick moves, right stick looks (radial dead zone, response curve, adjustable speed), triggers fire, shoulders place portals.
+- Menus built in code and usable with keyboard, mouse or gamepad: a title screen, a pause menu, a Controls screen with click-to-rebind, and a Settings screen (sensitivity, gamepad look speed, dead zone, field of view, render distance, inverted Y). The game pauses while a menu is open, and hints on the HUD show the buttons for the device you are using.
+- HUD polish: damage and parry flashes, hit markers, rank-coloured style meter, health number and an end-of-floor result panel.
+- Enemies now use portals as shortcuts to reach you.
 - Portals: Q and E place a linked blue and orange pair on flat portalable surfaces. You walk or fall through with your speed conserved (a fall into a floor portal launches you out of a wall), and shots, enemy projectiles and reflected projectiles pass through too. Core has `PortalSystem`, `PortalTransform` and `PortalWalker`; `PlayerBody` gained horizontal momentum and ground friction; the Godot view draws each portal with its own camera and a code-built shader.
 - Combat in the game: left and right mouse fire the revolver and shotgun, V parries, doors lock during encounters, and a HUD shows health with hard damage, the style meter, recent bonuses, the floor and the portals. R respawns after dying, and each floor is graded when you go down.
 - `HOLLOWFALL_DEMO=portals` runs a scripted portal setup for screenshots.

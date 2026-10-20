@@ -98,7 +98,9 @@ means walking out. The two blocks behind a portal are treated as open for the pl
 its centre crosses the face, and then it is moved to the other portal with its velocity and facing turned to match
 (at least a minimum exit speed, so you never stall inside). Rendering uses a second camera per portal placed where
 the viewer would be if the pair were one doorway; portals are not drawn inside portal views, so there is one level of
-see-through, not infinite recursion.
+see-through, not infinite recursion; a portal seen inside another portal's view appears as a glowing frame. Enemies treat a
+portal as a shortcut: if the player's reflection behind a portal's face is closer than the player, they walk into it and
+come out beside you.
 
 ## Principles
 
