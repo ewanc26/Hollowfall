@@ -96,3 +96,6 @@ public sealed record OmenSensed(int Id) : CombatEvent;
 
 /// <summary>An armed omen came true: <paramref name="Extra"/> more enemies joined the encounter.</summary>
 public sealed record OmenFulfilled(int Floor, int RoomId, int Extra) : CombatEvent;
+
+/// <summary>A creature accepted an offering of the player's blood and thinks more of them for it.</summary>
+public sealed record OfferingAccepted(int Id, Relations.Faction Faction) : CombatEvent;

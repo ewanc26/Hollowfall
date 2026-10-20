@@ -44,7 +44,10 @@ public static class ReplayRunner
         if (!replay.IsVerifiable || world.Seed != Terrain.TerrainGenerator.SeedFromString(replay.Seed)) return false;
         if (world.Generator.Dungeons?.GetSite(replay.RegionX, replay.RegionZ) is not { } site || replay.Floor >= site.FloorCount) return false;
 
-        outcome = Play(replay, new CombatSim(world, site), site);
+        // The game plays with the relationship system on, so the re-simulation does too (creatures use ids and can be shot).
+        var sim = new CombatSim(world, site);
+        sim.EnableRelations();
+        outcome = Play(replay, sim, site);
         return outcome.Completed is { } c && c.Floor == replay.Floor && c.Result.Overall == replay.Result.Grade && c.Result.Points == replay.Result.Points &&
                Math.Abs(c.Seconds - replay.Result.Seconds) < 0.0015 && replay.EndTick == outcome.Ticks - 1;
     }

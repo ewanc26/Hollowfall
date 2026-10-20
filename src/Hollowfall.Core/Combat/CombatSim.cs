@@ -228,7 +228,7 @@ public sealed class CombatSim
         if (Relations != null)
         {
             Relations.Tick(dt);
-            if (actions.Interact) TryBoon(view);
+            if (actions.Interact && !TryBoon(view)) TryOffering(view);
             SenseOmen(view);
         }
         Vitals.HitHealScale = _items.Perks.HealScale;
@@ -518,7 +518,7 @@ public sealed class CombatSim
                 double nearest = length;
                 foreach (var e in _enemies)
                 {
-                    if (e.Dead) continue;
+                    if (e.Dead || e.Mind is { Disposition: Disposition.Allied }) continue; // shots pass through friends
                     if (RayCast.HitBox(origin, direction, e.Bounds, length) is { } d && d <= nearest) { nearest = d; hitHere = e; }
                 }
 
@@ -853,9 +853,9 @@ public sealed class CombatSim
     }
 
     /// <summary>Interact beside a Brownie while the Brownies think well of you: it repays you once with a warm hearth.</summary>
-    private void TryBoon(PlayerView view)
+    private bool TryBoon(PlayerView view)
     {
-        if (Relations!.Reputation.Tier(Faction.Brownies) < ReputationTier.Friendly) return;
+        if (Relations!.Reputation.Tier(Faction.Brownies) < ReputationTier.Friendly) return false;
         foreach (var e in _enemies)
         {
             if (e.Dead || e.Mind is not { Species.Kind: EnemyKind.Brownie, BoonGiven: false } m) continue;
@@ -866,6 +866,30 @@ public sealed class CombatSim
             double healed = Vitals.Heal(BoonHeal);
             Vitals.Cleanse();
             _events.Add(new BoonGiven(e.Id, "warmth", healed));
+            return true;
+        }
+        return false;
+    }
+
+    public const double OfferingCost = 10;
+
+    /// <summary>
+    /// Interact beside a creature that can fight at your side, while it is not afraid or angry and the Folk think well of you (Friendly or better): you give it a
+    /// little of your blood, once, and it remembers the gift (standing and gratitude rise, which can make it an ally).
+    /// </summary>
+    private void TryOffering(PlayerView view)
+    {
+        if (Vitals.Health <= OfferingCost + 15) return;
+        foreach (var e in _enemies)
+        {
+            if (e.Dead || e.Mind is not { Species.CanAlly: true, Offered: false, Provoked: false, Scared: false } m) continue;
+            if (Relations!.Reputation.Tier(m.Faction) < ReputationTier.Friendly) continue;
+            double dx = e.Feet.X - view.Feet.X, dz = e.Feet.Z - view.Feet.Z;
+            if (Math.Sqrt(dx * dx + dz * dz) > BoonReach || Math.Abs(e.Feet.Y - view.Feet.Y) > 2) continue;
+            m.Offered = true;
+            Vitals.Damage(OfferingCost);
+            Relations.PlayerGave(e, Time);
+            _events.Add(new OfferingAccepted(e.Id, m.Faction));
             return;
         }
     }
@@ -1089,7 +1113,7 @@ public sealed class CombatSim
     {
         foreach (var e in _enemies.ToList())
         {
-            if (e.Dead) continue;
+            if (e.Dead || e.Mind is { Disposition: Disposition.Allied }) continue;
             double dist = (e.Feet + new Vec3(0, 0.9, 0)).DistanceTo(at);
             if (dist > ExplosionRadius && e != directHit) continue;
             DamageEnemy(e, ExplosionDamage * (e == directHit ? 1.0 : 1 - dist / (ExplosionRadius * 1.5)), HitZone.Torso, at, "explosion", view.Airborne);

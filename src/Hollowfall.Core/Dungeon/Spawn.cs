@@ -129,7 +129,9 @@ public static class SpawnPlanner
             bool quiet = room.Role is RoomRole.Safe or RoomRole.Entrance;
             if (IsCistern(room))
             {
-                if (rng.Chance(room.Role == RoomRole.Standard && floor.Floor == 0 ? 0 : 0.45)) Add(EnemyKind.Kelpie, room);
+                // A kelpie guards its water: never in the room you arrive in, and not in an ordinary room on the first floor.
+                bool kelpieHere = room.Role == RoomRole.Safe || (room.Role == RoomRole.Standard && floor.Floor >= 1);
+                if (kelpieHere && rng.Chance(0.45)) Add(EnemyKind.Kelpie, room);
                 else if (rng.Chance(0.35)) Add(EnemyKind.Selkie, room);
             }
             if (quiet)
