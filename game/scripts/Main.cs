@@ -62,6 +62,15 @@ public partial class Main : Node3D
     public StoryUi StoryUi => _storyUi;
     public string SeedName => _seedName;
 
+    private Action<Hollowfall.Core.Audio.SoundId>? _uiSound;
+
+    public override void _ExitTree()
+    {
+        // The event is static and outlives this scene; a handler left on it would call into a freed AudioDirector.
+        if (_uiSound != null) Menus.UiSound -= _uiSound;
+        _uiSound = null;
+    }
+
     public override void _Ready()
     {
         Settings = GameSettings.Load(SettingsPath);
@@ -84,7 +93,8 @@ public partial class Main : Node3D
 
         _audio = new AudioDirector { Name = "Audio", Settings = Settings };
         AddChild(_audio);
-        Menus.UiSound += id => _audio.Play(id);
+        _uiSound = id => _audio.Play(id);
+        Menus.UiSound += _uiSound;
 
         var site = FindNearestSite(World);
         var (feet, yaw, where) = Spawn(World, site);
@@ -403,6 +413,7 @@ public partial class Main : Node3D
         var combat = Combat!;
         int floor = Math.Max(combat.Sim.CurrentFloor, 0);
         combat.Sim.Respawn();
+        combat.RefreshPortals(); // the sim cleared the portals; drop their views too
         _replay?.NoteRespawn();
         var site = combat.Site;
         _player.PlaceAt(combat.Sim.CurrentFloor < 0 ? new Vector3(site.EntranceX + DungeonSite.PlazaRadius + 0.5f, site.SurfaceY + 1, site.EntranceZ + 0.5f) : FloorSpawn(site, floor), 0);

@@ -105,8 +105,12 @@ public sealed class StoryProgress
         var progress = new StoryProgress();
         if (string.IsNullOrWhiteSpace(json) || json.Length > MaxFileBytes) return progress;
         JsonObject? root;
-        try { root = JsonNode.Parse(json) as JsonObject; }
-        catch (JsonException) { return progress; }
+        try
+        {
+            // A repeated property name would otherwise throw later, when the tree is first read, so refuse it here.
+            root = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject;
+        }
+        catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException or FormatException) { return progress; }
         if (root?["seeds"] is not JsonObject seeds) return progress;
 
         foreach (var (seed, node) in seeds)

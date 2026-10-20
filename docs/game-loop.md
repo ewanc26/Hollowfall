@@ -63,7 +63,7 @@ computed from the floor itself (enemy count and path length) instead of being ha
 2. **Fight.** Move constantly, hit things up close to heal, chain kills and tricks to climb the style rank,
    parry telegraphed attacks to recover.
 3. **Clear.** Doors open, and the rank for the floor keeps counting. Chests heal you; locked ones (treasure and boss rooms)
-   spend a key, and each floor with an exit hides one key.
+   spend a key, and every floor hides one key per locked chest on it, in a standard or trap room away from the entrance.
 4. **Descend.** The exit stairs are always open: you can skip a floor's fights, at the cost of its kills and style grades.
    The last floor ends when the boss dies.
 5. **Score.** At the end of each floor you see time, kills and style ranks and the combined letter.

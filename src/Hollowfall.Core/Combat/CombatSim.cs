@@ -325,6 +325,12 @@ public sealed class CombatSim
         _projectiles.Clear();
         Vitals.Reset();
         Style.Reset();
+        // The meter restarts from zero, so unfinished floors measure style from zero too, and kills in rooms that must be
+        // fought again no longer count (otherwise the HUD could show more kills than the floor has enemies).
+        foreach (var progress in _floors.Where(f => !f.Completed)) progress.StartStyle = 0;
+        for (int f = 0; f < _floors.Length; f++)
+            if (!_floors[f].Completed)
+                _floors[f].Kills = _encounters.Where(e => e.Floor == f && e.Cleared).Sum(e => e.Enemies.Count(en => en.Dead));
         Portals.Clear();
         _parryWindow = _parryCooldown = 0;
         _meteor.Reset();

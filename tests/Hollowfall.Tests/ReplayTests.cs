@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4208;
-    private const uint ExpectedGoldenChecksum = 1248447351;
+    private const uint ExpectedGoldenChecksum = 1111065265;
 
     [Fact]
     public void FileSizesStaySane()

@@ -79,7 +79,7 @@ public partial class AudioDirector : Node
     /// <summary>Plays a sound in the head, or from <paramref name="at"/> in the world, optionally quieter (<paramref name="volume"/>, 0 to 1) or at another pitch.</summary>
     public void Play(SoundId id, Vector3? at = null, float volume = 1f, float pitch = 1f)
     {
-        if (!IsInsideTree() || Settings.MasterVolume * Settings.EffectsVolume <= 0.001) return;
+        if (!IsInstanceValid(this) || !IsInsideTree() || Settings.MasterVolume * Settings.EffectsVolume <= 0.001) return;
         int voice = _next++ % Voices;
         float db = EffectDb(id) + Mathf.LinearToDb(Math.Max(volume, 1e-4f));
         if (at is { } position)

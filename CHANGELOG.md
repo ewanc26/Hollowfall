@@ -13,6 +13,15 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 ### Fixed
 
 - Chest lids now swing open in the game (the props view never registered its chests, so the lid animation never ran).
+- Every locked chest can be opened: each floor now hides one key per locked chest on it, in a standard or trap room (this changes the spawns of existing seeds), and replays are recorded under `RunReplay.SimVersion` 3, so older ghosts are unverifiable.
+- A spike trap no longer hurts a player on the floor below, and only counts as having struck when it did damage (a parry's invulnerability no longer spares you for the whole strike).
+- A respawn no longer leaves the floor's style baseline stale (which could give a negative style grade) or keeps kills from rooms that must be fought again (the HUD could show 12/10).
+- Portal views are removed when a respawn clears the portals.
+- Rebinding onto a stick axis used by a Look action is refused with a message instead of silently unbinding Look; when another action is left unbound the message says so.
+- Settings: Reset rebuilds the sliders so they show the defaults and keeps the chosen seed.
+- A damaged save with a repeated property name (settings, records, story progress) falls back to defaults instead of throwing.
+- Reloading the scene no longer leaves a menu-sound handler pointing at a freed audio player.
+- Personal-best eviction is by recency: improving a record keeps its seed.
 
 ### Changed
 
