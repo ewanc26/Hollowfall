@@ -55,6 +55,7 @@ to `user://settings.json` (Godot's user data folder).
 | Close portals (sever anything standing in them) | C | D-pad down |
 | Respawn | R | Y |
 | Open chests (a key for locked ones; each holds seeded loot) | F | Left stick click |
+| Open chests (a key for locked ones), read notes | F | Left stick click |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
 | Pause menu | Esc | Start |
 | Debug overlay (fps, position, speed) | F3 | none |
@@ -84,6 +85,8 @@ more than 20 blocks), costs you 30% of your speed and never hurts you. Hitting a
 Environment variables: `HOLLOWFALL_SEED` picks the world (default `voxel`),
 `HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, `HOLLOWFALL_DEMO=portals` runs a scripted
 portal setup for screenshots, and `HOLLOWFALL_DEMO=sever` closes the pair on a husk.
+`HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, and `HOLLOWFALL_DEMO=portals` runs a scripted
+portal setup for screenshots. `HOLLOWFALL_DEMO=notes|ending|captions` stage the story screens, and `HOLLOWFALL_MENU=journal` opens the journal.
 
 ## Language
 
@@ -102,6 +105,17 @@ treasure, trap, safe). Voxelisation is a pure function of the seed and position,
 any chunk can be generated alone. Spawn points for monsters, loot and keys are
 produced as data. Run `dotnet run --project src/Hollowfall.Cli -c Release -- <seed> 1 --dungeon --spawns`
 to see a floor plan.
+
+## Story
+
+Under the hill a Hollow is falling in on itself. Seven Wardens went down to hold it shut with the fold-craft and left a red cord behind them; six are only names now, and the seventh, who took the craft, is the boss at the bottom. You are a Delver, following the cord. The story is told in the margins and never gets in the way of the fight:
+
+- **Every seed names its dungeon** ("The Pale Vault"), shown on the title screen, and names the last Warden.
+- **A first-play opening** (once per seed), and a **title card** ("I. The Antechamber") that fades in the first time you enter each floor.
+- **Notes**: one to three scrolls lie against the walls of each floor, in rooms you can reach without a secret door. Walk up and press Open (F) to read one; Open or the menu button closes it. The notes on a floor are one voice and read in order, and none is used twice in a run. The **Journal** in the pause menu keeps what you have read on each seed, saved in `story.json`.
+- A line when a floor is finished (one per grade), when the boss wakes, when you die, and an ending card when the last Warden falls.
+
+All the words and every choice are in `Hollowfall.Core.Story`, a pure function of the seed. See [docs/story.md](docs/story.md) for the premise, characters, floor-by-floor beats and what is deliberately left open. `HOLLOWFALL_STORY` overrides where `story.json` is saved.
 
 ## Agent control (MCP)
 
