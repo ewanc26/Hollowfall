@@ -10,6 +10,9 @@ public sealed class ChestState(int index, Spawn spawn)
     public Spawn Spawn { get; } = spawn;
     public bool Opened { get; internal set; }
     public bool Locked => Spawn.Tier >= Spawn.Floor + 2;
+
+    /// <summary>What is inside, rolled from the seed. It is the same whether or not the chest has been opened.</summary>
+    public Loot Loot { get; internal init; }
 }
 
 /// <summary>
@@ -37,13 +40,21 @@ public sealed class Interactables
     private readonly Func<double, double> _hurt;
     private readonly Func<double, double> _heal;
     private readonly Action<CombatEvent> _emit;
+    private readonly Func<double>? _cleanse;
+    private readonly Func<double, double>? _boostStyle;
     private double _time;
+
+    /// <summary>Timed perks from loot; the sim reads them through small hooks.</summary>
+    public Perks Perks { get; } = new();
 
     public IReadOnlyList<ChestState> Chests => _chests;
     public int KeysHeld { get; private set; }
 
-    public Interactables(IReadOnlyList<Spawn> spawns, long seed, Func<double, double> hurt, Func<double, double> heal, Action<CombatEvent> emit)
+    public Interactables(IReadOnlyList<Spawn> spawns, long seed, Func<double, double> hurt, Func<double, double> heal, Action<CombatEvent> emit,
+        Func<double>? cleanse = null, Func<double, double>? boostStyle = null)
     {
+        _cleanse = cleanse;
+        _boostStyle = boostStyle;
         _hurt = hurt;
         _heal = heal;
         _emit = emit;
@@ -52,7 +63,7 @@ public sealed class Interactables
             var s = spawns[i];
             switch (s.Kind)
             {
-                case SpawnKind.Loot: _chests.Add(new ChestState(i, s)); break;
+                case SpawnKind.Loot: _chests.Add(new ChestState(i, s) { Loot = LootTable.Roll(seed, s) }); break;
                 case SpawnKind.Key: _keys.Add((i, s)); break;
                 case SpawnKind.Trap:
                     // Each trap has its own beat, so a room of them never strikes in unison.
@@ -95,6 +106,7 @@ public sealed class Interactables
     public void Tick(double dt, PlayerView view, bool interact)
     {
         _time += dt;
+        Perks.Tick(dt);
         var feet = view.Feet;
 
         foreach (var (index, s) in _keys)
@@ -150,8 +162,17 @@ public sealed class Interactables
             KeysHeld--;
         }
         chest.Opened = true;
-        double healed = _heal(chest.Locked ? LockedChestHeal : ChestHeal);
-        _emit(new ChestOpened(chest.Index, healed, chest.Locked));
+        var loot = chest.Loot;
+        double healed = 0, applied;
+        switch (loot.Kind)
+        {
+            case LootKind.Health: healed = applied = _heal(loot.Amount); break;
+            case LootKind.Cleanse: applied = _cleanse?.Invoke() ?? 0; break;
+            case LootKind.StyleBoost: applied = _boostStyle?.Invoke(loot.Amount) ?? 0; break;
+            case LootKind.Key: KeysHeld += (int)loot.Amount; applied = loot.Amount; break;
+            default: Perks.Grant(loot); applied = loot.Seconds; break;
+        }
+        _emit(new ChestOpened(chest.Index, healed, chest.Locked, loot, applied));
     }
 
     private static double Dist(Vec3 feet, Spawn s)

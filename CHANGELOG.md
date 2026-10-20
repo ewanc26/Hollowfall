@@ -4,7 +4,19 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ## [Unreleased]
 
+### Added
+
+- Chests hold real loot, rolled from the seed (`LootTable`): the same dungeon always holds the same loot. Ordinary chests are common; locked chests (treasure and boss rooms) roll a better table with stronger, longer effects. Outcomes are a vial of blood (health), a cleansing drop (clears hard damage), a style shard (a burst of style), Bloodlust (hits heal more for a while), Open guard (a longer parry window for a while) and, from ordinary chests only, a spare key.
+- Opening a chest releases a floating pickup (five new low-poly models: vial, drop, star, fang and shield) and the banner names the loot. `ChestOpened` now carries the `Loot` and what it did.
+- `PlayerVitals.Cleanse` and `HitHealScale`, `Interactables.Perks`, and `CombatSim.ParryWindowLeft`: small hooks the perks use. The props showcase page shows the new pickups.
+
+### Fixed
+
+- Chest lids now swing open in the game (the props view never registered its chests, so the lid animation never ran).
+
 ### Changed
+
+- Chests no longer always heal: the flat 30 (60 locked) health is now one possible outcome, at the same amounts for common and rare chests.
 
 - Free-fly moved to G so that F can open chests. Saved bindings keep working.
 - Portals have their own identity: teal and violet chamfered double-frame gates with a diagonal shimmer, replacing the blue and orange ovals. The colours, actions (`PortalTeal`, `PortalViolet`), icons and text were renamed to match; saved bindings for the old action names fall back to the defaults.

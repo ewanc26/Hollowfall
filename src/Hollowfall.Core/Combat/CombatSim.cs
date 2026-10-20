@@ -73,6 +73,9 @@ public sealed class CombatSim
 
     public PlayerVitals Vitals { get; } = new();
 
+    /// <summary>Seconds left in the open parry window (0 when closed), which a Wide Parry perk lengthens.</summary>
+    public double ParryWindowLeft => _parryWindow;
+
     /// <summary>Keys, chests and spike traps.</summary>
     public Interactables Items => _items;
 
@@ -92,7 +95,8 @@ public sealed class CombatSim
         _world = world;
         _site = site;
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
-        _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add);
+        _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add,
+            cleanse: Vitals.Cleanse, boostStyle: m => Style.Award(StyleBonus.Parry, extraMultiplier: m));
         Map = new FloorMap(site);
         _floors = new FloorProgress[site.FloorCount];
         for (int k = 0; k < site.FloorCount; k++)
@@ -177,10 +181,11 @@ public sealed class CombatSim
         TrackFloor(view);
         if (CurrentFloor >= 0) Map.Reveal(CurrentFloor, view.Feet.X, view.Feet.Z);
         _items.Tick(dt, view, actions.Interact);
+        Vitals.HitHealScale = _items.Perks.HealScale;
         TriggerEncounters(view);
         UpdateMeteor(dt, view);
 
-        if (actions.Parry && _parryCooldown <= 0 && _parryWindow <= 0) _parryWindow = ParryWindowSeconds;
+        if (actions.Parry && _parryCooldown <= 0 && _parryWindow <= 0) _parryWindow = ParryWindowSeconds + _items.Perks.ParryWindowBonus;
         if (_parryWindow > 0)
         {
             if (TryParry(view)) _parryWindow = 0;

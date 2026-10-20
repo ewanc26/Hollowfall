@@ -253,7 +253,7 @@ Portal-aware sound and the non-colour cue (2.6) go in when audio and accessibili
   feature every voxel game has. Controlled digging (3.1 to 3.3) keeps the fun and the performance.
 - **A grappling hook.** Great, but not ours; the portal fling covers the same space with our own twist.
 - **Co-op.** The deterministic core would make it possible, but it multiplies everything else; revisit after verified replays.
-- **Inventory, crafting and loot rarity tiers.** They dilute the push-forward loop. Pacts are the only meta layer.
+- **Inventory, crafting and gear.** They dilute the push-forward loop, so chest loot (see the game loop) is used on the spot: a heal, a style burst or a short perk. Pacts are the only meta layer.
 - **Voice or story.** A seeded name and a few lines per boss are enough; the game's identity is its rules.
 
 ## 7. Risks and open questions
