@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Ui;
 
@@ -50,6 +51,12 @@ public partial class Menus : CanvasLayer
     public event Action? ResumeRequested;
     public event Action? RespawnRequested;
     public event Action? QuitRequested;
+
+    /// <summary>Raised when a different seed was chosen on the title screen: the host builds a fresh world.</summary>
+    public event Action? NewGameRequested;
+
+    /// <summary>Raised by the pause menu's main menu button.</summary>
+    public event Action? MainMenuRequested;
 
     /// <summary>Fired whenever a setting or binding changes, so the game can apply it.</summary>
     public event Action? SettingsChanged;
@@ -228,14 +235,38 @@ public partial class Menus : CanvasLayer
 
     private Control BuildTitle()
     {
-        var (screen, col) = Panel(460, 360);
+        var (screen, col) = Panel(500, 430);
         var logo = Glyphs.LoadTexture("res://assets/logo.svg");
         if (logo != null)
             col.AddChild(new TextureRect { Texture = logo, CustomMinimumSize = new Vector2(400, 90), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
         else
             col.AddChild(Heading("HOLLOWFALL", 48));
         col.AddChild(new Label { Text = "A procedural dungeon crawler.\nMove fast. Heal by hurting things.", HorizontalAlignment = HorizontalAlignment.Center });
-        col.AddChild(MakeButton("Play", () => { Close(); ResumeRequested?.Invoke(); }));
+
+        // The world is named by its seed: type one to share or revisit a dungeon, or roll a random one.
+        var seedRow = new HBoxContainer();
+        seedRow.AddThemeConstantOverride("separation", 8);
+        seedRow.AddChild(new Label { Text = "Seed" });
+        var seedEdit = new LineEdit { Text = _settings.Seed, MaxLength = SeedWords.MaxLength, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(240, 0), PlaceholderText = "any text or number" };
+        seedRow.AddChild(seedEdit);
+        var dice = MakeButton("Random", () => seedEdit.Text = SeedWords.From((ulong)System.Random.Shared.NextInt64()));
+        seedRow.AddChild(dice);
+        col.AddChild(seedRow);
+
+        col.AddChild(MakeButton("Play", () =>
+        {
+            string seed = SeedWords.Clean(seedEdit.Text);
+            seedEdit.Text = seed;
+            if (seed != _settings.Seed)
+            {
+                _settings.Seed = seed;
+                _settings.TrySave(_savePath);
+                NewGameRequested?.Invoke();
+                return;
+            }
+            Close();
+            ResumeRequested?.Invoke();
+        }));
         col.AddChild(MakeButton("Controls", () => OpenFrom(MenuScreen.Title, MenuScreen.Controls)));
         col.AddChild(MakeButton("Settings", () => OpenFrom(MenuScreen.Title, MenuScreen.Settings)));
         col.AddChild(MakeButton("Quit", () => QuitRequested?.Invoke()));
@@ -244,10 +275,11 @@ public partial class Menus : CanvasLayer
 
     private Control BuildPause()
     {
-        var (screen, col) = Panel(420, 360);
+        var (screen, col) = Panel(420, 420);
         col.AddChild(Heading("PAUSED"));
         col.AddChild(MakeButton("Resume", () => { Close(); ResumeRequested?.Invoke(); }));
         col.AddChild(MakeButton("Respawn", () => { Close(); RespawnRequested?.Invoke(); }));
+        col.AddChild(MakeButton("Main menu", () => MainMenuRequested?.Invoke()));
         col.AddChild(MakeButton("Controls", () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
         col.AddChild(MakeButton("Settings", () => OpenFrom(MenuScreen.Pause, MenuScreen.Settings)));
         col.AddChild(MakeButton("Quit", () => QuitRequested?.Invoke()));

@@ -18,6 +18,9 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- A minimap under the floor panel (`FloorMap`): it fills in by line of sight as you explore, secret doors look like wall until found, and the exit stairs show once seen.
+- Choose a world: the title screen has a seed box (any text or a number) and a Random button that makes names like `amber-hollow-914`; the seed is saved in settings, and the pause menu has a Main menu button.
+- Personal bests (`RunRecords`): each floor's best grade, points and time per seed is saved to `records.json`, and the floor-complete banner says whether it is a new best.
 - Chests, keys and spike traps now work (`Interactables`). Walk over a key to take it; press Open (F, or left stick click) beside a chest to open it for health; chests in treasure and boss rooms are locked and spend a key (one per floor). Spike traps warn, then strike on their own beat for 22 damage, and a jump clears them. The floor panel shows keys held, and chests and spikes animate.
 - Sound, with no audio files: every effect and the dungeon drone is synthesised in Core (`Synth`), so it is identical everywhere and unit tested (bounded, click-free, deterministic, a seamless loop). Combat events map to sounds in one tested place (`SoundMap`), world sounds play from where they happen, and menus tick and select. Settings gained master, effects and ambience volume.
 - Low-poly art for everything that is not a voxel: a code-built model system (`Hollowfall.Core.Models`) with flat-shaded primitives, named pivoted parts with parent links, glow buffers and anchors; models for the three enemies, the enemy orb, the revolver and shotgun, chests, keys, spike traps and torches. See `docs/art-style.md`.
