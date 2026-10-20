@@ -20,6 +20,7 @@ public partial class Main : Node3D
     private Menus _menus = null!;
     private ViewModels _weapons = null!;
     private PropsView? _props;
+    private AudioDirector _audio = null!;
     private CanvasLayer _weaponLayer = null!;
     private string _where = "";
     private int _demoFrame;
@@ -52,6 +53,10 @@ public partial class Main : Node3D
             DirectionalShadowMaxDistance = 90,
         });
 
+        _audio = new AudioDirector { Name = "Audio", Settings = Settings };
+        AddChild(_audio);
+        Menus.UiSound += id => _audio.Play(id);
+
         var site = FindNearestSite(World);
         var (feet, yaw, where) = Spawn(World, site);
         _where = where;
@@ -72,11 +77,12 @@ public partial class Main : Node3D
             Combat = new CombatView { Name = "Combat" };
             Combat.Initialize(new CombatSim(World, site), site, _view);
             Combat.EventRaised += OnCombatEvent;
+            Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => _hud?.OnEvent(e);
             Combat.EventRaised += e => { if (e is ShotFired shot) _weapons?.Fire(shot.Weapon); };
             AddChild(Combat);
             _props = new PropsView { Name = "Props" };
-            _props.Initialize(site);
+            _props.Initialize(site, Combat.Sim.Items);
             AddChild(_props);
         }
 
@@ -147,6 +153,7 @@ public partial class Main : Node3D
             Hint(GameAction.Parry, "parry"),
             Hint(GameAction.PortalTeal, "teal portal"),
             Hint(GameAction.PortalViolet, "violet portal"),
+            Hint(GameAction.Interact, "open"),
             Hint(GameAction.Jump, "jump"),
             Hint(GameAction.Pause, "menu"),
         ];
@@ -288,6 +295,18 @@ public partial class Main : Node3D
             case FloorCompleted f:
                 _hud.ShowBanner($"FLOOR {f.Floor + 1} COMPLETE  {f.Result.Overall}\ntime {f.Result.Time}  kills {f.Result.Kills}  style {f.Result.Style}", 6);
                 break;
+            case KeyCollected:
+                _hud.ShowBanner("KEY", 1.2);
+                break;
+            case ChestOpened o:
+                _hud.ShowBanner(o.WasLocked ? $"LOCKED CHEST OPENED  +{o.Healed:F0} health" : $"CHEST  +{o.Healed:F0} health", 1.6);
+                break;
+            case ChestLocked:
+                _hud.ShowBanner("locked: find the key on this floor", 1.8);
+                break;
+            case TrapSprung t:
+                _hud.ShowBanner($"SPIKES  -{t.Damage:F0}", 0.8);
+                break;
             case PortalPlaced { Success: false } failed:
                 _hud.ShowBanner($"can't place a portal there ({failed.Failure})", 1.2);
                 break;
@@ -304,6 +323,7 @@ public partial class Main : Node3D
 
         _weapons.Pose(delta, b.Speed, b.OnGround, _player.LookDelta);
         _props?.Update(delta, _view.Focus);
+        _audio.Underground = Combat != null && Combat.Sim.CurrentFloor >= 0;
 
         if (Combat == null) return;
         var sim = Combat.Sim;
@@ -312,7 +332,7 @@ public partial class Main : Node3D
         _hud.SetOpenings(openings);
         _weapons.SetOpenings(openings);
         _weapons.SetPortals(sim.Portals.Teal != null, sim.Portals.Violet != null);
-        if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds);
+        if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds, sim.Items.KeysHeld);
         else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
 
         string info =

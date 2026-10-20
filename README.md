@@ -53,11 +53,12 @@ to `user://settings.json` (Godot's user data folder).
 | Parry (hit it while an enemy flashes yellow) | V | X |
 | Teal / violet portal | Q / E | LB / RB |
 | Respawn | R | Y |
-| Free-fly (fly down) | F (Shift) | Right stick click (B) |
+| Open chests (a key for locked ones) | F | Left stick click |
+| Free-fly (fly down) | G (Shift) | Right stick click (B) |
 | Pause menu | Esc | Start |
 | Debug overlay (fps, position, speed) | F3 | none |
 
-Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, render distance, inverted Y for mouse and
+Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, master, effects and ambience volume, render distance, inverted Y for mouse and
 gamepad, and controller prompts. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
 Nintendo letters, with the bottom and right buttons swapped), or you can pick a style.
 

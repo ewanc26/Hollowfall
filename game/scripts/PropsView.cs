@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Models;
 
@@ -14,15 +15,20 @@ public partial class PropsView : Node3D
     private const int MaxLights = 6;
     private const double LightRadius = 24;
 
-    private readonly List<(Node3D Node, Vector3 Home, double Phase)> _keys = [];
+    private readonly List<(int Index, Node3D Node, Vector3 Home, double Phase)> _keys = [];
+    private readonly List<(ChestState Chest, ModelRig Rig)> _chests = [];
+    private readonly List<(int Index, ModelRig Rig)> _traps = [];
+    private Interactables _items = null!;
     private readonly List<(ModelRig Rig, Vector3 Position, double Phase)> _torches = [];
     private readonly List<OmniLight3D> _lights = [];
     private double _time;
 
-    public void Initialize(DungeonSite site)
+    public void Initialize(DungeonSite site, Interactables items)
     {
-        foreach (var spawn in site.Spawns)
+        _items = items;
+        for (int index = 0; index < site.Spawns.Count; index++)
         {
+            var spawn = site.Spawns[index];
             var at = new Vector3(spawn.X + 0.5f, spawn.Y, spawn.Z + 0.5f);
             switch (spawn.Kind)
             {
@@ -40,7 +46,7 @@ public partial class PropsView : Node3D
                         var key = ModelFactory.Build(ModelCatalog.Key, castShadows: false);
                         key.Root.Position = at;
                         AddChild(key.Root);
-                        _keys.Add((key.Root, at, spawn.X * 0.37 + spawn.Z));
+                        _keys.Add((index, key.Root, at, spawn.X * 0.37 + spawn.Z));
                         break;
                     }
                 case SpawnKind.Trap:
@@ -76,11 +82,26 @@ public partial class PropsView : Node3D
     public void Update(double delta, Vector3 viewer)
     {
         _time += delta;
-        foreach (var (node, home, phase) in _keys)
+        foreach (var (index, node, home, phase) in _keys)
         {
+            node.Visible = !_items.KeyTaken(index);
             node.RotationDegrees = new Vector3(0, (float)(_time * 90 + phase * 40) % 360, 0);
             node.Position = home + new Vector3(0, (float)(0.15 + Math.Sin(_time * 2 + phase) * 0.06), 0);
         }
+
+        foreach (var (chest, rig) in _chests)
+            if (rig.Part("lid") is { } lid)
+            {
+                float target = chest.Opened ? 105 : 0;
+                float next = Mathf.MoveToward(lid.RotationDegrees.X, target, (float)(delta * 330));
+                lid.RotationDegrees = new Vector3(next, 0, 0);
+            }
+        foreach (var (index, rig) in _traps)
+            if (rig.Part("spikes") is { } spikes)
+            {
+                double ext = _items.SpikeExtension(index);
+                spikes.Scale = new Vector3(1, (float)Math.Max(0.12, ext), 1);
+            }
 
         var near = new List<(double Distance, int Index)>();
         for (int i = 0; i < _torches.Count; i++)

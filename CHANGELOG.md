@@ -6,6 +6,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Changed
 
+- Free-fly moved to G so that F can open chests. Saved bindings keep working.
 - Portals have their own identity: teal and violet chamfered double-frame gates with a diagonal shimmer, replacing the blue and orange ovals. The colours, actions (`PortalTeal`, `PortalViolet`), icons and text were renamed to match; saved bindings for the old action names fall back to the defaults.
 - The game is now called Hollowfall. Namespaces, projects, the solution, the Godot project and the environment variables (`HOLLOWFALL_SEED`, `HOLLOWFALL_SPAWN_FLOOR`) were renamed from `VoxelGame`.
 - Dungeon entrances are only placed where the surface is at or below y=84 (`DungeonMap.MaxEntranceY`), so the entrance spiral never exceeds about 46 blocks. Dungeons are still in about a fifth of regions (17-22% across five seeds).
@@ -17,6 +18,8 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Chests, keys and spike traps now work (`Interactables`). Walk over a key to take it; press Open (F, or left stick click) beside a chest to open it for health; chests in treasure and boss rooms are locked and spend a key (one per floor). Spike traps warn, then strike on their own beat for 22 damage, and a jump clears them. The floor panel shows keys held, and chests and spikes animate.
+- Sound, with no audio files: every effect and the dungeon drone is synthesised in Core (`Synth`), so it is identical everywhere and unit tested (bounded, click-free, deterministic, a seamless loop). Combat events map to sounds in one tested place (`SoundMap`), world sounds play from where they happen, and menus tick and select. Settings gained master, effects and ambience volume.
 - Low-poly art for everything that is not a voxel: a code-built model system (`Hollowfall.Core.Models`) with flat-shaded primitives, named pivoted parts with parent links, glow buffers and anchors; models for the three enemies, the enemy orb, the revolver and shotgun, chests, keys, spike traps and torches. See `docs/art-style.md`.
 - Enemies are procedurally animated from their state (limb swing, windup poses that flash yellow, stagger), first-person weapon models with kick, muzzle flash and portal-colour gems, and dungeon props including deterministic wall torches (`PropPlacer`) with flickering lights near the player.
 - A model showcase scene (`HOLLOWFALL_SHOWCASE=enemies|poses|weapons|props`) and tests for triangle budgets, hit boxes, mirroring and rigging.

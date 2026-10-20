@@ -20,7 +20,7 @@ public partial class Hud : CanvasLayer
     private Control _tealMark = null!, _violetMark = null!;
     private TextureRect _rankIcon = null!;
     private Control _crossCluster = null!;
-    private Label _floorStairs = null!, _floorKills = null!, _floorTime = null!;
+    private Label _floorStairs = null!, _floorKills = null!, _floorTime = null!, _floorKeys = null!;
     private PanelContainer _floorPanel = null!;
     private ShaderMaterial _vignette = null!;
     private readonly List<Control> _avoid = [];
@@ -84,6 +84,7 @@ public partial class Hud : CanvasLayer
         _floorStairs = FloorRow(floorRows, GameIcons.Stairs);
         _floorKills = FloorRow(floorRows, GameIcons.Kills);
         _floorTime = FloorRow(floorRows, GameIcons.Time);
+        _floorKeys = FloorRow(floorRows, GameIcons.Key);
         root.AddChild(_floorPanel);
 
         // Bottom-left stack: bonuses, style meter, health bar and the controls hint. Everything is anchored, so it
@@ -200,13 +201,15 @@ public partial class Hud : CanvasLayer
     public float CrosshairAlpha => _crossCluster.Modulate.A;
 
     /// <summary>Shows the dungeon progress panel, or hides it on the surface.</summary>
-    public void SetFloorInfo(int floor, int floors, int kills, int enemies, double elapsed, double par)
+    public void SetFloorInfo(int floor, int floors, int kills, int enemies, double elapsed, double par, int keys = 0)
     {
         _floorPanel.Visible = floor >= 0;
         if (floor < 0) return;
         _floorStairs.Text = $"Floor {floor + 1} / {floors}";
         _floorKills.Text = $"{kills} / {enemies}";
         _floorTime.Text = $"{Clock(elapsed)}  /  {Clock(par)}";
+        _floorKeys.Text = keys == 1 ? "1 key" : $"{keys} keys";
+        _floorKeys.GetParent<Control>().Visible = keys > 0;
         _floorTime.AddThemeColorOverride("font_color", elapsed <= par ? Colors.White : new Color(1f, 0.55f, 0.45f));
     }
 

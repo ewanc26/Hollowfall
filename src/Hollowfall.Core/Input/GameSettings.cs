@@ -12,6 +12,8 @@ public sealed class GameSettings
     public static readonly (double Min, double Max, double Default) PadLookSpeedRange = (1.0, 8.0, 3.2);
     public static readonly (double Min, double Max, double Default) DeadzoneRange = (0.05, 0.5, 0.2);
     public static readonly (double Min, double Max, double Default) FovRange = (60, 110, 80);
+    public static readonly (double Min, double Max, double Default) VolumeRange = (0, 1, 0.8);
+    public static readonly (double Min, double Max, double Default) AmbienceRange = (0, 1, 0.5);
     public static readonly (int Min, int Max, int Default) ViewRadiusRange = (3, 12, 6);
 
     private double _mouseSensitivity = MouseSensitivityRange.Default;
@@ -19,6 +21,9 @@ public sealed class GameSettings
     private double _deadzone = DeadzoneRange.Default;
     private double _fov = FovRange.Default;
     private int _viewRadius = ViewRadiusRange.Default;
+    private double _master = VolumeRange.Default;
+    private double _effects = 1.0;
+    private double _ambience = AmbienceRange.Default;
 
     /// <summary>Radians of turn per pixel of mouse movement.</summary>
     public double MouseSensitivity
@@ -52,6 +57,27 @@ public sealed class GameSettings
         set => _viewRadius = (int)Clamp(value, ViewRadiusRange.Min, ViewRadiusRange.Max, ViewRadiusRange.Default);
     }
 
+    /// <summary>Overall loudness, 0 (silent) to 1.</summary>
+    public double MasterVolume
+    {
+        get => _master;
+        set => _master = Clamp(value, VolumeRange.Min, VolumeRange.Max, VolumeRange.Default);
+    }
+
+    /// <summary>Gunfire, hits, pickups and the rest of the sound effects, relative to the master volume.</summary>
+    public double EffectsVolume
+    {
+        get => _effects;
+        set => _effects = Clamp(value, VolumeRange.Min, VolumeRange.Max, 1.0);
+    }
+
+    /// <summary>The low dungeon drone, relative to the master volume.</summary>
+    public double AmbienceVolume
+    {
+        get => _ambience;
+        set => _ambience = Clamp(value, AmbienceRange.Min, AmbienceRange.Max, AmbienceRange.Default);
+    }
+
     /// <summary>Which button labels to show for a gamepad. Auto follows the connected controller.</summary>
     public PromptStyle ControllerPrompts { get; set; } = PromptStyle.Auto;
 
@@ -70,6 +96,9 @@ public sealed class GameSettings
         Deadzone = DeadzoneRange.Default;
         FieldOfView = FovRange.Default;
         ViewRadius = ViewRadiusRange.Default;
+        MasterVolume = VolumeRange.Default;
+        EffectsVolume = 1.0;
+        AmbienceVolume = AmbienceRange.Default;
         InvertMouseY = false;
         InvertPadY = false;
         ControllerPrompts = PromptStyle.Auto;
@@ -99,6 +128,9 @@ public sealed class GameSettings
             ["deadzone"] = Deadzone,
             ["fieldOfView"] = FieldOfView,
             ["viewRadius"] = ViewRadius,
+            ["masterVolume"] = MasterVolume,
+            ["effectsVolume"] = EffectsVolume,
+            ["ambienceVolume"] = AmbienceVolume,
             ["invertMouseY"] = InvertMouseY,
             ["invertPadY"] = InvertPadY,
             ["controllerPrompts"] = ControllerPrompts.ToString(),
@@ -126,6 +158,9 @@ public sealed class GameSettings
         s.Deadzone = Number(root, "deadzone", DeadzoneRange.Default);
         s.FieldOfView = Number(root, "fieldOfView", FovRange.Default);
         s.ViewRadius = (int)Number(root, "viewRadius", ViewRadiusRange.Default);
+        s.MasterVolume = Number(root, "masterVolume", VolumeRange.Default);
+        s.EffectsVolume = Number(root, "effectsVolume", 1.0);
+        s.AmbienceVolume = Number(root, "ambienceVolume", AmbienceRange.Default);
         s.InvertMouseY = Flag(root, "invertMouseY");
         s.InvertPadY = Flag(root, "invertPadY");
         s.ControllerPrompts = Enum.TryParse<PromptStyle>(root["controllerPrompts"] is JsonValue v && v.TryGetValue<string>(out var cp) ? cp : null, out var prompts) && Enum.IsDefined(prompts)

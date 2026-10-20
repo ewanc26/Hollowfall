@@ -90,6 +90,21 @@ public partial class SmokeTest : Node
 
         Check("every enemy model is rigged: poses move the joints and children follow their parents", CheckEnemyRigs);
 
+        Check("every sound becomes an engine stream and plays", () =>
+        {
+            var audio = new AudioDirector();
+            AddChild(audio);
+            bool ok = true;
+            foreach (var id in Enum.GetValues<Hollowfall.Core.Audio.SoundId>())
+            {
+                if (audio.Length(id) < 0.04) ok = false;
+                audio.Play(id);
+                audio.Play(id, new Vector3(1, 2, 3));
+            }
+            audio.QueueFree();
+            return ok;
+        });
+
         await CheckMainSceneAsync();
 
         GD.Print($"==== {_passed} passed, {_failed} failed ====");
@@ -235,10 +250,10 @@ public partial class SmokeTest : Node
         Check("a rebind changes the live input map and survives saving", () =>
         {
             var settings = main.Settings;
-            if (settings.Bindings.Rebind(GameAction.Parry, Binding.Key("G")) != RebindOutcome.Ok) return false;
+            if (settings.Bindings.Rebind(GameAction.Parry, Binding.Key("K")) != RebindOutcome.Ok) return false;
             InputMapper.Apply(settings.Bindings, settings.Deadzone);
-            bool mapped = InputMap.ActionGetEvents(InputMapper.Name(GameAction.Parry)).OfType<InputEventKey>().Any(k => k.PhysicalKeycode == Key.G);
-            bool saved = settings.TrySave(Main.SettingsPath) && GameSettings.Load(Main.SettingsPath).Bindings.Get(GameAction.Parry, Slot.KeyboardMouse) == Binding.Key("G");
+            bool mapped = InputMap.ActionGetEvents(InputMapper.Name(GameAction.Parry)).OfType<InputEventKey>().Any(k => k.PhysicalKeycode == Key.K);
+            bool saved = settings.TrySave(Main.SettingsPath) && GameSettings.Load(Main.SettingsPath).Bindings.Get(GameAction.Parry, Slot.KeyboardMouse) == Binding.Key("K");
             settings.Bindings.ResetToDefaults();
             InputMapper.Apply(settings.Bindings, settings.Deadzone);
             return mapped && saved;
