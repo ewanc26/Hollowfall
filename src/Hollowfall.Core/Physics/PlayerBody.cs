@@ -25,7 +25,36 @@ public sealed class PlayerBody
     public double Y { get; set; }
     public double Z { get; set; }
     public double VelocityY { get; private set; }
+
+    /// <summary>
+    /// Horizontal velocity. On the ground it simply follows the input; in the air it does too, unless the body
+    /// carries more than walking speed (from a portal, say), in which case that momentum is kept and only slowly bent.
+    /// </summary>
+    public double VelocityX { get; private set; }
+
+    public double VelocityZ { get; private set; }
     public bool OnGround { get; private set; }
+
+    /// <summary>How fast excess momentum in the air bends toward the input, per second.</summary>
+    public const double MomentumControl = 0.8;
+
+    /// <summary>The same on the ground, where friction scrubs speed off much faster.</summary>
+    public const double GroundFriction = 5.0;
+
+    /// <summary>Overall speed.</summary>
+    public double Speed => Math.Sqrt(VelocityX * VelocityX + VelocityY * VelocityY + VelocityZ * VelocityZ);
+
+    /// <summary>Moves the body and sets its velocity outright (portals, knockback, scripted moves).</summary>
+    public void Teleport(double x, double y, double z, double vx, double vy, double vz)
+    {
+        X = x;
+        Y = y;
+        Z = z;
+        VelocityX = vx;
+        VelocityY = vy;
+        VelocityZ = vz;
+        OnGround = false;
+    }
 
     public PlayerBody(double x, double y, double z)
     {
@@ -63,8 +92,25 @@ public sealed class PlayerBody
         VelocityY = Math.Max(VelocityY - Gravity * dt, -TerminalSpeed);
 
         bool wasOnGround = OnGround;
-        MoveHorizontal(moveX * speed * dt, 0, wasOnGround, blockAt);
-        MoveHorizontal(0, moveZ * speed * dt, wasOnGround, blockAt);
+        double wantX = moveX * speed, wantZ = moveZ * speed;
+        double carried = Math.Sqrt(VelocityX * VelocityX + VelocityZ * VelocityZ);
+        if (carried <= speed * 1.05)
+        {
+            VelocityX = wantX;
+            VelocityZ = wantZ;
+        }
+        else
+        {
+            double k = Math.Min(1.0, (wasOnGround ? GroundFriction : MomentumControl) * dt);
+            VelocityX += (wantX - VelocityX) * k;
+            VelocityZ += (wantZ - VelocityZ) * k;
+        }
+
+        double beforeX = X, beforeZ = Z;
+        MoveHorizontal(VelocityX * dt, 0, wasOnGround, blockAt);
+        MoveHorizontal(0, VelocityZ * dt, wasOnGround, blockAt);
+        if (Math.Abs(X - beforeX) < Math.Abs(VelocityX * dt) * 0.5) VelocityX = 0; // ran into something
+        if (Math.Abs(Z - beforeZ) < Math.Abs(VelocityZ * dt) * 0.5) VelocityZ = 0;
         MoveVertical(VelocityY * dt, blockAt);
     }
 
