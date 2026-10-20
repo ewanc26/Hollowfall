@@ -100,6 +100,13 @@ public partial class CombatView : Node3D
             case PortalPlaced { Success: true } placed:
                 RefreshPortals();
                 break;
+            case PortalClosed closed:
+                RefreshPortals();
+                AddChild(SeverEffect.ForPortal(closed));
+                break;
+            case EnemySevered severed:
+                AddChild(SeverEffect.ForEnemy(severed));
+                break;
             case EnemyKilled killed when _enemies.TryGetValue(killed.Id, out var node):
                 Collapse(node);
                 _enemies.Remove(killed.Id);

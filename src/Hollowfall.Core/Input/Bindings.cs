@@ -22,6 +22,7 @@ public enum GameAction
     FlyDown,
     DebugInfo,
     Interact,
+    ClosePortals,
     Pause,
 }
 
@@ -118,7 +119,7 @@ public static class ActionInfo
         GameAction.MoveForward or GameAction.MoveBack or GameAction.MoveLeft or GameAction.MoveRight or GameAction.Jump or GameAction.Interact => ActionGroup.Movement,
         GameAction.LookUp or GameAction.LookDown or GameAction.LookLeft or GameAction.LookRight => ActionGroup.Look,
         GameAction.FirePrimary or GameAction.FireSecondary or GameAction.Parry => ActionGroup.Combat,
-        GameAction.PortalTeal or GameAction.PortalViolet => ActionGroup.Portals,
+        GameAction.PortalTeal or GameAction.PortalViolet or GameAction.ClosePortals => ActionGroup.Portals,
         _ => ActionGroup.System,
     };
 
@@ -143,6 +144,7 @@ public static class ActionInfo
         GameAction.FlyDown => "Fly down",
         GameAction.DebugInfo => "Debug overlay",
         GameAction.Interact => "Open and use",
+        GameAction.ClosePortals => "Close portals (sever)",
         _ => "Pause menu",
     };
 
@@ -285,6 +287,7 @@ public sealed class BindingMap
             GameAction.Respawn => Binding.Key("R"),
             GameAction.FlyToggle => Binding.Key("G"),
             GameAction.Interact => Binding.Key("F"),
+            GameAction.ClosePortals => Binding.Key("C"),
             GameAction.FlyDown => Binding.Key("Shift"),
             GameAction.DebugInfo => Binding.Key("F3"),
             GameAction.Pause => PauseKey,
@@ -310,6 +313,7 @@ public sealed class BindingMap
             GameAction.Respawn => Binding.Button("Y"),
             GameAction.FlyToggle => Binding.Button("RightStick"),
             GameAction.Interact => Binding.Button("LeftStick"),
+            GameAction.ClosePortals => Binding.Button("DpadDown"),
             GameAction.FlyDown => Binding.Button("B"),
             GameAction.Pause => Binding.Button("Start"),
             _ => null,

@@ -175,6 +175,7 @@ public partial class Main : Node3D
             Hint(GameAction.Parry, "parry"),
             Hint(GameAction.PortalTeal, "teal portal"),
             Hint(GameAction.PortalViolet, "violet portal"),
+            Hint(GameAction.ClosePortals, "sever"),
             Hint(GameAction.Interact, "open"),
             Hint(GameAction.Jump, "jump"),
             Hint(GameAction.Pause, "menu"),
@@ -260,6 +261,7 @@ public partial class Main : Node3D
             if (dead && _player.RespawnRequested) Respawn();
             var view = _player.View;
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
+            if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
             Combat.Step(delta, view, actions);
             foreach (var impact in Combat.LastEvents.OfType<MeteorImpact>()) _player.KeepSpeed(impact.SpeedKept);
         }
@@ -289,6 +291,27 @@ public partial class Main : Node3D
             var at = teal.Frame.Center + teal.Frame.Normal * 3.5;
             _player.PlaceAt(new Vector3((float)at.X, (float)view.Feet.Y, (float)at.Z), -Math.PI / 2);
         }
+        return (view, actions);
+    }
+
+    /// <summary>
+    /// A scripted Sever (HOLLOWFALL_DEMO=sever): link two portals, stand a husk in the teal opening and close the pair on it.
+    /// </summary>
+    private (PlayerView, PlayerActions) RunSeverDemo(PlayerView view, PlayerActions actions)
+    {
+        _demoFrame++;
+        if (_demoFrame == 5) MovePlayerToFloor(0);
+        var east = new Vec3(1, 0, 0);
+        if (_demoFrame == 30) return (view with { Forward = east }, actions with { PortalTeal = true });
+        if (_demoFrame == 32) return (view with { Forward = new Vec3(0, 0, -1) }, actions with { PortalViolet = true });
+        if (_demoFrame == 34 && Combat!.Sim.Portals.Teal is { } teal)
+        {
+            var at = teal.Frame.Center + teal.Frame.Normal * 3.5;
+            _player.PlaceAt(new Vector3((float)at.X, (float)view.Feet.Y, (float)at.Z), -Math.PI / 2);
+            var husk = teal.Frame.Center + teal.Frame.Normal * 0.15;
+            Combat.Sim.SpawnEnemy(EnemyKind.Husk, new Vec3(husk.X, view.Feet.Y, husk.Z));
+        }
+        if (_demoFrame == 36) return (view, actions with { ClosePortals = true });
         return (view, actions);
     }
 

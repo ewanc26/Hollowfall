@@ -124,7 +124,8 @@ public partial class PlayerController : Node3D
             Parry: live && InputMapper.JustPressed(GameAction.Parry),
             PortalTeal: live && InputMapper.JustPressed(GameAction.PortalTeal),
             PortalViolet: live && InputMapper.JustPressed(GameAction.PortalViolet),
-            Interact: live && InputMapper.JustPressed(GameAction.Interact));
+            Interact: live && InputMapper.JustPressed(GameAction.Interact),
+            ClosePortals: live && InputMapper.JustPressed(GameAction.ClosePortals));
 
         if (!dead)
         {

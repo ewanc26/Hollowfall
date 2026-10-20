@@ -14,6 +14,7 @@ public static class SoundMap
         PortalPlaced { Color: PortalColor.Teal } => SoundId.PortalTeal,
         PortalPlaced => SoundId.PortalViolet,
         PortalTraversed => SoundId.PortalCross,
+        EnemySevered => SoundId.Sever,
         EnemyTelegraph => SoundId.Telegraph,
         EnemyHit { Killed: true } => null, // the kill has its own sound
         EnemyHit { Zone: HitZone.Head } => SoundId.Headshot,

@@ -41,7 +41,7 @@ never hurts the player. Wardens (the boss) are immune.
 payoff, and it rewards luring enemies through your own gate (they already walk through to chase you).
 
 **Build on.** `PortalSystem.Place` already replaces a portal; add a `PortalClosed` event and an overlap test against
-`Enemy.Bounds` in `CombatSim`. **Tests:** enemy inside opening takes damage, outside does not, bosses are immune, only on
+`Enemy.Bounds` in `CombatSim`. **Status: built** (`Combat/Sever.cs`; `CombatSim.ClosePortal`/`ClosePortals`, the Close portals action, the `PortalClosed` and `EnemySevered` events). Heavy means more health than the cut does; those are staggered and left on at least 1 health. **Tests:** enemy inside opening takes damage, outside does not, bosses are immune, only on
 replacement, style awarded once per enemy. **Effort:** small.
 
 ### 2.2 Meteor (momentum kills)
