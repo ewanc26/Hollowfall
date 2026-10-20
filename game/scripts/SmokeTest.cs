@@ -364,7 +364,7 @@ public partial class SmokeTest : Node
     /// <summary>The Wulver in the real scene: standing beside him, Interact opens his conversation; a path through it gives the gift once and is saved.</summary>
     private void CheckWulver(Main main)
     {
-        Check("the Wulver greets, opens his choice panel, gives the gift once, remembers what was chosen and never says Ewan on an ordinary seed", () =>
+        Check("the Wulver greets, opens his choice panel, gives the gift once, remembers what was chosen and never speaks the maker's name on an ordinary seed", () =>
         {
             var wulver = main.Wulver ?? throw new InvalidOperationException("no Wulver in the world");
             var view = main.WulverView!;
@@ -418,7 +418,7 @@ public partial class SmokeTest : Node
             seen += ui.DialogueText;
             bool kind = ui.DialogueText.Contains("A good many folk say that");
             ui.Close();
-            bool quiet = !seen.Contains("Ewan");
+            bool quiet = !seen.Contains(WulverDialogue.MakerSeeds[0], StringComparison.OrdinalIgnoreCase);
 
             ui.ClearCaption();
             vitals.Reset();
