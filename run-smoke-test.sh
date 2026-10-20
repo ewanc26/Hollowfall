@@ -54,6 +54,9 @@ fi
 
 echo "==> using: ${GODOT_CMD[*]}"
 
+echo "==> importing assets (fonts and glyphs)"
+"${GODOT_CMD[@]}" --headless --path "$PROJECT_DIR/game" --import >/dev/null 2>&1 || true
+
 echo "==> building solution"
 if ! "${GODOT_CMD[@]}" --headless --path "$PROJECT_DIR/game" --build-solutions --quit >/dev/null 2>&1; then
   echo "error: the solution failed to build." >&2

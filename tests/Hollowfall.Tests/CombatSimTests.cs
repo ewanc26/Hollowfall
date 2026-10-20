@@ -532,8 +532,8 @@ public class CombatSimTests
         var west = new Vec3(-1, 0, 0);
         eastWall = view.Eye + east * (RayCast.FirstSolid(a.World.GetBlock, view.Eye, east, 80) ?? throw new InvalidOperationException("no east wall"));
         westWall = view.Eye + west * (RayCast.FirstSolid(a.World.GetBlock, view.Eye, west, 80) ?? throw new InvalidOperationException("no west wall"));
-        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalBlue: true));
-        a.Sim.Tick(Dt, view with { Forward = west }, new PlayerActions(false, false, false, PortalOrange: true));
+        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalTeal: true));
+        a.Sim.Tick(Dt, view with { Forward = west }, new PlayerActions(false, false, false, PortalViolet: true));
     }
 
     [Fact]
@@ -541,14 +541,14 @@ public class CombatSimTests
     {
         var a = MakeArena();
         var view = a.View();
-        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalBlue: true));
-        var blue = Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>());
-        Assert.True(blue.Success, blue.Failure.ToString());
-        Assert.Equal(PortalColor.Blue, blue.Color);
-        Assert.Equal(-1, blue.Normal.X);
+        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalTeal: true));
+        var teal = Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>());
+        Assert.True(teal.Success, teal.Failure.ToString());
+        Assert.Equal(PortalColor.Teal, teal.Color);
+        Assert.Equal(-1, teal.Normal.X);
         Assert.False(a.Sim.Portals.Linked);
 
-        a.Sim.Tick(Dt, view with { Forward = new Vec3(-1, 0, 0) }, new PlayerActions(false, false, false, PortalOrange: true));
+        a.Sim.Tick(Dt, view with { Forward = new Vec3(-1, 0, 0) }, new PlayerActions(false, false, false, PortalViolet: true));
         Assert.True(Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>()).Success);
         Assert.True(a.Sim.Portals.Linked);
     }
@@ -560,16 +560,16 @@ public class CombatSimTests
         LinkEastAndWest(a, out _, out var westWall);
         a.Sim.DrainEvents();
 
-        // The orange portal is on the west wall facing east; stand an enemy a few blocks out from it.
+        // The violet portal is on the west wall facing east; stand an enemy a few blocks out from it.
         var enemy = a.Sim.SpawnEnemy(EnemyKind.Warden, new Vec3(westWall.X + 1.6, a.Y, a.Z));
         a.Sim.DrainEvents();
 
-        // Shoot from a few blocks east, so the enemy near the orange portal is not on top of the shooter.
+        // Shoot from a few blocks east, so the enemy near the violet portal is not on top of the shooter.
         var view = a.View(dx: 5) with { Forward = new Vec3(1, 0, 0) };
         a.Sim.Tick(Dt, view, new PlayerActions(true, false, false));
         var events = a.Sim.DrainEvents();
         var shot = Assert.Single(events.OfType<ShotFired>());
-        Assert.True(shot.Path!.Count >= 2, "the shot should be in two pieces: to the blue portal and out of the orange one");
+        Assert.True(shot.Path!.Count >= 2, "the shot should be in two pieces: to the teal portal and out of the violet one");
         Assert.Contains(events, e => e is EnemyHit h && h.Id == enemy.Id);
         Assert.True(enemy.Health < enemy.Spec.Health);
     }
@@ -579,7 +579,7 @@ public class CombatSimTests
     {
         var a = MakeArena();
         var view = a.View();
-        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalBlue: true));
+        a.Sim.Tick(Dt, view, new PlayerActions(false, false, false, PortalTeal: true));
         a.Sim.DrainEvents();
         a.Sim.Tick(Dt, view, new PlayerActions(true, false, false));
         var shot = Assert.Single(a.Sim.DrainEvents().OfType<ShotFired>());
@@ -607,7 +607,7 @@ public class CombatSimTests
             }
         }
         Assert.True(reflected, "the shot should have been parried");
-        Assert.True(through || spitter.Dead, "a reflected projectile should fly into the blue portal, or kill the spitter first");
+        Assert.True(through || spitter.Dead, "a reflected projectile should fly into the teal portal, or kill the spitter first");
     }
 
     [Fact]
@@ -617,7 +617,7 @@ public class CombatSimTests
         LinkEastAndWest(a, out var eastWall, out _);
         a.Sim.DrainEvents();
 
-        // The player stands near the orange portal on the west wall; the enemy is right beside the blue one on the east wall.
+        // The player stands near the violet portal on the west wall; the enemy is right beside the teal one on the east wall.
         var husk = a.Sim.SpawnEnemy(EnemyKind.Husk, new Vec3(eastWall.X - 1.5, a.Y, a.Z));
         double direct = husk.Feet.DistanceTo(new Vec3(a.X, a.Y, a.Z));
         Assert.True(direct > 9, $"the long way round is {direct} blocks");
@@ -654,7 +654,7 @@ public class CombatSimTests
         Assert.True(a.Sim.Portals.Linked);
         a.Sim.Respawn();
         Assert.False(a.Sim.Portals.Linked);
-        Assert.Null(a.Sim.Portals.Blue);
+        Assert.Null(a.Sim.Portals.Teal);
     }
 
     [Fact]

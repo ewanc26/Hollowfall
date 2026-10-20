@@ -51,20 +51,21 @@ to `user://settings.json` (Godot's user data folder).
 | Revolver | Left click | RT |
 | Shotgun | Right click | LT |
 | Parry (hit it while an enemy flashes yellow) | V | X |
-| Blue / orange portal | Q / E | LB / RB |
+| Teal / violet portal | Q / E | LB / RB |
 | Respawn | R | Y |
 | Free-fly (fly down) | F (Shift) | Right stick click (B) |
 | Pause menu | Esc | Start |
 
-Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, render distance, and inverted Y for
-mouse and gamepad.
+Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, render distance, inverted Y for mouse and
+gamepad, and controller prompts. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
+Nintendo letters, with the bottom and right buttons swapped), or you can pick a style.
 
 Terrain is shown as flat-coloured blocks with baked ambient occlusion, and you carry a torch for the dungeons.
 Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit
 locks away part of your health for a while, and a style meter rewards kills, headshots, parries and movement.
 See [docs/game-loop.md](docs/game-loop.md).
 
-**Portals.** Q and E fire the two ends of a linked pair onto flat stone walls, floors and ceilings (a 1 x 2
+**Portals.** Q and E fire the two ends of a linked teal and violet pair onto flat stone walls, floors and ceilings (a 1 x 2
 opening, with room in front of it). Walk, fall or shoot into one and you come out of the other, keeping your
 speed, so a fall into a floor portal becomes a launch out of a wall. Your shots and enemy projectiles fly through
 too, including ones you parry.

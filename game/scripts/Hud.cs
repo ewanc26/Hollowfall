@@ -1,5 +1,7 @@
 using Godot;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Input;
+using Hollowfall.Core.Ui;
 using Hollowfall.Core.Portals;
 
 namespace Hollowfall.Game;
@@ -13,7 +15,10 @@ public partial class Hud : CanvasLayer
     private const float BarWidth = 320;
 
     private ColorRect _healthFill = null!, _hardFill = null!, _styleFill = null!, _styleBack = null!, _flash = null!;
-    private Label _info = null!, _hint = null!, _style = null!, _awards = null!, _banner = null!, _crosshair = null!, _hitMarker = null!, _health = null!;
+    private Label _info = null!, _style = null!, _awards = null!, _banner = null!, _hitMarker = null!, _health = null!;
+    private HintBar _hint = null!;
+    private Control _tealMark = null!, _violetMark = null!;
+    private TextureRect _rankIcon = null!;
     private PanelContainer _result = null!;
     private Label _resultText = null!;
     private double _bannerTime, _flashTime, _flashTotal, _hitTime, _resultTime;
@@ -22,7 +27,7 @@ public partial class Hud : CanvasLayer
     public override void _Ready()
     {
         Layer = 5;
-        var root = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
+        var root = new Control { MouseFilter = Control.MouseFilterEnum.Ignore, Theme = UiFonts.BodyTheme() };
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
@@ -41,7 +46,13 @@ public partial class Hud : CanvasLayer
         root.AddChild(stack);
 
         _awards = Text(stack, Vector2.Zero, 15);
-        _style = Text(stack, Vector2.Zero, 22);
+        var styleRow = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        styleRow.AddThemeConstantOverride("separation", 8);
+        stack.AddChild(styleRow);
+        _rankIcon = new TextureRect { CustomMinimumSize = new Vector2(30, 30), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore };
+        styleRow.AddChild(_rankIcon);
+        _style = Text(styleRow, Vector2.Zero, 26);
+        _style.AddThemeFontOverride("font", UiFonts.Display);
         var styleBar = BarGroup(stack, 8);
         _styleBack = styleBar.Back;
         _styleFill = styleBar.Fill;
@@ -52,17 +63,29 @@ public partial class Hud : CanvasLayer
         var healthBar = BarGroup(healthRow, 18);
         _healthFill = healthBar.Fill;
         _hardFill = healthBar.Extra;
-        _health = Text(healthRow, Vector2.Zero, 20);
+        healthRow.AddChild(Glyphs.Icon(GameIcons.Health, 24));
+        _health = Text(healthRow, Vector2.Zero, 24);
+        _health.AddThemeFontOverride("font", UiFonts.DisplayMedium);
 
-        _hint = Text(stack, Vector2.Zero, 14);
+        _hint = new HintBar();
+        stack.AddChild(_hint);
 
         // Centre: crosshair, hit marker and the banner.
         var crossCentre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         crossCentre.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         root.AddChild(crossCentre);
-        _crosshair = Text(crossCentre, Vector2.Zero, 28);
+        var cross = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        cross.AddThemeConstantOverride("separation", 4);
+        _tealMark = Glyphs.Icon(GameIcons.PortalTeal, 22);
+        _violetMark = Glyphs.Icon(GameIcons.PortalViolet, 22);
+        var plus = Text(cross, Vector2.Zero, 30);
+        plus.Text = "+";
+        cross.AddChild(_tealMark);
+        cross.MoveChild(_tealMark, 0);
+        cross.AddChild(_violetMark);
+        crossCentre.AddChild(cross);
         _hitMarker = Text(crossCentre, Vector2.Zero, 34);
-        _hitMarker.Text = "✕";
+        _hitMarker.Text = "×";
         _hitMarker.Modulate = new Color(1, 1, 1, 0);
 
         var bannerTop = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -151,10 +174,10 @@ public partial class Hud : CanvasLayer
         }
     }
 
-    public void Update(double delta, CombatSim sim, PortalSystem portals, string info, string hint)
+    public void Update(double delta, CombatSim sim, PortalSystem portals, string info, IReadOnlyList<(Binding? Binding, string Label)> hints, ControllerStyle prompts)
     {
         _info.Text = info;
-        _hint.Text = hint;
+        _hint.Set(hints, prompts);
 
         var v = sim.Vitals;
         _healthFill.Size = new Vector2((float)(BarWidth * v.Health / PlayerVitals.MaxHealth), 18);
@@ -171,7 +194,9 @@ public partial class Hud : CanvasLayer
         _awards.Text = string.Join("\n", style.RecentAwards.TakeLast(5).Reverse().Select(a => $"+{a.Points:F0} {a.Bonus}"));
 
         // The crosshair shows which portals exist: each half lights up as its portal is placed.
-        _crosshair.Text = (portals.Blue != null ? "◖" : "·") + "+" + (portals.Orange != null ? "◗" : "·");
+        _tealMark.Modulate = new Color(1, 1, 1, portals.Teal != null ? 1f : 0.22f);
+        _violetMark.Modulate = new Color(1, 1, 1, portals.Violet != null ? 1f : 0.22f);
+        _rankIcon.Texture = Glyphs.Get(GameIcons.RankIcon(style.Rank));
 
         if (_flashTime > 0)
         {

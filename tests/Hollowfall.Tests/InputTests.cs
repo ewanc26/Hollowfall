@@ -62,10 +62,10 @@ public class BindingMapTests
     public void BindingSomethingAlreadyInUseSwapsTheTwoActions()
     {
         var m = BindingMap.CreateDefault();
-        // Parry is V, portal blue is Q. Put parry on Q: blue takes V.
+        // Parry is V, portal teal is Q. Put parry on Q: teal takes V.
         Assert.Equal(RebindOutcome.Swapped, m.Rebind(GameAction.Parry, Binding.Key("Q")));
         Assert.Equal(Binding.Key("Q"), m.Get(GameAction.Parry, Slot.KeyboardMouse));
-        Assert.Equal(Binding.Key("V"), m.Get(GameAction.PortalBlue, Slot.KeyboardMouse));
+        Assert.Equal(Binding.Key("V"), m.Get(GameAction.PortalTeal, Slot.KeyboardMouse));
         Assert.Null(m.FindConflict(Binding.Key("Q"), GameAction.Parry));
     }
 
@@ -99,7 +99,7 @@ public class BindingMapTests
         var m = BindingMap.CreateDefault();
         Assert.True(m.Unbind(GameAction.Jump, Slot.Gamepad)); // the keyboard binding remains
         Assert.False(m.Unbind(GameAction.Jump, Slot.KeyboardMouse)); // that would leave nothing
-        Assert.True(m.Unbind(GameAction.PortalBlue, Slot.KeyboardMouse)); // not required
+        Assert.True(m.Unbind(GameAction.PortalTeal, Slot.KeyboardMouse)); // not required
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class GameSettingsTests : IDisposable
     {
         var s = new GameSettings { MouseSensitivity = 0.004, FieldOfView = 95, ViewRadius = 9, InvertMouseY = true, InvertPadY = true, Deadzone = 0.3, PadLookSpeed = 5 };
         s.Bindings.Rebind(GameAction.Parry, Binding.Key("G"));
-        s.Bindings.Rebind(GameAction.PortalOrange, Binding.Button("Back"));
+        s.Bindings.Rebind(GameAction.PortalViolet, Binding.Button("Back"));
         s.Bindings.Unbind(GameAction.FlyToggle, Slot.KeyboardMouse);
 
         var back = GameSettings.FromJson(s.ToJson());
@@ -219,7 +219,7 @@ public class GameSettingsTests : IDisposable
          "bindings": {
            "Parry": {"keyboardMouse": {"device":"Keyboard","code":"G","axisSign":0}},
            "Jump": {"keyboardMouse": {"device":"Keyboard","code":"","axisSign":0}},
-           "PortalBlue": {"keyboardMouse": {"device":"Warp","code":"Q"}},
+           "PortalTeal": {"keyboardMouse": {"device":"Warp","code":"Q"}},
            "Nonsense": {"keyboardMouse": {"device":"Keyboard","code":"X"}}
          }}
         """;
@@ -228,7 +228,7 @@ public class GameSettingsTests : IDisposable
         Assert.Equal(GameSettings.MouseSensitivityRange.Max, s.MouseSensitivity);
         Assert.Equal(Binding.Key("G"), s.Bindings.Get(GameAction.Parry, Slot.KeyboardMouse));
         Assert.Equal(Binding.Key("Space"), s.Bindings.Get(GameAction.Jump, Slot.KeyboardMouse)); // blank code rejected
-        Assert.Equal(Binding.Key("Q"), s.Bindings.Get(GameAction.PortalBlue, Slot.KeyboardMouse)); // unknown device rejected
+        Assert.Equal(Binding.Key("Q"), s.Bindings.Get(GameAction.PortalTeal, Slot.KeyboardMouse)); // unknown device rejected
     }
 
     [Fact]

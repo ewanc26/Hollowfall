@@ -10,8 +10,8 @@ public readonly record struct InputFrame(
     bool FireHeld,
     bool ShotgunHeld,
     bool ParryPressed,
-    bool PortalBluePressed,
-    bool PortalOrangePressed);
+    bool PortalTealPressed,
+    bool PortalVioletPressed);
 
 /// <summary>Maths for turning raw device values into movement and turning.</summary>
 public static class InputMath

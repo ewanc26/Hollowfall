@@ -2,6 +2,7 @@ using Godot;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Ui;
 using Hollowfall.Core.Meshing;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
@@ -23,6 +24,32 @@ public partial class SmokeTest : Node
         // Never touch the real settings file from a test run.
         string settingsPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-{System.Environment.ProcessId}.json");
         System.Environment.SetEnvironmentVariable("HOLLOWFALL_SETTINGS", settingsPath);
+
+        Check("both fonts load as real fonts, not the fallback", () =>
+            UiFonts.Display != ThemeDB.FallbackFont && UiFonts.Body != ThemeDB.FallbackFont && UiFonts.Display.HasChar('H') && UiFonts.Body.HasChar('9'));
+
+        Check("every glyph and icon imports as a texture", () =>
+        {
+            var ids = BindingGlyphs.AllIds.Concat(GameIcons.All).Concat(GameIcons.RankIcons).Append("mouse").ToList();
+            var missing = ids.Where(id => Glyphs.Get(id) == null).ToList();
+            if (missing.Count > 0) GD.PrintErr($"    missing glyphs: {string.Join(", ", missing)}");
+            return missing.Count == 0 && ids.All(id => Glyphs.Get(id)!.GetWidth() > 0);
+        });
+
+        Check("hint bars draw a glyph or keycap for each style", () =>
+        {
+            var bar = new HintBar();
+            AddChild(bar);
+            var map = BindingMap.CreateDefault();
+            bool ok = true;
+            foreach (var style in Enum.GetValues<ControllerStyle>())
+            {
+                bar.Set([(map.Get(GameAction.Jump, Slot.Gamepad), "jump"), (map.Get(GameAction.Jump, Slot.KeyboardMouse), "jump")], style);
+                ok &= bar.GetChildCount() >= 2;
+            }
+            bar.QueueFree();
+            return ok;
+        });
 
         Check("terrain is deterministic", () =>
             new TerrainGenerator(7).GenerateChunk(2, 3).RawBlocks.SequenceEqual(new TerrainGenerator(7).GenerateChunk(2, 3).RawBlocks));
@@ -114,13 +141,13 @@ public partial class SmokeTest : Node
             // Fire both portals at the walls either side of the room.
             var east = view with { Forward = new Vec3(1, 0, 0) };
             var west = view with { Forward = new Vec3(-1, 0, 0) };
-            combat.Step(1.0 / 60, east, new PlayerActions(false, false, false, PortalBlue: true));
-            combat.Step(1.0 / 60, west, new PlayerActions(false, false, false, PortalOrange: true));
+            combat.Step(1.0 / 60, east, new PlayerActions(false, false, false, PortalTeal: true));
+            combat.Step(1.0 / 60, west, new PlayerActions(false, false, false, PortalViolet: true));
             for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             combat.UpdatePortalViews(main.Player.Camera);
 
             bool enemyDrawn = combat.GetNodeOrNull<MeshInstance3D>($"Enemy_{enemy.Id}") != null;
-            bool portalsDrawn = combat.GetNodeOrNull<PortalView>("Portal_Blue") != null && combat.GetNodeOrNull<PortalView>("Portal_Orange") != null;
+            bool portalsDrawn = combat.GetNodeOrNull<PortalView>("Portal_Teal") != null && combat.GetNodeOrNull<PortalView>("Portal_Violet") != null;
             bool linked = combat.Sim.Portals.Linked;
 
             bool ok = enemyDrawn && portalsDrawn && linked;

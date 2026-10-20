@@ -4,8 +4,8 @@ namespace Hollowfall.Core.Portals;
 
 public enum PortalColor
 {
-    Blue,
-    Orange,
+    Teal,
+    Violet,
 }
 
 /// <summary>

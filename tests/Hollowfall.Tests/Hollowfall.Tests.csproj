@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Hollowfall.Core\Hollowfall.Core.csproj" />
+    <ProjectReference Include="..\..\tools\Hollowfall.AssetGen\Hollowfall.AssetGen.csproj" />
   </ItemGroup>
 
 </Project>

@@ -15,8 +15,8 @@ public enum GameAction
     FirePrimary,
     FireSecondary,
     Parry,
-    PortalBlue,
-    PortalOrange,
+    PortalTeal,
+    PortalViolet,
     Respawn,
     FlyToggle,
     FlyDown,
@@ -59,6 +59,50 @@ public readonly record struct Binding(InputDevice Device, string Code, int AxisS
 }
 
 /// <summary>Which of an action's two slots a binding belongs to: keyboard and mouse, or gamepad.</summary>
+/// <summary>
+/// How a gamepad labels its buttons. Engines name buttons by position (the bottom face button is "A"), but a PlayStation pad
+/// calls it Cross and a Nintendo pad calls the one on the right "A", so prompts follow the connected controller.
+/// </summary>
+public enum ControllerStyle
+{
+    Xbox,
+    PlayStation,
+    Nintendo,
+}
+
+/// <summary>The player's choice of prompt style: follow the connected controller, or force one.</summary>
+public enum PromptStyle
+{
+    Auto,
+    Xbox,
+    PlayStation,
+    Nintendo,
+}
+
+public static class ControllerStyles
+{
+    /// <summary>Guesses the layout from the name the operating system reports. Unknown pads are treated as Xbox-style.</summary>
+    public static ControllerStyle Detect(string? deviceName)
+    {
+        if (string.IsNullOrWhiteSpace(deviceName)) return ControllerStyle.Xbox;
+        string n = deviceName.ToLowerInvariant();
+        if (n.Contains("playstation") || n.Contains("dualsense") || n.Contains("dualshock") || n.Contains("sony") || n.Contains("ps5") || n.Contains("ps4") || n.Contains("ps3"))
+            return ControllerStyle.PlayStation;
+        if (n.Contains("nintendo") || n.Contains("switch") || n.Contains("joy-con") || n.Contains("joycon") || n.Contains("pro controller"))
+            return ControllerStyle.Nintendo;
+        return ControllerStyle.Xbox;
+    }
+
+    /// <summary>Resolves the setting against what is connected.</summary>
+    public static ControllerStyle Resolve(PromptStyle choice, string? connectedDeviceName) => choice switch
+    {
+        PromptStyle.Xbox => ControllerStyle.Xbox,
+        PromptStyle.PlayStation => ControllerStyle.PlayStation,
+        PromptStyle.Nintendo => ControllerStyle.Nintendo,
+        _ => Detect(connectedDeviceName),
+    };
+}
+
 public enum Slot
 {
     KeyboardMouse,
@@ -72,7 +116,7 @@ public static class ActionInfo
         GameAction.MoveForward or GameAction.MoveBack or GameAction.MoveLeft or GameAction.MoveRight or GameAction.Jump => ActionGroup.Movement,
         GameAction.LookUp or GameAction.LookDown or GameAction.LookLeft or GameAction.LookRight => ActionGroup.Look,
         GameAction.FirePrimary or GameAction.FireSecondary or GameAction.Parry => ActionGroup.Combat,
-        GameAction.PortalBlue or GameAction.PortalOrange => ActionGroup.Portals,
+        GameAction.PortalTeal or GameAction.PortalViolet => ActionGroup.Portals,
         _ => ActionGroup.System,
     };
 
@@ -90,8 +134,8 @@ public static class ActionInfo
         GameAction.FirePrimary => "Fire revolver",
         GameAction.FireSecondary => "Fire shotgun",
         GameAction.Parry => "Parry",
-        GameAction.PortalBlue => "Blue portal",
-        GameAction.PortalOrange => "Orange portal",
+        GameAction.PortalTeal => "Teal portal",
+        GameAction.PortalViolet => "Violet portal",
         GameAction.Respawn => "Respawn",
         GameAction.FlyToggle => "Free-fly",
         GameAction.FlyDown => "Fly down",
@@ -232,8 +276,8 @@ public sealed class BindingMap
             GameAction.FirePrimary => Binding.Mouse("Left"),
             GameAction.FireSecondary => Binding.Mouse("Right"),
             GameAction.Parry => Binding.Key("V"),
-            GameAction.PortalBlue => Binding.Key("Q"),
-            GameAction.PortalOrange => Binding.Key("E"),
+            GameAction.PortalTeal => Binding.Key("Q"),
+            GameAction.PortalViolet => Binding.Key("E"),
             GameAction.Respawn => Binding.Key("R"),
             GameAction.FlyToggle => Binding.Key("F"),
             GameAction.FlyDown => Binding.Key("Shift"),
@@ -255,8 +299,8 @@ public sealed class BindingMap
             GameAction.FirePrimary => Binding.Axis("TriggerRight", 1),
             GameAction.FireSecondary => Binding.Axis("TriggerLeft", 1),
             GameAction.Parry => Binding.Button("X"),
-            GameAction.PortalBlue => Binding.Button("LeftShoulder"),
-            GameAction.PortalOrange => Binding.Button("RightShoulder"),
+            GameAction.PortalTeal => Binding.Button("LeftShoulder"),
+            GameAction.PortalViolet => Binding.Button("RightShoulder"),
             GameAction.Respawn => Binding.Button("Y"),
             GameAction.FlyToggle => Binding.Button("RightStick"),
             GameAction.FlyDown => Binding.Button("B"),
@@ -269,7 +313,7 @@ public sealed class BindingMap
 /// <summary>Short names for showing bindings on screen and in the HUD hints.</summary>
 public static class BindingNames
 {
-    public static string Display(Binding? b)
+    public static string Display(Binding? b, ControllerStyle style = ControllerStyle.Xbox)
     {
         if (b is not { } v) return "unbound";
         return v.Device switch
@@ -284,8 +328,8 @@ public static class BindingNames
                 "WheelDown" => "Wheel down",
                 _ => "Mouse " + v.Code,
             },
-            InputDevice.GamepadButton => Button(v.Code),
-            _ => Axis(v.Code, v.AxisSign),
+            InputDevice.GamepadButton => Button(v.Code, style),
+            _ => Axis(v.Code, v.AxisSign, style),
         };
     }
 
@@ -304,6 +348,37 @@ public static class BindingNames
         _ => code,
     };
 
+    private static string Button(string code, ControllerStyle style) => style switch
+    {
+        ControllerStyle.PlayStation => code switch
+        {
+            "A" => "Cross",
+            "B" => "Circle",
+            "X" => "Square",
+            "Y" => "Triangle",
+            "LeftShoulder" => "L1",
+            "RightShoulder" => "R1",
+            "Start" => "Options",
+            "Back" => "Share",
+            "LeftStick" => "L3",
+            "RightStick" => "R3",
+            _ => Button(code),
+        },
+        ControllerStyle.Nintendo => code switch
+        {
+            "A" => "B",
+            "B" => "A",
+            "X" => "Y",
+            "Y" => "X",
+            "LeftShoulder" => "L",
+            "RightShoulder" => "R",
+            "Start" => "+",
+            "Back" => "−",
+            _ => Button(code),
+        },
+        _ => Button(code),
+    };
+
     private static string Button(string code) => code switch
     {
         "LeftShoulder" => "LB",
@@ -319,10 +394,10 @@ public static class BindingNames
         _ => code,
     };
 
-    private static string Axis(string code, int sign) => code switch
+    private static string Axis(string code, int sign, ControllerStyle style) => code switch
     {
-        "TriggerLeft" => "LT",
-        "TriggerRight" => "RT",
+        "TriggerLeft" => style switch { ControllerStyle.PlayStation => "L2", ControllerStyle.Nintendo => "ZL", _ => "LT" },
+        "TriggerRight" => style switch { ControllerStyle.PlayStation => "R2", ControllerStyle.Nintendo => "ZR", _ => "RT" },
         "LeftX" => sign < 0 ? "Left stick left" : "Left stick right",
         "LeftY" => sign < 0 ? "Left stick up" : "Left stick down",
         "RightX" => sign < 0 ? "Right stick left" : "Right stick right",

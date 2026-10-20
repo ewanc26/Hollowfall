@@ -52,6 +52,9 @@ public sealed class GameSettings
         set => _viewRadius = (int)Clamp(value, ViewRadiusRange.Min, ViewRadiusRange.Max, ViewRadiusRange.Default);
     }
 
+    /// <summary>Which button labels to show for a gamepad. Auto follows the connected controller.</summary>
+    public PromptStyle ControllerPrompts { get; set; } = PromptStyle.Auto;
+
     public bool InvertMouseY { get; set; }
     public bool InvertPadY { get; set; }
 
@@ -69,6 +72,7 @@ public sealed class GameSettings
         ViewRadius = ViewRadiusRange.Default;
         InvertMouseY = false;
         InvertPadY = false;
+        ControllerPrompts = PromptStyle.Auto;
         Bindings = BindingMap.CreateDefault();
     }
 
@@ -97,6 +101,7 @@ public sealed class GameSettings
             ["viewRadius"] = ViewRadius,
             ["invertMouseY"] = InvertMouseY,
             ["invertPadY"] = InvertPadY,
+            ["controllerPrompts"] = ControllerPrompts.ToString(),
             ["bindings"] = bindings,
         };
         return root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
@@ -123,6 +128,9 @@ public sealed class GameSettings
         s.ViewRadius = (int)Number(root, "viewRadius", ViewRadiusRange.Default);
         s.InvertMouseY = Flag(root, "invertMouseY");
         s.InvertPadY = Flag(root, "invertPadY");
+        s.ControllerPrompts = Enum.TryParse<PromptStyle>(root["controllerPrompts"] is JsonValue v && v.TryGetValue<string>(out var cp) ? cp : null, out var prompts) && Enum.IsDefined(prompts)
+            ? prompts
+            : PromptStyle.Auto;
 
         if (root["bindings"] is JsonObject saved)
             foreach (var a in Enum.GetValues<GameAction>())
