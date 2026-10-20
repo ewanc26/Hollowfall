@@ -10,7 +10,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding, Vec3 Velocity = default, bool Crossed = false);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -193,6 +193,7 @@ public sealed class CombatSim
 
         if (actions.PortalTeal) FirePortal(PortalColor.Teal, view);
         if (actions.PortalViolet) FirePortal(PortalColor.Violet, view);
+        if (actions.ClosePortals) ClosePortals();
 
         if (actions.FireRevolver) Fire(WeaponSpec.Revolver, view);
         if (actions.FireShotgun) Fire(WeaponSpec.Shotgun, view);
@@ -396,10 +397,30 @@ public sealed class CombatSim
 
     private void FirePortal(PortalColor color, PlayerView view)
     {
+        var replaced = Portals.Get(color);
         var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks);
         var p = result.Portal;
+        if (result.Placed && replaced != null) Close(replaced);
         _events.Add(new PortalPlaced(color, result.Placed,
             p?.Frame.Center ?? view.Eye, p?.Frame.Normal ?? new Vec3(0, 0, 0), p?.Frame.Up ?? new Vec3(0, 1, 0), result.Failure));
+    }
+
+    /// <summary>Removes one portal on purpose (the player, a pact or a boss) and severs anything standing in it.</summary>
+    public bool ClosePortal(PortalColor color)
+    {
+        if (Portals.Get(color) is not { } portal) return false;
+        Portals.Remove(color);
+        Close(portal);
+        return true;
+    }
+
+    /// <summary>Closes both portals, severing whatever stands in either opening.</summary>
+    public bool ClosePortals() => ClosePortal(PortalColor.Teal) | ClosePortal(PortalColor.Violet);
+
+    private void Close(Portal old)
+    {
+        _events.Add(new PortalClosed(old.Color, old.Frame.Center, old.Frame.Normal, old.Frame.Up));
+        SeverRules.Apply(old, _enemies, Style, _events.Add, e => _floors[e.Floor].Kills++);
     }
 
     private Vec3 Spread(Vec3 forward, double radians)

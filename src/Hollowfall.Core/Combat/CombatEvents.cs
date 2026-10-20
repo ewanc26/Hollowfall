@@ -55,3 +55,8 @@ public sealed record TrapSprung(int SpawnIndex, double Damage) : CombatEvent;
 
 /// <summary>The player hit an enemy at speed. The host scales the player's velocity by <see cref="SpeedKept"/>.</summary>
 public sealed record MeteorImpact(int Id, double Speed, double Damage, double Points, bool LongFall, double SpeedKept) : CombatEvent;
+/// <summary>A portal closed on an enemy. Severed enemies drop no blood. <see cref="Killed"/> false means it was staggered instead.</summary>
+public sealed record EnemySevered(int Id, EnemyKind Kind, Portals.PortalColor Portal, double Damage, bool Killed, Vec3 Point, double Points) : CombatEvent;
+
+/// <summary>A portal was replaced or removed. Fired for every closure, whether or not anything was caught in it.</summary>
+public sealed record PortalClosed(Portals.PortalColor Color, Vec3 Position, Vec3 Normal, Vec3 Up) : CombatEvent;

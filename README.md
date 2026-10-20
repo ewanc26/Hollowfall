@@ -52,6 +52,7 @@ to `user://settings.json` (Godot's user data folder).
 | Shotgun | Right click | LT |
 | Parry (hit it while an enemy flashes yellow) | V | X |
 | Teal / violet portal | Q / E | LB / RB |
+| Close portals (sever anything standing in them) | C | D-pad down |
 | Respawn | R | Y |
 | Open chests (a key for locked ones) | F | Left stick click |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
@@ -71,7 +72,8 @@ See [docs/game-loop.md](docs/game-loop.md) for the design of the loop and [docs/
 **Portals.** Q and E fire the two ends of a linked teal and violet pair onto flat stone walls, floors and ceilings (a 1 x 2
 opening, with room in front of it). Walk, fall or shoot into one and you come out of the other, keeping your
 speed, so a fall into a floor portal becomes a launch out of a wall. Your shots and enemy projectiles fly through
-too, including ones you parry.
+too, including ones you parry. **Sever:** replacing a portal, or closing the pair with C, cuts in half anything standing
+in the old opening (60 damage and 250 style; Wardens are immune).
 
 **Meteor.** Leave a portal at 18 blocks per second or more and for 0.6 seconds you are the weapon: touching an enemy within
 1.2 blocks hits it for speed x 2.5 damage (at most 120), awards the Meteor style bonus (180 points, doubled after a fall of
@@ -79,8 +81,8 @@ more than 20 blocks), costs you 30% of your speed and never hurts you. Hitting a
 `MeteorTuning`.
 
 Environment variables: `HOLLOWFALL_SEED` picks the world (default `voxel`),
-`HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, and `HOLLOWFALL_DEMO=portals` runs a scripted
-portal setup for screenshots.
+`HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, `HOLLOWFALL_DEMO=portals` runs a scripted
+portal setup for screenshots, and `HOLLOWFALL_DEMO=sever` closes the pair on a husk.
 
 ## Language
 

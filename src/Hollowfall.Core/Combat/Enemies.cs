@@ -71,6 +71,9 @@ public sealed class Enemy
     public double Health { get; internal set; }
     public EnemyState State { get; internal set; }
     internal double Timer { get; set; }
+
+    /// <summary>Whether a closing portal has already cut this enemy (the Sever bonus is earned once).</summary>
+    public bool Severed { get; internal set; }
     internal PlayerBody Body { get; }
 
     public Vec3 Feet => new(Body.X, Body.Y, Body.Z);
