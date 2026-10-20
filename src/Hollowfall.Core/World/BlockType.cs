@@ -39,4 +39,9 @@ public static class BlockInfo
 
     /// <summary>Hides the faces of neighbouring blocks: a solid, full, non-see-through cube.</summary>
     public static bool Occludes(BlockType b) => IsSolid(b) && b != BlockType.Leaves;
+
+    /// <summary>Surfaces a portal can be placed on: plain solid walls, floors and ceilings.</summary>
+    public static bool Portalable(BlockType b) =>
+        IsSolid(b) && b is not (BlockType.Bedrock or BlockType.Gate or BlockType.SecretDoor or BlockType.Stairs or BlockType.Pillar
+            or BlockType.Leaves or BlockType.Cactus or BlockType.Snow or BlockType.Log);
 }

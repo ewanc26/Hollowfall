@@ -32,8 +32,37 @@ public readonly record struct Box(Vec3 Min, Vec3 Max)
         p.X >= Min.X && p.X <= Max.X && p.Y >= Min.Y && p.Y <= Max.Y && p.Z >= Min.Z && p.Z <= Max.Z;
 }
 
+/// <summary>A ray's first solid hit: how far, which block, and which face (the outward normal) it struck.</summary>
+public readonly record struct FaceHit(double Distance, int X, int Y, int Z, int NormalX, int NormalY, int NormalZ);
+
 public static class RayCast
 {
+    /// <summary>Like <see cref="FirstSolid"/> but also reports the block and face hit. Null if the ray starts inside a block.</summary>
+    public static FaceHit? FirstSolidFace(Func<int, int, int, BlockType> blockAt, Vec3 origin, Vec3 direction, double maxDistance)
+    {
+        var d = direction.Normalized();
+        int x = (int)Math.Floor(origin.X), y = (int)Math.Floor(origin.Y), z = (int)Math.Floor(origin.Z);
+        if (BlockInfo.IsSolid(blockAt(x, y, z))) return null;
+
+        int sx = Math.Sign(d.X), sy = Math.Sign(d.Y), sz = Math.Sign(d.Z);
+        double tx = Next(origin.X, d.X, x), ty = Next(origin.Y, d.Y, y), tz = Next(origin.Z, d.Z, z);
+        double dx = d.X == 0 ? double.PositiveInfinity : Math.Abs(1 / d.X);
+        double dy = d.Y == 0 ? double.PositiveInfinity : Math.Abs(1 / d.Y);
+        double dz = d.Z == 0 ? double.PositiveInfinity : Math.Abs(1 / d.Z);
+
+        while (true)
+        {
+            double t;
+            int nx = 0, ny = 0, nz = 0;
+            if (tx <= ty && tx <= tz) { t = tx; x += sx; tx += dx; nx = -sx; }
+            else if (ty <= tz) { t = ty; y += sy; ty += dy; ny = -sy; }
+            else { t = tz; z += sz; tz += dz; nz = -sz; }
+
+            if (t > maxDistance) return null;
+            if (BlockInfo.IsSolid(blockAt(x, y, z))) return new FaceHit(t, x, y, z, nx, ny, nz);
+        }
+    }
+
     /// <summary>Distance along the ray to the first solid voxel within <paramref name="maxDistance"/>, or null (DDA traversal).</summary>
     public static double? FirstSolid(Func<int, int, int, BlockType> blockAt, Vec3 origin, Vec3 direction, double maxDistance)
     {
