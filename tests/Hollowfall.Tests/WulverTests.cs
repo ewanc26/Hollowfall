@@ -56,6 +56,90 @@ public class WulverPlacerTests
     }
 
     [Fact]
+    public void AProminentRiseBeatsAHigherPlateau()
+    {
+        // 90 blocks up on a flat plateau (prominence 0) against 70 up on a knoll that stands 12 above its surroundings.
+        Assert.True(WulverPlacer.Score(70, 12) > WulverPlacer.Score(90, 0));
+        // Between equal bumps the higher one wins, and a visible sight line helps.
+        Assert.True(WulverPlacer.Score(80, 6) > WulverPlacer.Score(70, 6));
+        Assert.True(WulverPlacer.Score(70, 6, 60, 3) > WulverPlacer.Score(70, 6, 60, 0));
+        // A spot ringed with trees loses to an open one, and the foliage count is of the leaves, logs and cactus near him.
+        Assert.True(WulverPlacer.Score(70, 6, 60, 2, 0) > WulverPlacer.Score(70, 6, 60, 2, 80));
+        Assert.True(WulverPlacer.Foliage(new VoxelWorld(1), 0, 0, 200) == 0, "nothing grows that high up");
+        // Being far away costs a little, and nothing is lost before the near edge of the band.
+        Assert.True(WulverPlacer.Score(70, 6, 130) < WulverPlacer.Score(70, 6, 50));
+        Assert.Equal(WulverPlacer.Score(70, 6, 45), WulverPlacer.Score(70, 6, 10));
+    }
+
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void HisProminenceIsReportedAndBeatsTheAverageColumnOfTheBand(long seed)
+    {
+        var world = new VoxelWorld(seed);
+        var s = WulverPlacer.Place(world)!.Value;
+        Assert.Equal(WulverPlacer.Prominence(world.Generator, s.BlockX, s.BlockZ), s.Prominence, 6);
+
+        // He is not just somewhere high: his rise stands out more than the typical land in the band does.
+        var gen = world.Generator;
+        double total = 0;
+        int n = 0;
+        for (int x = s.AnchorX - WulverPlacer.MaxDistance; x <= s.AnchorX + WulverPlacer.MaxDistance; x += 12)
+            for (int z = s.AnchorZ - WulverPlacer.MaxDistance; z <= s.AnchorZ + WulverPlacer.MaxDistance; z += 12)
+            {
+                double d = Math.Sqrt(Math.Pow(x - s.AnchorX, 2) + Math.Pow(z - s.AnchorZ, 2));
+                if (d < WulverPlacer.MinDistance || d > WulverPlacer.MaxDistance || gen.SampleColumn(x, z).Height <= TerrainGenerator.SeaLevel + 2) continue;
+                total += WulverPlacer.Prominence(gen, x, z);
+                n++;
+            }
+        Assert.True(n > 0);
+        Assert.True(s.Prominence > total / n, $"prominence {s.Prominence:F1} against an average of {total / n:F1}");
+    }
+
+    [Fact]
+    public void HeStandsOnATopNotInADip()
+    {
+        var gen = new VoxelWorld(Voxel.Value).Generator;
+        // The ring mean of any column is finite and the measure is the column's own height minus it.
+        double p = WulverPlacer.Prominence(gen, 100, 100);
+        Assert.InRange(p, -60, 60);
+        var s = WulverPlacer.Place(new VoxelWorld(42))!.Value;
+        Assert.True(s.Prominence > 0, "he stands on a top, not in a dip");
+    }
+
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void NoTreeOrCactusStandsWithinTwoBlocksOfHim(long seed)
+    {
+        var world = new VoxelWorld(seed);
+        var s = WulverPlacer.Place(world)!.Value;
+        for (int dx = -WulverPlacer.ClearRadius; dx <= WulverPlacer.ClearRadius; dx++)
+            for (int dz = -WulverPlacer.ClearRadius; dz <= WulverPlacer.ClearRadius; dz++)
+                for (int y = s.GroundY + 1; y <= s.GroundY + WulverPlacer.Headroom + 1; y++)
+                {
+                    var b = world.GetBlock(s.BlockX + dx, y, s.BlockZ + dz);
+                    Assert.False(b is BlockType.Leaves or BlockType.Log or BlockType.Cactus, $"{b} at {dx},{y - s.GroundY},{dz}");
+                }
+    }
+
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void HisHeadCanBeSeenFromSomewhereOnTheWayIn(long seed)
+    {
+        var world = new VoxelWorld(seed);
+        var s = WulverPlacer.Place(world)!.Value;
+        int clear = WulverPlacer.SightsClear(world.Generator, s.BlockX, s.BlockZ, s.GroundY, (s.AnchorX - s.BlockX) / s.Distance, (s.AnchorZ - s.BlockZ) / s.Distance, s.Distance);
+        Assert.True(clear >= 1, "at least one sight distance is open");
+    }
+
+    [Fact]
+    public void ABandOfThePrescribedWidthIsUsed()
+    {
+        Assert.Equal(45, WulverPlacer.MinDistance);
+        Assert.Equal(140, WulverPlacer.MaxDistance);
+        Assert.True(WulverPlacer.RingMin < WulverPlacer.RingMax);
+    }
+
+    [Fact]
     public void DifferentSeedsDiffer()
     {
         var spots = new long[] { 1, 2, 3, 5, 7, 11, 42, 99, 12345, 777 }.Select(seed => WulverPlacer.Place(new VoxelWorld(seed))!.Value).Select(s => (s.BlockX, s.BlockZ)).Distinct().Count();
