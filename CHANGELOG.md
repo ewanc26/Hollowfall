@@ -17,6 +17,9 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Low-poly art for everything that is not a voxel: a code-built model system (`Hollowfall.Core.Models`) with flat-shaded primitives, named pivoted parts with parent links, glow buffers and anchors; models for the three enemies, the enemy orb, the revolver and shotgun, chests, keys, spike traps and torches. See `docs/art-style.md`.
+- Enemies are procedurally animated from their state (limb swing, windup poses that flash yellow, stagger), first-person weapon models with kick, muzzle flash and portal-colour gems, and dungeon props including deterministic wall torches (`PropPlacer`) with flickering lights near the player.
+- A model showcase scene (`HOLLOWFALL_SHOWCASE=enemies|poses|weapons|props`) and tests for triangle budgets, hit boxes, mirroring and rigging.
 - Portal polish: the inside of a portal is now exactly the other camera's image with nothing laid over it (no tint, shimmer or inner lines), the glowing frame sits outside the opening, new portals open with a short grow animation, and the portal camera matches the main view's lens, size and anti-aliasing. The HUD fades out wherever it would cover a portal opening, and damage and parry flashes are edge vignettes that keep the centre clear.
 - HUD refinements: a floor panel (floor, kills, time against par), a debug overlay that is off until F3 is pressed, display-font banners, and the wordmark logo on the title screen.
 - Assets: Chakra Petch (titles) and Rajdhani (menus and HUD), both SIL OFL, with their licences; a generated vector set (`tools/Hollowfall.AssetGen`) of controller, mouse and keyboard prompts, HUD icons, style-rank emblems, the app icon and the README banner; and `assets/CREDITS.md`. A test fails if the committed files drift from the generator.

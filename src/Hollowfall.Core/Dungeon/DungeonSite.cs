@@ -41,6 +41,9 @@ public sealed class DungeonSite
 
     public IReadOnlyList<Spawn> Spawns { get; }
 
+    /// <summary>Wall torches for every floor.</summary>
+    public IReadOnlyList<TorchSpot> Torches { get; }
+
     public DungeonSite(long seed, int regionX, int regionZ, int originX, int originZ,
         int entranceLocalX, int entranceLocalZ, int surfaceY, int floorCount)
     {
@@ -67,6 +70,7 @@ public sealed class DungeonSite
         }
 
         Spawns = SpawnPlanner.Plan(this, seed);
+        Torches = PropPlacer.Torches(this, seed);
     }
 
     public static int FloorY(int floor) => FirstFloorY - FloorSpacing * floor;
