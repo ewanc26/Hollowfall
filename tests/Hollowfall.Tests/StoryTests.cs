@@ -302,6 +302,20 @@ public class StoryPlanTests
     }
 
     [Fact]
+    public void TheJournalListsReadNotesByFloorAndOrderAndIgnoresStrangers()
+    {
+        var plan = StoryPlan.For(4, 4);
+        var all = plan.AllNotes.ToList();
+        var shuffled = all.AsEnumerable().Reverse().Select(n => n.Id).Append("ghost").Append(all[0].Id).ToList();
+        var journal = plan.Journal(shuffled);
+        Assert.Equal(all.Select(n => n.Id), journal.Select(n => n.Id));
+        Assert.Empty(plan.Journal([]));
+        Assert.Single(plan.Journal([all[2].Id, "x"]));
+        // A note read on another dungeon of the same seed text but a different floor count is simply absent.
+        Assert.Empty(plan.Journal(["up-ledger-1-not-real"]));
+    }
+
+    [Fact]
     public void LookupsAreSafeForAnythingTheSaveFileMightHold()
     {
         var plan = StoryPlan.For(3, 3);

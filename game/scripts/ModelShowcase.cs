@@ -145,6 +145,7 @@ public partial class ModelShowcase : Node3D
             Place(pickup.Root, new Vector3(-2.6f + i * 1.3f, 1.75f, 0), loot[i].Item2, spin: 0.8, labelHeight: 1.45f);
         }
         AddChild(new OmniLight3D { Position = new Vector3(3.4f, 1.5f, 0.2f), LightColor = new Color(1f, 0.6f, 0.25f), OmniRange = 4 });
+        Place(ModelFactory.Build(ModelCatalog.Scroll).Root, new Vector3(0.85f, 0, 0.3f), "Scroll", spin: 0.5, labelHeight: 0.05f);
     }
 
     public override void _Process(double delta)

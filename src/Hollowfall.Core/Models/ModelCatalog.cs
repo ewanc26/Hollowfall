@@ -393,6 +393,9 @@ public static class ModelCatalog
             .Prism(V(0, 0, 0), 0.17, 0.035, 8, Palette.Steel, 1, V(90, 0, 0))
             .Prism(V(0, 0, -0.012), 0.12, 0.03, 8, Palette.VioletGlow, 1, V(90, 0, 0), glow: true)
             .Gem(V(0, 0, -0.03), V(0.05, 0.05, 0.04), Palette.White, glow: true);
+        return m.Build();
+    }
+
     // ---- story: the scroll a lore note is written on --------------------------------------------
 
     private static readonly Lazy<LowPolyModel> ScrollModel = new(BuildScroll);

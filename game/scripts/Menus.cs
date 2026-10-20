@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Story;
 using Hollowfall.Core.Ui;
 
 namespace Hollowfall.Game;
@@ -12,6 +13,7 @@ public enum MenuScreen
     Pause,
     Controls,
     Settings,
+    Journal,
 }
 
 /// <summary>
@@ -32,6 +34,8 @@ public partial class Menus : CanvasLayer
     private double _listenLeft;
     private MenuScreen _current = MenuScreen.None;
     private OptionButton? _promptBox;
+    private VBoxContainer _journalList = null!;
+    private Label _journalTitle = null!;
 
     public Menus(GameSettings settings, string savePath)
     {
@@ -41,6 +45,9 @@ public partial class Menus : CanvasLayer
 
     /// <summary>Supplies the controller style to show on binding buttons; set by the game from the connected pad.</summary>
     public Func<ControllerStyle> PromptStyleProvider { get; set; } = () => ControllerStyle.Xbox;
+
+    /// <summary>Supplies the journal: the dungeon's title and the notes read so far, with the floor each was found on. Set by the game.</summary>
+    public Func<(string Title, IReadOnlyList<(string Floor, StoryNote Note)> Notes)> JournalProvider { get; set; } = () => ("", []);
 
     public MenuScreen Current => _current;
     public bool IsOpen => _current != MenuScreen.None;
@@ -74,6 +81,7 @@ public partial class Menus : CanvasLayer
         _screens[MenuScreen.Pause] = BuildPause();
         _screens[MenuScreen.Controls] = BuildControls();
         _screens[MenuScreen.Settings] = BuildSettings();
+        _screens[MenuScreen.Journal] = BuildJournal();
         foreach (var s in _screens.Values)
         {
             s.Visible = false;
@@ -92,6 +100,7 @@ public partial class Menus : CanvasLayer
         GetTree().Paused = screen != MenuScreen.None;
         MenuOpenChanged?.Invoke(screen != MenuScreen.None);
         Input.MouseMode = screen == MenuScreen.None ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
+        if (screen == MenuScreen.Journal) RefreshJournal();
         if (screen != MenuScreen.None) FocusFirst(_screens[screen]);
     }
 
@@ -140,7 +149,7 @@ public partial class Menus : CanvasLayer
         {
             if (_current == MenuScreen.None) Open(MenuScreen.Pause);
             else if (_current == MenuScreen.Pause) { Close(); ResumeRequested?.Invoke(); }
-            else if (_current is MenuScreen.Controls or MenuScreen.Settings) Open(ReturnScreen());
+            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal) Open(ReturnScreen());
             GetViewport().SetInputAsHandled();
         }
     }
@@ -235,7 +244,7 @@ public partial class Menus : CanvasLayer
 
     private Control BuildTitle()
     {
-        var (screen, col) = Panel(500, 430);
+        var (screen, col) = Panel(500, 480);
         var logo = Glyphs.LoadTexture("res://assets/logo.svg");
         if (logo != null)
             col.AddChild(new TextureRect { Texture = logo, CustomMinimumSize = new Vector2(400, 90), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
@@ -243,12 +252,22 @@ public partial class Menus : CanvasLayer
             col.AddChild(Heading("HOLLOWFALL", 48));
         col.AddChild(new Label { Text = "A procedural dungeon crawler.\nMove fast. Heal by hurting things.", HorizontalAlignment = HorizontalAlignment.Center });
 
+        // Every seed names its dungeon, the way the old maps do.
+        var dungeonName = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        dungeonName.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+        dungeonName.AddThemeFontSizeOverride("font_size", 26);
+        dungeonName.AddThemeColorOverride("font_color", new Color(0.85f, 0.6f, 0.35f));
+        col.AddChild(dungeonName);
+
         // The world is named by its seed: type one to share or revisit a dungeon, or roll a random one.
         var seedRow = new HBoxContainer();
         seedRow.AddThemeConstantOverride("separation", 8);
         seedRow.AddChild(new Label { Text = "Seed" });
         var seedEdit = new LineEdit { Text = _settings.Seed, MaxLength = SeedWords.MaxLength, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(240, 0), PlaceholderText = "any text or number" };
         seedRow.AddChild(seedEdit);
+        void ShowName() => dungeonName.Text = StoryPlan.TitleFor(TerrainGenerator.SeedFromString(SeedWords.Clean(seedEdit.Text)));
+        seedEdit.TextChanged += _ => ShowName();
+        ShowName();
         var dice = MakeButton("Random", () => seedEdit.Text = SeedWords.From((ulong)System.Random.Shared.NextInt64()));
         seedRow.AddChild(dice);
         col.AddChild(seedRow);
@@ -275,15 +294,69 @@ public partial class Menus : CanvasLayer
 
     private Control BuildPause()
     {
-        var (screen, col) = Panel(420, 420);
+        var (screen, col) = Panel(420, 470);
         col.AddChild(Heading("PAUSED"));
         col.AddChild(MakeButton("Resume", () => { Close(); ResumeRequested?.Invoke(); }));
         col.AddChild(MakeButton("Respawn", () => { Close(); RespawnRequested?.Invoke(); }));
+        col.AddChild(MakeButton("Journal", () => OpenFrom(MenuScreen.Pause, MenuScreen.Journal)));
         col.AddChild(MakeButton("Main menu", () => MainMenuRequested?.Invoke()));
         col.AddChild(MakeButton("Controls", () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
         col.AddChild(MakeButton("Settings", () => OpenFrom(MenuScreen.Pause, MenuScreen.Settings)));
         col.AddChild(MakeButton("Quit", () => QuitRequested?.Invoke()));
         return screen;
+    }
+
+    private Control BuildJournal()
+    {
+        var (screen, col) = Panel(820, 600);
+        col.AddChild(Heading("JOURNAL"));
+        _journalTitle = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        _journalTitle.AddThemeColorOverride("font_color", new Color(0.85f, 0.6f, 0.35f));
+        col.AddChild(_journalTitle);
+
+        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 390), SizeFlagsVertical = Control.SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        col.AddChild(scroll);
+        _journalList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(740, 0) };
+        _journalList.AddThemeConstantOverride("separation", 14);
+        scroll.AddChild(_journalList);
+
+        var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
+        col.AddChild(footer);
+        return screen;
+    }
+
+    /// <summary>Rebuilds the journal from the notes read so far. Called each time the screen opens.</summary>
+    private void RefreshJournal()
+    {
+        var (title, notes) = JournalProvider();
+        _journalTitle.Text = notes.Count == 0 ? title : $"{title}   -   {notes.Count} {(notes.Count == 1 ? "note" : "notes")} read";
+        foreach (var child in _journalList.GetChildren()) child.QueueFree();
+
+        if (notes.Count == 0)
+        {
+            var empty = new Label { Text = "Nothing read yet. Notes lie against the walls of the dungeon: walk up to a scroll and use it.", AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(720, 0) };
+            empty.AddThemeColorOverride("font_color", new Color(0.7f, 0.7f, 0.75f));
+            _journalList.AddChild(empty);
+            return;
+        }
+        foreach (var (floor, note) in notes)
+        {
+            var floorLabel = new Label { Text = floor };
+            floorLabel.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 1f));
+            floorLabel.AddThemeFontSizeOverride("font_size", 17);
+            var heading = new Label { Text = note.Title };
+            heading.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+            heading.AddThemeColorOverride("font_color", new Color(1f, 0.8f, 0.3f));
+            var text = new Label { Text = note.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(720, 0) };
+            text.AddThemeFontSizeOverride("font_size", 24);
+            var entry = new VBoxContainer();
+            entry.AddThemeConstantOverride("separation", 2);
+            entry.AddChild(floorLabel);
+            entry.AddChild(heading);
+            entry.AddChild(text);
+            _journalList.AddChild(entry);
+        }
     }
 
     private Control BuildControls()
