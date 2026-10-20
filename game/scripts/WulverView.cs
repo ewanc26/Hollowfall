@@ -11,8 +11,8 @@ namespace Hollowfall.Game;
 /// </summary>
 public partial class WulverView : Node3D
 {
-    /// <summary>How close the player must be for him to turn and look, in blocks.</summary>
-    public const double NoticeRange = 14;
+    /// <summary>How close the player must be for him to turn and look, in blocks (the same range at which he greets them).</summary>
+    public const double NoticeRange = WulverEncounter.NoticeRange;
 
     private ModelRig _rig = null!;
     private OmniLight3D _light = null!;

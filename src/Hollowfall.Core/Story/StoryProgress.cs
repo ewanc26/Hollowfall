@@ -22,6 +22,8 @@ public sealed class StoryProgress
     {
         public bool Intro, Ending;
         public readonly List<string> Notes = [];
+        public readonly List<string> WulverFlags = [];
+        public int WulverVisits;
     }
 
     private readonly List<string> _order = [];
@@ -68,6 +70,21 @@ public sealed class StoryProgress
         if (Touch(seed) is { } s) s.Ending = true;
     }
 
+    /// <summary>What the Wulver remembers of this seed: short flag ids (at most <see cref="WulverEncounter.MaxFlags"/>) and how often he has been visited.</summary>
+    public IReadOnlyList<string> WulverFlags(string seed) => Find(seed)?.WulverFlags ?? (IReadOnlyList<string>)[];
+
+    public int WulverVisits(string seed) => Find(seed)?.WulverVisits ?? 0;
+
+    /// <summary>Replaces what the Wulver remembers. Invalid or surplus flags are dropped.</summary>
+    public void SetWulver(string seed, IEnumerable<string> flags, int visits)
+    {
+        if (Touch(seed) is not { } s) return;
+        s.WulverFlags.Clear();
+        foreach (var f in flags)
+            if (WulverEncounter.ValidFlag(f) && !s.WulverFlags.Contains(f) && s.WulverFlags.Count < WulverEncounter.MaxFlags) s.WulverFlags.Add(f);
+        s.WulverVisits = Math.Clamp(visits, 0, 10_000);
+    }
+
     public bool IsRead(string seed, string noteId) => Find(seed)?.Notes.Contains(noteId) ?? false;
 
     /// <summary>The ids of the notes read on a seed, in the order they were first read.</summary>
@@ -95,6 +112,11 @@ public sealed class StoryProgress
                 ["intro"] = s.Intro,
                 ["ending"] = s.Ending,
                 ["notes"] = new JsonArray([.. s.Notes.Select(id => (JsonNode?)JsonValue.Create(id))]),
+                ["wulver"] = new JsonObject
+                {
+                    ["visits"] = s.WulverVisits,
+                    ["flags"] = new JsonArray([.. s.WulverFlags.Select(id => (JsonNode?)JsonValue.Create(id))]),
+                },
             };
         }
         return new JsonObject { ["version"] = 1, ["seeds"] = seeds }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
@@ -119,6 +141,14 @@ public sealed class StoryProgress
             if (progress.Touch(seed) is not { } s) continue;
             s.Intro = entry["intro"] is JsonValue iv && iv.TryGetValue<bool>(out var intro) && intro;
             s.Ending = entry["ending"] is JsonValue ev && ev.TryGetValue<bool>(out var ending) && ending;
+            if (entry["wulver"] is JsonObject w)
+            {
+                if (w["visits"] is JsonValue vv && vv.TryGetValue<int>(out var visits)) s.WulverVisits = Math.Clamp(visits, 0, 10_000);
+                if (w["flags"] is JsonArray fl)
+                    foreach (var item in fl)
+                        if (item is JsonValue v && v.TryGetValue<string>(out var flag) && WulverEncounter.ValidFlag(flag) && !s.WulverFlags.Contains(flag) && s.WulverFlags.Count < WulverEncounter.MaxFlags)
+                            s.WulverFlags.Add(flag);
+            }
             if (entry["notes"] is not JsonArray notes) continue;
             foreach (var item in notes)
             {

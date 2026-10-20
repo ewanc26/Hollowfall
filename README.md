@@ -125,7 +125,7 @@ All the words and every choice are in `Hollowfall.Core.Story`, a pure function o
 
 ## Hidden things
 
-Somewhere out on the hills, a wolf stands holding a branch of yew. He is there as a nod to the author, and he is gentle. Go and say hello.
+Somewhere out on the hills, a wolf stands holding a branch of yew. He is a dedication to the game's solo developer, and he is gentle. Go and say hello, and ask him a few things: he remembers what you chose.
 
 ## Agent control (MCP)
 

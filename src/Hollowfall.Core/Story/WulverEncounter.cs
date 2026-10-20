@@ -1,46 +1,150 @@
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Story.Dialogue;
 
 namespace Hollowfall.Core.Story;
 
-/// <summary>What the Wulver said and gave on one press of Interact.</summary>
-public readonly record struct WulverSpeech(string Speaker, string Text, bool GiftGiven, double Healed, double Cleansed, Loot? Perk);
+/// <summary>Where the player stands in the run, as far as the Wulver is concerned. The host fills it in from the game.</summary>
+public readonly record struct WulverFacts(int Deaths, int Kills, int DeepestFloor, int FloorCount, int NotesRead, bool HasKey, bool EndingReached);
 
 /// <summary>
-/// One meeting with the Wulver, for one run of one seed: how near you must stand, which line he says, and his gift. The gift is given
-/// once: a full heal, the hard damage washed away, and a timed Open guard perk (the same perk a chest can hold). Later presses only
-/// bring the next line. Pure logic with no engine types; the host shows the words and plays the sound.
+/// The Wulver, for one run of one seed: when he notices you, how near you must stand to talk, and the conversation itself, which is the
+/// tree in <see cref="WulverDialogue"/> run by a <see cref="DialogueRunner"/>. He notices you at <see cref="NoticeRange"/> (he looks at
+/// you, and greets you once); the greeting fires again only after you have gone beyond <see cref="LeaveRange"/> and come back. His gift is
+/// handed over once per run, by whichever node gives it. What he remembers (<see cref="Flags"/>, <see cref="Visits"/>) is meant to be
+/// saved with the story progress. Pure logic with no engine types.
 /// </summary>
-public sealed class WulverEncounter(long seed, WulverSpot spot)
+public sealed class WulverEncounter
 {
     /// <summary>How far, in blocks along the ground, you may stand and still speak to him.</summary>
     public const double Reach = 3.0;
 
     public const double ReachHeight = 3.0;
 
-    /// <summary>The perk he gives: a wide parry for a good while.</summary>
-    public static readonly Loot Gift = new(LootKind.WideParry, LootRarity.Rare, 0.18, 40);
+    /// <summary>How near you come before he looks at you and greets you.</summary>
+    public const double NoticeRange = 7.0;
 
-    public WulverSpot Spot { get; } = spot;
+    /// <summary>How far you must go before the next approach counts as a new visit.</summary>
+    public const double LeaveRange = 10.0;
+
+    /// <summary>The most flags he can remember, and the longest one.</summary>
+    public const int MaxFlags = 32, MaxFlagLength = 24;
+
+    private readonly long _seed;
+    private readonly string _seedText;
+    private HashSet<string> _flags;
+    private bool _inRange;
+
+    public WulverSpot Spot { get; }
     public int Visits { get; private set; }
     public bool GiftTaken { get; private set; }
+
+    /// <summary>The conversation in progress, or null.</summary>
+    public DialogueRunner? Conversation { get; private set; }
+
+    public IReadOnlyCollection<string> Flags => _flags;
+
+    public WulverEncounter(long seed, string seedText, WulverSpot spot, IEnumerable<string>? flags = null, int visits = 0)
+    {
+        _seed = seed;
+        _seedText = seedText;
+        Spot = spot;
+        _flags = [.. (flags ?? []).Where(ValidFlag).Take(MaxFlags)];
+        Visits = Math.Clamp(visits, 0, 10_000);
+    }
+
+    /// <summary>A flag is a short id of letters, digits and underscores.</summary>
+    public static bool ValidFlag(string? flag) => !string.IsNullOrEmpty(flag) && flag.Length <= MaxFlagLength && flag.All(c => char.IsAsciiLetterOrDigit(c) || c == '_');
 
     public bool IsNear(double x, double y, double z)
     {
         if (Math.Abs(y - Spot.Y) > ReachHeight) return false;
-        double dx = x - Spot.X, dz = z - Spot.Z;
-        return dx * dx + dz * dz <= Reach * Reach;
+        return Distance(x, z) <= Reach;
     }
 
-    /// <summary>He speaks. On the first press he also gives his gift to <paramref name="vitals"/> and <paramref name="perks"/>.</summary>
-    public WulverSpeech Speak(PlayerVitals vitals, Perks perks)
+    private double Distance(double x, double z)
     {
-        string text = WulverVoice.LineFor(seed, Visits++);
-        if (GiftTaken || vitals.Dead) return new WulverSpeech(WulverVoice.Name, text, false, 0, 0, null);
-
-        GiftTaken = true;
-        double cleansed = vitals.Cleanse();
-        double healed = vitals.Heal(PlayerVitals.MaxHealth);
-        perks.Grant(Gift);
-        return new WulverSpeech(WulverVoice.Name, text, true, healed, cleansed, Gift);
+        double dx = x - Spot.X, dz = z - Spot.Z;
+        return Math.Sqrt(dx * dx + dz * dz);
     }
+
+    /// <summary>Whether he can see you (for turning his head): within <see cref="NoticeRange"/> and not far above or below.</summary>
+    public bool Notices(double x, double y, double z) => Math.Abs(y - Spot.Y) <= 12 && Distance(x, z) <= NoticeRange;
+
+    /// <summary>
+    /// Call each step with where the player stands. Returns the greeting once as you come within range, and nothing more until you have
+    /// left (beyond <see cref="LeaveRange"/>) and come back.
+    /// </summary>
+    public string? Approach(double x, double y, double z)
+    {
+        double d = Distance(x, z);
+        if (_inRange)
+        {
+            if (d > LeaveRange || Math.Abs(y - Spot.Y) > 20) _inRange = false;
+            return null;
+        }
+        if (!Notices(x, y, z)) return null;
+        _inRange = true;
+        return Visits == 0 ? WulverDialogue.GreetingFirst : WulverDialogue.GreetingReturn;
+    }
+
+    /// <summary>Starts a conversation, applying anything its first node gives.</summary>
+    public DialogueRunner Begin(WulverFacts facts, PlayerVitals vitals, Perks perks)
+    {
+        var context = new DialogueContext
+        {
+            Seed = _seed,
+            SeedText = _seedText,
+            VisitCount = Visits,
+            HealthFraction = Math.Clamp(vitals.Health / PlayerVitals.MaxHealth, 0, 1),
+            Deaths = facts.Deaths,
+            Kills = facts.Kills,
+            DeepestFloor = facts.DeepestFloor,
+            FloorCount = facts.FloorCount,
+            NotesRead = facts.NotesRead,
+            HasKey = facts.HasKey,
+            GiftGiven = GiftTaken,
+            EndingReached = facts.EndingReached,
+            Flags = new HashSet<string>(_flags),
+        };
+        var runner = new DialogueRunner(WulverDialogue.Graph, context);
+        Conversation = runner;
+        Sync(runner, vitals, perks);
+        return runner;
+    }
+
+    /// <summary>Takes a choice in the conversation, hands over any gift it gives and remembers what changed. False for a bad index.</summary>
+    public bool Choose(int index, PlayerVitals vitals, Perks perks)
+    {
+        if (Conversation is not { Finished: false } runner || !runner.Advance(index)) return false;
+        Sync(runner, vitals, perks);
+        return true;
+    }
+
+    /// <summary>Ends the conversation (the player closed the panel or walked off). What was chosen so far is kept.</summary>
+    public void End()
+    {
+        Conversation?.Abandon();
+        Conversation = null;
+    }
+
+    private void Sync(DialogueRunner runner, PlayerVitals vitals, Perks perks)
+    {
+        foreach (var gift in runner.TakeGifts())
+        {
+            GiftTaken = true;
+            if (vitals.Dead) continue;
+            vitals.Cleanse();
+            vitals.Heal(PlayerVitals.MaxHealth);
+            perks.Grant(gift == GiftKind.Hurt ? HurtGift : Gift);
+        }
+        _flags = [.. runner.Context.Flags.Where(ValidFlag).Take(MaxFlags)];
+        Visits = runner.Context.VisitCount;
+        if (runner.Finished) Conversation = null;
+    }
+
+    /// <summary>The perk of the ordinary gift: a wide parry for a good while.</summary>
+    public static readonly Loot Gift = new(LootKind.WideParry, LootRarity.Rare, 0.18, 40);
+
+    /// <summary>The perk for someone badly hurt: a wider parry, for longer.</summary>
+    public static readonly Loot HurtGift = new(LootKind.WideParry, LootRarity.Epic, 0.28, 60);
 }

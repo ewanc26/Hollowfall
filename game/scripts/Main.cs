@@ -36,6 +36,8 @@ public partial class Main : Node3D
     private NotesView? _notesView;
     private WulverDirector? _wulver;
     private WulverView? _wulverView;
+    private int _deathCount, _killCount, _deepestFloor = -1;
+    private double _playSeconds;
 
     /// <summary>Set when the scene is rebuilt for a new world, so the player is not shown the title screen they just left.</summary>
     private static bool _skipTitleOnce;
@@ -134,6 +136,7 @@ public partial class Main : Node3D
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => _hud?.OnEvent(e);
             Combat.EventRaised += e => _story?.OnEvent(e);
+            Combat.EventRaised += e => { if (e is PlayerDied) _deathCount++; else if (e is EnemyKilled) _killCount++; };
             Combat.EventRaised += e => { if (e is ShotFired shot) _weapons?.Fire(shot.Weapon); };
             AddChild(Combat);
             _props = new PropsView { Name = "Props" };
@@ -167,9 +170,12 @@ public partial class Main : Node3D
             _wulverView = new WulverView { Name = "Wulver" };
             _wulverView.Initialize(wulverSpot, false);
             AddChild(_wulverView);
-            _wulver = new WulverDirector(new WulverEncounter(World.Seed, wulverSpot), Combat.Sim.Vitals, Combat.Sim.Items.Perks, _storyUi, _wulverView, id => _audio.Play(id))
+            var wulverEncounter = new WulverEncounter(World.Seed, _seedName, wulverSpot, storyProgress.WulverFlags(_seedName), storyProgress.WulverVisits(_seedName));
+            _wulver = new WulverDirector(wulverEncounter, Combat.Sim.Vitals, Combat.Sim.Items.Perks, _storyUi, _wulverView, storyProgress, _seedName, StoryPath, id => _audio.Play(id))
             {
                 InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                Facts = () => new WulverFacts(_deathCount, _killCount, _deepestFloor, site!.FloorCount, _story.NotesRead, Combat.Sim.Items.KeysHeld > 0, false),
             };
             GD.Print($"Hollowfall: the Wulver stands at ({wulverSpot.X:F1}, {wulverSpot.Y:F1}, {wulverSpot.Z:F1}), {wulverSpot.Distance:F0} blocks from the entrance");
         }
@@ -439,7 +445,7 @@ public partial class Main : Node3D
         _demoFrame++;
         if (_wulverView == null) return;
         var s = _wulverView.Spot;
-        double away = demo switch { "wulver_wide" => 8, "wulver_talk" => 2.4, _ => 4.0 };
+        double away = demo switch { "wulver_wide" => 8, "wulver_talk" or "wulver_maker" => 2.4, _ => 4.0 };
         if (_demoFrame is 5 or 40)
         {
             double fx = -Math.Sin(s.Yaw), fz = -Math.Cos(s.Yaw);
@@ -452,7 +458,17 @@ public partial class Main : Node3D
             int ground = World.Generator.SampleColumn((int)Math.Floor(px), (int)Math.Floor(pz)).Height;
             _player.PlaceAt(new Vector3((float)px, ground + 1.2f, (float)pz), Math.Atan2(px - s.X, pz - s.Z));
         }
-        if (demo == "wulver_talk" && _demoFrame == 60) _wulver?.Speak();
+        if (demo is "wulver_talk" or "wulver_maker" && _demoFrame == 60)
+        {
+            _wulver?.Talk();
+            if (demo == "wulver_maker")
+            {
+                // The game is paused while the panel is open, so the presses are timed on the real clock: who are you, then claim the hill.
+                GetTree().CreateTimer(0.4, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(0);
+                GetTree().CreateTimer(0.8, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(0);
+                GetTree().CreateTimer(1.2, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(0);
+            }
+        }
     }
 
     /// <summary>HOLLOWFALL_DEMO=captions: shows the death line, the boss line and a floor-complete line in turn, for screenshots.</summary>
@@ -561,6 +577,8 @@ public partial class Main : Node3D
         _atmosphere = DungeonThemes.Lerp(_atmosphere, DungeonThemes.ForAtmosphere(floor), 1f - MathF.Exp(-2.5f * (float)delta));
         SkyBuilder.Apply(_env, _atmosphere);
         _story.OnFloor(floor);
+        _deepestFloor = Math.Max(_deepestFloor, floor);
+        _playSeconds += delta;
         _story.Tick(delta, floor);
         _notesView?.Update(delta);
         _wulverView?.Update(delta, new Vector3((float)b.X, (float)b.Y, (float)b.Z));

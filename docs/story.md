@@ -90,9 +90,23 @@ The last Warden falls and the Hollow stops falling. The fold-craft is warm in yo
 
 ## The Wulver
 
-A hidden figure outside the story, and a nod to the author. In Shetland folklore (mostly Jessie Saxby's account) the Wulver is a gentle wolf-headed man who fishes from a rock and leaves fish on the windowsills of the poor. Ours is called Eòghann, stands on a hill holding a branch of yew (dark, flat-needled, with red arils), and speaks in a voice no one else in the game shares: gentle, dry, unhurried, a little Scots, fond of fishing, weather and the long way down. His name and nine lines live in `WulverVoice`, not in `StoryBook`, and a test keeps the name out of everything else.
+A hidden figure outside the story, and a dedication to the game's solo developer. In Shetland folklore (mostly Jessie Saxby's account) the Wulver is a gentle wolf-headed man who fishes from a rock and leaves fish on the windowsills of the poor. Ours is called Eòghann (the Gaelic form of the developer's name), stands on a hill holding a branch of yew (dark, flat-needled, with red arils), and speaks in a voice nobody else in the game shares: gentle, dry, unhurried, a little Scots, fond of fishing, weather, the yew and the long way down.
 
-`WulverPlacer` puts him on the highest level, dry, open 3 by 3 patch of ground 45 to 110 blocks from the entrance you spawn beside, facing it. Pressing Interact within about 3 blocks makes him speak (his name over the line, the first line an introduction) and, the first time only, heal you to full, cleanse hard damage, grant a 40 second Open guard perk and leave a fish at his feet. Later lines follow a seeded order and do not repeat until all have been heard.
+`WulverPlacer` puts him on the highest level, dry, open 3 by 3 patch of ground 45 to 110 blocks from the entrance you spawn beside, facing it. When you come within about 7 blocks he turns his head to you and greets you once (generic, again only after you have gone away and come back). Press Interact within about 3 blocks and the choice panel opens.
+
+### The tree
+
+Everything he says lives in one data file, `Story/Dialogue/WulverDialogue.cs`, run by a small engine in `Story/Dialogue` (`DialogueNode`, `DialogueChoice`, composable `DialogueCondition`, `DialogueContext`, `DialogueEffect`, `DialogueRunner`, and a `DialogueValidator` the tests use). There are 39 nodes and 94 choices.
+
+- **Entries** are chosen by the player's state, first match wins: the maker's return, a key carried from the last floor, the maker's recognition, the first meeting, then hurt, often dead, carrying a key, ending reached, far below, many notes read, and a plain welcome. Each return visit remembers what you chose before, through flags saved with the story progress (`heardYew`, `askedWhoIAm`, `gaveFishBack`, `keptFish`, `claimedMaker`, `makerKey`, `makerKnown`) and a visit count, at most 32 short flags per seed.
+- **First meeting:** who he is, what the place is, and the gift, which comes once per run: a full heal, hard damage cleansed and an Open guard perk, given more gently and for longer to someone badly hurt. Then the fish ritual: leave it on a windowsill or keep it.
+- **The yew:** a short story, with the berries and why he carries a branch.
+- **The long way down:** true hints about locked chests and keys, Sever and Meteor, and parrying. New players hear the basics; veterans (many kills, or the third floor reached) hear shorter lines.
+- Every node has two to four choices, and a way to leave. There are no dead ends and no unreachable nodes (tested).
+
+### The one guarded path
+
+The developer's name is written in exactly one file, and spoken on exactly one path. The player must pick the choice that claims they made this place, AND one of these circumstances must hold: the world seed (ignoring case, accents, spaces and hyphens) is one of the developer's own names; or the ending has been reached on this seed and he has been visited at least three times; or the `makerKey` flag is set, which is earned by claiming first, then reaching the last floor carrying a key and showing it to him. The nodes on that path carry a guard, and the runner redirects to a kind reply ("A good many folk say that, and I let them") if the guard fails. When it holds he speaks to the maker by name in seven warm lines, and `makerKnown` makes later visits greet them by name with a different set. A test walks every path of the tree under every combination of those conditions and fails if the name appears anywhere else, and another scans all of Core and the game scripts for the names outside the dialogue file.
 
 ## How it is built
 
