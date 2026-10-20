@@ -1,3 +1,4 @@
+using Hollowfall.Core.Textures;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Core.Meshing;
@@ -6,6 +7,15 @@ namespace Hollowfall.Core.Meshing;
 public static class BlockPalette
 {
     public readonly record struct Rgb(float R, float G, float B);
+
+    /// <summary>The colour of a face in a dungeon theme: the dungeon's blocks take the theme's tint, everything else ignores it.</summary>
+    public static Rgb Color(BlockType b, int face, DungeonTheme theme)
+    {
+        var c = Color(b, face);
+        if (theme == DungeonTheme.Plain || !DungeonThemes.IsThemed(b)) return c;
+        var (r, g, bl) = theme == DungeonTheme.Mossy ? (0.84f, 1.0f, 0.86f) : (0.80f, 0.70f, 0.66f);
+        return new(c.R * r, c.G * g, c.B * bl);
+    }
 
     public static Rgb Color(BlockType b, int face) => b switch
     {
