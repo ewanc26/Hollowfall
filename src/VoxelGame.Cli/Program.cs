@@ -9,6 +9,28 @@ int radius = args.Length > 1 && int.TryParse(args[1], out var r) ? Math.Clamp(r,
 long seed = TerrainGenerator.SeedFromString(seedText);
 var gen = new TerrainGenerator(seed);
 
+if (args.Contains("--biomes"))
+{
+    // Coarse ASCII biome map: ~ ocean, ' beach, = river, " plains, T forest, : desert, ^ mountains.
+    for (int z = -400; z < 400; z += 10)
+    {
+        var line = new StringBuilder();
+        for (int x = -800; x < 800; x += 8)
+            line.Append(gen.SampleColumn(x, z).Biome switch
+            {
+                Biome.Ocean => '~',
+                Biome.Beach => '\'',
+                Biome.River => '=',
+                Biome.Plains => '"',
+                Biome.Forest => 'T',
+                Biome.Desert => ':',
+                _ => '^',
+            });
+        Console.WriteLine(line);
+    }
+    return;
+}
+
 if (args.Contains("--stats"))
 {
     // Biome / height distribution over a wide area, without generating voxels.

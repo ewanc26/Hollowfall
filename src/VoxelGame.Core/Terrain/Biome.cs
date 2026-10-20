@@ -8,4 +8,5 @@ public enum Biome : byte
     Forest,
     Desert,
     Mountains,
+    River,
 }

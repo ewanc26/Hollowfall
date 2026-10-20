@@ -6,6 +6,8 @@ Everything that changes for someone using VoxelGame goes here, newest first, in 
 
 ### Added
 
+- Rivers: noise zero-crossings carve channels down to just below sea level, fading out toward the sea and thinning in mountains. New `River` biome with a gravel bed. Worlds generated before this change differ.
+- `--biomes` option on the CLI prints a coarse ASCII biome map.
 - Coal, iron and gold ore veins from per-ore 3D noise, each limited to a depth band (`OreSpec`). Worlds generated before this change differ.
 - Seeded terrain generator: Perlin/fBm heightmap, six biomes, caves, trees and cacti over 16×128×16 chunks.
 - `VoxelGame.Cli`, a seed inspector that prints a top-down map, block counts and biome statistics.
