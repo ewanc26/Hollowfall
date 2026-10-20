@@ -611,6 +611,42 @@ public class CombatSimTests
     }
 
     [Fact]
+    public void EnemiesWalkThroughPortalsToReachYou()
+    {
+        var a = MakeArena();
+        LinkEastAndWest(a, out var eastWall, out _);
+        a.Sim.DrainEvents();
+
+        // The player stands near the orange portal on the west wall; the enemy is right beside the blue one on the east wall.
+        var husk = a.Sim.SpawnEnemy(EnemyKind.Husk, new Vec3(eastWall.X - 1.5, a.Y, a.Z));
+        double direct = husk.Feet.DistanceTo(new Vec3(a.X, a.Y, a.Z));
+        Assert.True(direct > 9, $"the long way round is {direct} blocks");
+
+        bool through = false;
+        double closest = double.MaxValue;
+        for (int i = 0; i < 60 * 6 && !through; i++)
+        {
+            a.Sim.Tick(Dt, a.View(), default);
+            through |= a.Sim.DrainEvents().Any(e => e is PortalTraversed { What: "enemy" });
+            closest = Math.Min(closest, husk.Feet.DistanceTo(new Vec3(a.X, a.Y, a.Z)));
+        }
+        Assert.True(through, "the husk should take the shortcut through the portal");
+        Assert.True(husk.Feet.DistanceTo(new Vec3(a.X, a.Y, a.Z)) < direct - 5, "and come out far closer to the player");
+    }
+
+    [Fact]
+    public void EnemiesIgnorePortalsThatAreNotAShortcut()
+    {
+        var a = MakeArena();
+        LinkEastAndWest(a, out _, out _);
+        a.Sim.DrainEvents();
+        var husk = a.Sim.SpawnEnemy(EnemyKind.Husk, new Vec3(a.X + 3, a.Y, a.Z)); // already close
+        Run(a.Sim, a.View(), 60);
+        Assert.DoesNotContain(a.Sim.DrainEvents(), e => e is PortalTraversed { What: "enemy" });
+        Assert.NotNull(husk);
+    }
+
+    [Fact]
     public void RespawningRemovesPortals()
     {
         var a = MakeArena();

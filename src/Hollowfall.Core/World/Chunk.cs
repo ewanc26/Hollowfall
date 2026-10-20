@@ -16,6 +16,9 @@ public sealed class Chunk
         ChunkZ = chunkZ;
     }
 
+    /// <summary>True once something has changed this chunk after generation; edited chunks are never silently dropped from the cache.</summary>
+    public bool Edited { get; internal set; }
+
     public int WorldMinX => ChunkX * Size;
     public int WorldMinZ => ChunkZ * Size;
 

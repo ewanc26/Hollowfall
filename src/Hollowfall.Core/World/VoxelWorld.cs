@@ -23,8 +23,15 @@ public sealed class VoxelWorld
 
     public bool HasChunk(int chunkX, int chunkZ) => _chunks.ContainsKey((chunkX, chunkZ));
 
-    /// <summary>Forgets a chunk (and any edits to it) so it is regenerated on next use.</summary>
-    public bool Unload(int chunkX, int chunkZ) => _chunks.TryRemove((chunkX, chunkZ), out _);
+    /// <summary>
+    /// Forgets a chunk so it is regenerated on next use. Chunks that have been edited (a locked door, a placed block)
+    /// are kept, because forgetting them would silently undo the edit; pass <paramref name="force"/> to drop them anyway.
+    /// </summary>
+    public bool Unload(int chunkX, int chunkZ, bool force = false)
+    {
+        if (!force && _chunks.TryGetValue((chunkX, chunkZ), out var lazy) && lazy.IsValueCreated && lazy.Value.Edited) return false;
+        return _chunks.TryRemove((chunkX, chunkZ), out _);
+    }
 
     public static bool InHeight(int y) => y >= 0 && y < Chunk.Height;
 
@@ -37,7 +44,11 @@ public sealed class VoxelWorld
         if (!InHeight(y)) throw new ArgumentOutOfRangeException(nameof(y), $"y must be 0..{Chunk.Height - 1}");
         var chunk = GetChunk(x >> 4, z >> 4);
         var previous = chunk[x & 15, y, z & 15];
-        chunk[x & 15, y, z & 15] = block;
+        if (previous != block)
+        {
+            chunk[x & 15, y, z & 15] = block;
+            chunk.Edited = true;
+        }
         return previous;
     }
 

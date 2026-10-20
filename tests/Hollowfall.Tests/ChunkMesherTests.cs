@@ -240,8 +240,14 @@ public class ChunkMesherTests
         Assert.Equal(BlockType.Stone, world.GetBlock(20, 120, 20));
         Assert.Equal(BlockType.Air, world.GetBlock(20, 200, 20));
         Assert.Throws<ArgumentOutOfRangeException>(() => world.SetBlock(0, 128, 0, BlockType.Stone));
-        Assert.True(world.Unload(1, 1));
-        Assert.False(world.HasChunk(1, 1));
+        Assert.False(world.Unload(1, 1), "a chunk with edits must not be dropped"); // (20,120,20) is in chunk (1,1)
+        Assert.True(world.HasChunk(1, 1));
+        Assert.Equal(BlockType.Stone, world.GetBlock(20, 120, 20));
+        world.GetChunk(5, 5);
+        Assert.True(world.Unload(5, 5));
+        Assert.False(world.HasChunk(5, 5));
+        Assert.True(world.Unload(1, 1, force: true));
+        Assert.Equal(BlockType.Air, world.GetBlock(20, 120, 20)); // forced: regenerated without the edit
 
         var parallel = new VoxelWorld(2);
         var chunks = new Chunk[64];
