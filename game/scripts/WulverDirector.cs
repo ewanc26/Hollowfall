@@ -34,6 +34,9 @@ public sealed class WulverDirector
     /// <summary>How the player is doing, for his answers (set by the host).</summary>
     public Func<WulverFacts> Facts { get; set; } = () => default;
 
+    /// <summary>Frames him above the panel while the conversation is open (set by the host; null leaves the camera alone).</summary>
+    public ConversationCamera? Framing { get; set; }
+
     public WulverEncounter Encounter => _encounter;
 
     /// <summary>How many greetings he has given (for tests).</summary>
@@ -83,9 +86,27 @@ public sealed class WulverDirector
         _play(SoundId.WulverGreeting);
         _ui.ClearCaption();
         Save();
+        ShowGiftEffects();
         if (runner.Finished) return;
         _ui.ShowDialogue(WulverDialogue.Name, runner.Text, Labels(runner), Choose, $"{InteractLabel()} or {MenuLabel()} to leave");
-        if (_encounter.GiftTaken) _view?.SetGiftTaken(true);
+        var s = _encounter.Spot;
+        Framing?.Begin(new Vector3((float)s.X, (float)(s.Y + 1.45), (float)s.Z));
+    }
+
+    /// <summary>How many times the gift's chime, glow and fish-pop have played (once per run, for tests).</summary>
+    public int GiftEffects { get; private set; }
+
+    /// <summary>
+    /// The first time the gift has been handed over: a soft chime, a warm glow at the edge of the screen, a pulse of light round him and
+    /// the fish popping in at his feet. They run in real time, since the game is paused behind the panel.
+    /// </summary>
+    private void ShowGiftEffects()
+    {
+        if (!_encounter.GiftTaken || GiftEffects > 0) return;
+        GiftEffects++;
+        _play(SoundId.WulverGift);
+        _ui.ShowGiftGlow();
+        _view?.SetGiftTaken(true, animate: true);
     }
 
     private static List<string> Labels(DialogueRunner runner) => [.. runner.Choices.Select(c => c.Text)];
@@ -95,7 +116,7 @@ public sealed class WulverDirector
         var runner = _encounter.Conversation;
         if (runner == null || !_encounter.Choose(index, _vitals, _perks))
             return;
-        if (_encounter.GiftTaken) _view?.SetGiftTaken(true);
+        ShowGiftEffects();
         Save();
         if (runner.Finished)
         {
@@ -108,6 +129,7 @@ public sealed class WulverDirector
     /// <summary>Closing the panel by any route ends the conversation; what was chosen is already saved.</summary>
     private void OnClosed()
     {
+        Framing?.End();
         if (_encounter.Conversation == null) return;
         _encounter.End();
         Save();

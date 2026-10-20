@@ -249,6 +249,22 @@ public class WulverTreeTests
         Assert.All(samples, s => Assert.True(float.IsFinite(s)));
     }
 
+    [Fact]
+    public void ItsGiftChimeIsASoftShortRisingPhrase()
+    {
+        var samples = Synth.Render(SoundId.WulverGift);
+        double seconds = samples.Length / (double)Synth.SampleRate;
+        Assert.InRange(seconds, 0.8, 2.5);
+        Assert.InRange(samples.Max(Math.Abs), 0.1, 0.8);
+        Assert.All(samples, s => Assert.True(float.IsFinite(s)));
+        // It fades out to near silence by the end, and is the same every time it is made.
+        Assert.True(samples.Skip(samples.Length - 200).Max(Math.Abs) < 0.02);
+        Assert.Equal(samples, Synth.Render(SoundId.WulverGift));
+        // New sounds are appended at the end of the list, so none of the earlier ids shift.
+        Assert.Equal(SoundId.WulverGreeting + 1, SoundId.WulverGift);
+        Assert.Equal(SoundId.WulverGift, Enum.GetValues<SoundId>().Max());
+    }
+
     // ---- exploring every path ----------------------------------------------------------------------
 
     private static readonly string[] Seeds = ["voxel", "ewan", "Èoghann", "Ewan-Croft", "ewanc26", "hollow"];

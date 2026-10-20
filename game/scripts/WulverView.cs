@@ -47,13 +47,83 @@ public partial class WulverView : Node3D
             Position = new Vector3((float)spot.X, (float)spot.Y + 0.9f, (float)spot.Z),
         };
         AddChild(_light);
+        ProcessMode = ProcessModeEnum.Always;
+        _fishBase = _rig.Part("fish")?.Position ?? Vector3.Zero;
         SetGiftTaken(giftTaken);
     }
 
-    /// <summary>The fish appears once the gift is given.</summary>
-    public void SetGiftTaken(bool taken)
+    /// <summary>How long the fish takes to pop into being, and how long the warm light he gives off lingers, in seconds.</summary>
+    public const double PopSeconds = 0.55, PulseSeconds = 1.6;
+
+    private double _fishAge = -1, _pulseAge = -1;
+    private Vector3 _fishBase;
+    private float _idleEnergy = 0.55f;
+
+    /// <summary>True while the fish is still popping into place.</summary>
+    public bool FishPopping => _fishAge >= 0;
+
+    /// <summary>The fish's current scale (0 before it appears, 1 at rest), for tests and screenshots.</summary>
+    public float FishScale => _rig.Part("fish")?.Scale.X ?? 0;
+
+    /// <summary>How strong the warm pulse is now, from 0 (none) to 1 (just given).</summary>
+    public float Pulse => _pulseAge < 0 ? 0 : (float)Math.Max(0, 1 - _pulseAge / PulseSeconds);
+
+    /// <summary>
+    /// The fish appears once the gift is given. With <paramref name="animate"/> it pops in at his feet with a little hop and a soft
+    /// warm pulse of light swells round him; without it (a saved state, a return visit) it simply lies there.
+    /// </summary>
+    public void SetGiftTaken(bool taken, bool animate = false)
     {
-        if (_rig.Part("fish") is { } fish) fish.Visible = taken;
+        if (_rig.Part("fish") is not { } fish) return;
+        if (taken && animate && !fish.Visible)
+        {
+            fish.Visible = true;
+            fish.Scale = Vector3.Zero;
+            _fishAge = 0;
+            _pulseAge = 0;
+            return;
+        }
+        if (!taken || !FishPopping)
+        {
+            fish.Visible = taken;
+            fish.Scale = Vector3.One;
+            fish.Position = _fishBase;
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        // The pop and the pulse run on real time, since the game is paused behind the conversation when the gift is given.
+        if (_rig == null) return;
+        if (_fishAge >= 0 && _rig.Part("fish") is { } fish)
+        {
+            _fishAge += delta;
+            double f = Math.Clamp(_fishAge / PopSeconds, 0, 1);
+            // Ease out with a slight overshoot, and a small hop on the way down.
+            double c1 = 1.9, c3 = c1 + 1;
+            double scale = 1 + c3 * Math.Pow(f - 1, 3) + c1 * Math.Pow(f - 1, 2);
+            fish.Scale = Vector3.One * (float)Math.Max(scale, 0);
+            fish.Position = _fishBase + new Vector3(0, (float)(0.35 * Math.Sin(Math.PI * f) * (1 - f)), 0);
+            if (f >= 1)
+            {
+                _fishAge = -1;
+                fish.Scale = Vector3.One;
+                fish.Position = _fishBase;
+            }
+        }
+        if (_pulseAge >= 0)
+        {
+            _pulseAge += delta;
+            if (_pulseAge >= PulseSeconds) _pulseAge = -1;
+        }
+        ApplyLight();
+    }
+
+    private void ApplyLight()
+    {
+        float pulse = Pulse;
+        _light.LightEnergy = _idleEnergy + 2.4f * pulse;
+        _light.OmniRange = 6f + 3f * pulse;
     }
 
     /// <summary>Advances the idle. <paramref name="player"/> is where the player's feet are.</summary>
@@ -88,6 +158,7 @@ public partial class WulverView : Node3D
         if (_rig.Part("branch") is { } branch) branch.Rotation = new Vector3(0.05f * Mathf.Sin(t * 1.3f + 1f), 0, 0.07f * Mathf.Sin(t * 1.0f));
         if (_rig.Part("arm_l") is { } left) left.Rotation = new Vector3(0.03f * Mathf.Sin(t * 0.8f + 2f), 0, -0.02f * Mathf.Sin(t * 0.6f));
 
-        _light.LightEnergy = 0.5f + 0.06f * Mathf.Sin(t * 2.3f);
+        _idleEnergy = 0.5f + 0.06f * Mathf.Sin(t * 2.3f);
+        ApplyLight();
     }
 }
