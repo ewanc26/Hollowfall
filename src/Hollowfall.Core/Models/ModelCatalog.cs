@@ -88,7 +88,7 @@ public static class ModelCatalog
             .Prism(V(0, 0.3, 0.19), 0.05, 0.14, 4, Palette.Bone, 0, V(90, 0, 0), spin: 45)
             .Prism(V(0, 0.1, 0.17), 0.045, 0.12, 4, Palette.Bone, 0, V(90, 0, 0), spin: 45);
 
-        m.Part("head", V(0, 1.58, -0.1))
+        m.Part("head", V(0, 1.58, -0.1), "torso")
             .Box(V(0, 0.1, -0.04), V(0.28, 0.26, 0.28), Palette.Rust.Shade(0.08f))
             .Wedge(V(0, -0.08, -0.12), V(0.22, 0.1, 0.2), Palette.Bone, V(0, 180, 0))
             .Prism(V(-0.06, -0.04, -0.2), 0.025, 0.07, 4, Palette.Bone, 0, V(180, 0, 0), spin: 45)
@@ -101,7 +101,7 @@ public static class ModelCatalog
         foreach (double side in new[] { -1.0, 1.0 })
         {
             string tag = side < 0 ? "l" : "r";
-            m.Part($"arm_{tag}", V(0.3 * side, 1.45, -0.05))
+            m.Part($"arm_{tag}", V(0.3 * side, 1.45, -0.05), "torso")
                 .Box(V(0, -0.2, 0), V(0.11, 0.4, 0.11), Palette.Rust)
                 .Box(V(0, -0.52, -0.02), V(0.17, 0.34, 0.17), Palette.RustDark)
                 .Prism(V(-0.05, -0.76, -0.04), 0.025, 0.2, 4, Palette.Bone, 0, V(180, 0, 0), spin: 45)
@@ -163,7 +163,7 @@ public static class ModelCatalog
             .Prism(V(0.22, 0.6, 0.38), 0.06, 0.2, 4, Palette.Gold, 0, V(90, 0, 0), spin: 45)
             .Gem(V(0, 0.4, -0.32), V(0.1, 0.11, 0.06), Palette.Hot, glow: true);
 
-        m.Part("head", V(0, 1.95, -0.02))
+        m.Part("head", V(0, 1.95, -0.02), "torso")
             .Box(V(0, 0.12, 0), V(0.34, 0.34, 0.36), Palette.Plate)
             .Wedge(V(0, 0.32, 0.02), V(0.08, 0.12, 0.3), Palette.Crimson)
             .Box(V(0, 0.12, -0.185), V(0.26, 0.05, 0.02), Palette.Hot, glow: true)
@@ -173,7 +173,7 @@ public static class ModelCatalog
         foreach (double side in new[] { -1.0, 1.0 })
         {
             string tag = side < 0 ? "l" : "r";
-            m.Part($"arm_{tag}", V(0.5 * side, 1.8, 0))
+            m.Part($"arm_{tag}", V(0.5 * side, 1.8, 0), "torso")
                 .Box(V(0, 0.02, 0), V(0.32, 0.2, 0.34), Palette.Crimson)
                 .Prism(V(0.08 * side, 0.18, 0), 0.07, 0.22, 4, Palette.Gold, 0, V(0, 0, -12 * side), spin: 45)
                 .Prism(V(-0.06 * side, 0.15, 0), 0.05, 0.16, 4, Palette.Gold, 0, V(0, 0, 12 * side), spin: 45)
@@ -214,7 +214,7 @@ public static class ModelCatalog
             .Box(V(0, 0.015, -0.19), V(0.03, 0.03, 0.16), Palette.Steel)
             .Box(V(0, 0.045, -0.1), V(0.046, 0.046, 0.02), Palette.Gold)
             .Box(V(0, 0.075, -0.29), V(0.012, 0.016, 0.012), Palette.SteelLight)
-            .Box(V(0, -0.08, 0.08), V(0.045, 0.16, 0.07), Palette.Wood, V(-18, 0, 0))
+            .Box(V(0, -0.08, 0.06), V(0.045, 0.16, 0.07), Palette.Wood, V(-18, 0, 0))
             .Box(V(0, -0.03, 0.0), V(0.012, 0.05, 0.1), Palette.Steel, V(0, 0, 0));
 
         m.Part("cylinder", V(0, 0.02, -0.04))
@@ -240,8 +240,8 @@ public static class ModelCatalog
             .Box(V(0, 0.064, -0.17), V(0.02, 0.012, 0.3), Palette.SteelLight)
             .Box(V(0, 0.03, -0.0), V(0.1, 0.08, 0.1), Palette.Gold)
             .Box(V(0, -0.005, -0.15), V(0.07, 0.04, 0.16), Palette.Wood)
-            .Box(V(0, -0.06, 0.07), V(0.05, 0.14, 0.07), Palette.Wood, V(-16, 0, 0))
-            .Box(V(0, 0.01, 0.13), V(0.045, 0.06, 0.1), Palette.Wood, V(8, 0, 0));
+            .Box(V(0, -0.06, 0.05), V(0.05, 0.14, 0.07), Palette.Wood, V(-16, 0, 0))
+            .Box(V(0, 0.015, 0.11), V(0.045, 0.06, 0.1), Palette.Wood, V(8, 0, 0));
 
         m.Part("gem", V(0, 0.085, -0.02))
             .Gem(V(0, 0, 0), V(0.016, 0.016, 0.016), Palette.VioletGlow, glow: true);

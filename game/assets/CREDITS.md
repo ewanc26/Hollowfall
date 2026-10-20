@@ -25,3 +25,7 @@ Keyboard keys are not images: the game draws a keycap and writes the key's name 
 
 For reference, [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0) is a ready-made alternative if a more
 conventional prompt style is ever wanted; nothing from it is used here.
+
+## Models
+
+All low-poly models are described in code for this project (`src/Hollowfall.Core/Models`) and use no third-party assets.

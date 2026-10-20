@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Models;
 using Hollowfall.Core.Portals;
 using Hollowfall.Core.World;
 
@@ -18,12 +19,11 @@ public partial class CombatView : Node3D
         public double Life;
     }
 
-    private readonly Dictionary<int, MeshInstance3D> _enemies = [];
-    private readonly Dictionary<int, MeshInstance3D> _projectiles = [];
+    private readonly Dictionary<int, EnemyView> _enemies = [];
+    private readonly Dictionary<int, ProjectileView> _projectiles = [];
+    private Vector3 _playerPosition;
     private readonly Dictionary<PortalColor, PortalView> _portals = [];
     private readonly List<Tracer> _tracers = [];
-    private readonly Dictionary<EnemyKind, StandardMaterial3D> _kindMaterials = [];
-    private StandardMaterial3D _telegraph = null!;
     private WorldView _world = null!;
 
     public CombatSim Sim { get; private set; } = null!;
@@ -38,10 +38,6 @@ public partial class CombatView : Node3D
         Site = site;
         _world = world;
 
-        _kindMaterials[EnemyKind.Husk] = Solid(new Color(0.72f, 0.2f, 0.18f));
-        _kindMaterials[EnemyKind.Spitter] = Solid(new Color(0.55f, 0.25f, 0.75f));
-        _kindMaterials[EnemyKind.Warden] = Solid(new Color(0.25f, 0.05f, 0.08f));
-        _telegraph = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.9f, 0.1f), EmissionEnabled = true, Emission = new Color(1f, 0.85f, 0f), EmissionEnergyMultiplier = 2.5f };
     }
 
     private static StandardMaterial3D Solid(Color c) => new() { AlbedoColor = c, Roughness = 0.8f };
@@ -49,6 +45,7 @@ public partial class CombatView : Node3D
     /// <summary>Advances the simulation one fixed step and refreshes the visuals.</summary>
     public void Step(double delta, PlayerView view, PlayerActions actions)
     {
+        _playerPosition = new Vector3((float)view.Feet.X, (float)view.Feet.Y, (float)view.Feet.Z);
         Sim.Tick(delta, view, actions);
 
         var events = Sim.DrainEvents();
@@ -56,8 +53,8 @@ public partial class CombatView : Node3D
         foreach (var e in events) Handle(e);
         foreach (var (cx, cz) in Sim.TakeDirtyChunks()) _world.MarkDirty(cx, cz);
 
-        SyncEnemies();
-        SyncProjectiles();
+        SyncEnemies(delta);
+        SyncProjectiles(delta);
     }
 
     public override void _Process(double delta)
@@ -104,7 +101,7 @@ public partial class CombatView : Node3D
                 RefreshPortals();
                 break;
             case EnemyKilled killed when _enemies.TryGetValue(killed.Id, out var node):
-                node.QueueFree();
+                Collapse(node);
                 _enemies.Remove(killed.Id);
                 break;
         }
@@ -126,21 +123,30 @@ public partial class CombatView : Node3D
         }
     }
 
-    private void SyncEnemies()
+    /// <summary>A killed enemy slumps, shrinks into the floor and disappears.</summary>
+    private void Collapse(EnemyView view)
+    {
+        view.ForcePose("stunned");
+        var tween = CreateTween();
+        tween.SetParallel();
+        tween.TweenProperty(view, "scale", new Vector3(1.15f, 0.05f, 1.15f), 0.45).SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.In);
+        tween.TweenProperty(view, "position:y", view.Position.Y - 0.25f, 0.45);
+        tween.Chain().TweenCallback(Callable.From(view.QueueFree));
+    }
+
+    private void SyncEnemies(double delta)
     {
         var alive = new HashSet<int>();
         foreach (var e in Sim.Enemies)
         {
             alive.Add(e.Id);
-            if (!_enemies.TryGetValue(e.Id, out var node))
+            if (!_enemies.TryGetValue(e.Id, out var view))
             {
-                node = new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.6f, 1.8f, 0.6f) }, Name = $"Enemy_{e.Id}" };
-                AddChild(node);
-                _enemies[e.Id] = node;
+                view = new EnemyView(e) { Name = $"Enemy_{e.Id}" };
+                AddChild(view);
+                _enemies[e.Id] = view;
             }
-            node.Position = new Vector3((float)e.Feet.X, (float)e.Feet.Y + 0.9f, (float)e.Feet.Z);
-            node.MaterialOverride = e.Telegraphing ? _telegraph : _kindMaterials[e.Kind];
-            node.Scale = e.Kind == EnemyKind.Warden ? new Vector3(1.6f, 1.25f, 1.6f) : Vector3.One;
+            view.Follow(e, _playerPosition, delta);
         }
 
         foreach (var id in _enemies.Keys.Where(id => !alive.Contains(id)).ToList())
@@ -150,27 +156,19 @@ public partial class CombatView : Node3D
         }
     }
 
-    private void SyncProjectiles()
+    private void SyncProjectiles(double delta)
     {
         var alive = new HashSet<int>();
         foreach (var p in Sim.Projectiles)
         {
             alive.Add(p.Id);
-            if (!_projectiles.TryGetValue(p.Id, out var node))
+            if (!_projectiles.TryGetValue(p.Id, out var view))
             {
-                node = new MeshInstance3D { Mesh = new SphereMesh { Radius = 0.25f, Height = 0.5f }, Name = $"Projectile_{p.Id}" };
-                AddChild(node);
-                _projectiles[p.Id] = node;
+                view = new ProjectileView { Name = $"Projectile_{p.Id}" };
+                AddChild(view);
+                _projectiles[p.Id] = view;
             }
-            node.Position = new Vector3((float)p.Position.X, (float)p.Position.Y, (float)p.Position.Z);
-            node.MaterialOverride = new StandardMaterial3D
-            {
-                AlbedoColor = p.Reflected ? new Color(0.3f, 0.9f, 1f) : new Color(1f, 0.45f, 0.1f),
-                EmissionEnabled = true,
-                Emission = p.Reflected ? new Color(0.2f, 0.8f, 1f) : new Color(1f, 0.35f, 0f),
-                EmissionEnergyMultiplier = 3f,
-                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-            };
+            view.Follow(new Vector3((float)p.Position.X, (float)p.Position.Y, (float)p.Position.Z), p.Reflected, delta);
         }
 
         foreach (var id in _projectiles.Keys.Where(id => !alive.Contains(id)).ToList())

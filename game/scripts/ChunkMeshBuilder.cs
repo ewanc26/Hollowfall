@@ -39,7 +39,8 @@ public static class ChunkMeshBuilder
         return mesh;
     }
 
-    private static void AddSurface(ArrayMesh mesh, MeshBuffer buffer, Material material)
+    /// <summary>Adds one buffer as a surface with its own material. Core winds counter-clockwise; Godot wants clockwise, so triangles are reversed.</summary>
+    public static void AddSurface(ArrayMesh mesh, MeshBuffer buffer, Material material)
     {
         if (buffer.IsEmpty) return;
 

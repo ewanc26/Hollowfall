@@ -1,6 +1,8 @@
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Meshing;
 using Hollowfall.Core.Models;
+using Hollowfall.Core.Terrain;
 
 namespace Hollowfall.Tests;
 
@@ -296,5 +298,192 @@ public class ModelCatalogTests
         Assert.Equal("husk", ModelCatalog.ForEnemy(EnemyKind.Husk).Id);
         Assert.Equal("spitter", ModelCatalog.ForEnemy(EnemyKind.Spitter).Id);
         Assert.Equal("warden", ModelCatalog.ForEnemy(EnemyKind.Warden).Id);
+    }
+}
+
+public class PropPlacerTests
+{
+    private static DungeonSite Site(long seed)
+    {
+        var g = new TerrainGenerator(seed);
+        for (int rx = -3; rx <= 3; rx++)
+            for (int rz = -3; rz <= 3; rz++)
+                if (g.Dungeons!.GetSite(rx, rz) is { } s) return s;
+        throw new InvalidOperationException($"no dungeon near seed {seed}");
+    }
+
+    [Fact]
+    public void TorchesAreDeterministicAndPlentiful()
+    {
+        var a = PropPlacer.Torches(Site(11), 11);
+        var b = PropPlacer.Torches(Site(11), 11);
+        Assert.Equal(a, b);
+        Assert.True(a.Count >= Site(11).Floors.Sum(f => f.Rooms.Count));
+    }
+
+    [Fact]
+    public void TorchesHangOnSolidWallsFacingIntoOpenFloor()
+    {
+        var site = Site(23);
+        foreach (var t in PropPlacer.Torches(site, 23))
+        {
+            var floor = site.Floors[t.Floor];
+            Assert.Equal(CellKind.Floor, floor.CellAt(t.CellX, t.CellZ));
+            Assert.Equal(CellKind.Rock, floor.CellAt(t.CellX - t.FaceX, t.CellZ - t.FaceZ));
+            Assert.Equal(1, Math.Abs(t.FaceX) + Math.Abs(t.FaceZ));
+        }
+    }
+
+    [Fact]
+    public void TorchesInARoomKeepTheirDistance()
+    {
+        var torches = PropPlacer.Torches(Site(5), 5).GroupBy(t => (t.Floor, t.RoomId));
+        foreach (var room in torches)
+            foreach (var a in room)
+                foreach (var b in room)
+                    if (a != b) Assert.True(Math.Abs(a.CellX - b.CellX) + Math.Abs(a.CellZ - b.CellZ) >= PropPlacer.MinSpacing);
+    }
+}
+
+/// <summary>The rigging rules the animation code relies on: parts exist, pivot at their joints, and hang the right way.</summary>
+public class ModelRigTests
+{
+    private static (double MinX, double MaxX, double MinY, double MaxY) Extent(ModelPart part)
+    {
+        double minX = double.MaxValue, maxX = double.MinValue, minY = double.MaxValue, maxY = double.MinValue;
+        foreach (var buffer in new[] { part.Solid, part.Glow })
+        {
+            var p = buffer.Positions();
+            for (int i = 0; i < p.Length; i += 3)
+            {
+                minX = Math.Min(minX, p[i]);
+                maxX = Math.Max(maxX, p[i]);
+                minY = Math.Min(minY, p[i + 1]);
+                maxY = Math.Max(maxY, p[i + 1]);
+            }
+        }
+        return (minX, maxX, minY, maxY);
+    }
+
+    public static TheoryData<string> Walkers => ["husk", "warden"];
+
+    private static LowPolyModel Model(string id) => ModelCatalog.All.First(m => m.Id == id);
+
+    [Theory]
+    [MemberData(nameof(Walkers))]
+    public void WalkersHaveEveryPartTheAnimationMoves(string id)
+    {
+        var m = Model(id);
+        foreach (var name in new[] { "torso", "head", "arm_l", "arm_r", "leg_l", "leg_r" }) Assert.True(m.HasPart(name), $"{id} lacks {name}");
+    }
+
+    [Fact]
+    public void TheSpitterHasItsBodyMouthAndTentacles()
+    {
+        var m = Model("spitter");
+        foreach (var name in new[] { "body", "mouth", "tent_0", "tent_1", "tent_2", "tent_3" }) Assert.True(m.HasPart(name), $"spitter lacks {name}");
+    }
+
+    [Theory]
+    [MemberData(nameof(Walkers))]
+    public void LimbsHangFromTheirJoints(string id)
+    {
+        var m = Model(id);
+        foreach (var side in new[] { "l", "r" })
+        {
+            foreach (var limb in new[] { "arm", "leg" })
+            {
+                var part = m.Part($"{limb}_{side}");
+                var e = Extent(part);
+                Assert.True(e.MinY < -0.4, $"{id} {limb}_{side} should hang below its pivot");
+                Assert.True(e.MaxY < 0.35, $"{id} {limb}_{side} pivot should sit at its top, not its middle");
+                Assert.True(Math.Abs(e.MinX + e.MaxX) < 0.1, $"{id} {limb}_{side} should be centred on its pivot sideways");
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Walkers))]
+    public void FeetRestOnTheGroundAndLimbsMirror(string id)
+    {
+        var m = Model(id);
+        foreach (var side in new[] { "l", "r" })
+        {
+            var leg = m.Part($"leg_{side}");
+            Assert.InRange(leg.Pivot.Y + Extent(leg).MinY, -0.05, 0.06);
+        }
+        foreach (var limb in new[] { "arm", "leg" })
+        {
+            Assert.Equal(m.Part($"{limb}_l").Pivot.X, -m.Part($"{limb}_r").Pivot.X, 6);
+            Assert.Equal(m.Part($"{limb}_l").Pivot.Y, m.Part($"{limb}_r").Pivot.Y, 6);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Walkers))]
+    public void HeadAndArmsAreAttachedToTheTorsoAndJointsTouchIt(string id)
+    {
+        var m = Model(id);
+        var torso = m.Part("torso");
+        var t = Extent(torso);
+        foreach (var name in new[] { "head", "arm_l", "arm_r" })
+        {
+            var part = m.Part(name);
+            Assert.Equal("torso", part.Parent);
+            // A joint sits on the body it hangs from: within its extent, give or take a shoulder pad.
+            Assert.InRange(part.Pivot.Y - torso.Pivot.Y, t.MinY - 0.1, t.MaxY + 0.1);
+            Assert.InRange(Math.Abs(part.Pivot.X - torso.Pivot.X), 0, Math.Max(Math.Abs(t.MinX), Math.Abs(t.MaxX)) + 0.15);
+        }
+        foreach (var name in new[] { "leg_l", "leg_r" }) Assert.Null(m.Part(name).Parent);
+    }
+
+    [Fact]
+    public void TentaclesHangFromTheBelly()
+    {
+        var m = Model("spitter");
+        var body = m.Part("body");
+        for (int i = 0; i < 4; i++)
+        {
+            var tent = m.Part($"tent_{i}");
+            var e = Extent(tent);
+            Assert.True(e.MaxY < 0.1 && e.MinY < -0.3, "a tentacle hangs from its pivot");
+            Assert.True(tent.Pivot.Y < body.Pivot.Y, "tentacles start under the bulb's centre");
+        }
+    }
+
+    [Fact]
+    public void ChestLidHingesAtTheBackEdgeOfTheBase()
+    {
+        var m = Model("chest");
+        var lid = m.Part("lid");
+        var e = Extent(lid);
+        Assert.True(e.MaxY < 0.3 && e.MinY > -0.1, "the lid sits just above its hinge");
+        Assert.InRange(lid.Pivot.Y, 0.3, 0.4);
+        Assert.True(lid.Pivot.Z > 0.15, "the hinge is on the back edge");
+    }
+
+    [Fact]
+    public void WeaponMovingPartsPivotAtTheirOwnAxes()
+    {
+        var r = Model("revolver");
+        var cyl = Extent(r.Part("cylinder"));
+        Assert.True(Math.Abs(cyl.MinY + cyl.MaxY) < 0.01, "the cylinder turns about its middle");
+        var ham = Extent(r.Part("hammer"));
+        Assert.True(ham.MinY > -0.02 && ham.MaxY > 0.04, "the hammer swings up from its hinge");
+    }
+
+    [Fact]
+    public void ParentsAreBuiltBeforeTheirChildren()
+    {
+        foreach (var m in ModelCatalog.All)
+        {
+            var seen = new HashSet<string>();
+            foreach (var p in m.Parts)
+            {
+                if (p.Parent != null) Assert.Contains(p.Parent, seen);
+                seen.Add(p.Name);
+            }
+        }
+        Assert.Throws<ArgumentException>(() => new ModelBuilder("x").Part("hand", new Vec3(0, 0, 0), "arm"));
     }
 }

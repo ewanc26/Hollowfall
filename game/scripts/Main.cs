@@ -18,6 +18,9 @@ public partial class Main : Node3D
     private PlayerController _player = null!;
     private Hud _hud = null!;
     private Menus _menus = null!;
+    private ViewModels _weapons = null!;
+    private PropsView? _props;
+    private CanvasLayer _weaponLayer = null!;
     private string _where = "";
     private int _demoFrame;
     private readonly string? _demo = System.Environment.GetEnvironmentVariable("HOLLOWFALL_DEMO");
@@ -70,8 +73,18 @@ public partial class Main : Node3D
             Combat.Initialize(new CombatSim(World, site), site, _view);
             Combat.EventRaised += OnCombatEvent;
             Combat.EventRaised += e => _hud?.OnEvent(e);
+            Combat.EventRaised += e => { if (e is ShotFired shot) _weapons?.Fire(shot.Weapon); };
             AddChild(Combat);
+            _props = new PropsView { Name = "Props" };
+            _props.Initialize(site);
+            AddChild(_props);
         }
+
+        // The weapons in your hands, drawn under the HUD.
+        _weaponLayer = new CanvasLayer { Layer = 4, Name = "Weapons" };
+        _weapons = new ViewModels { Name = "ViewModels" };
+        _weaponLayer.AddChild(_weapons);
+        AddChild(_weaponLayer);
 
         _hud = new Hud { Name = "Hud" };
         AddChild(_hud);
@@ -79,7 +92,11 @@ public partial class Main : Node3D
         _menus = new Menus(Settings, SettingsPath) { Name = "Menus" };
         _menus.SettingsChanged += ApplySettings;
         _menus.PromptStyleProvider = () => PromptStyle;
-        _menus.MenuOpenChanged += open => _hud.Visible = !open;
+        _menus.MenuOpenChanged += open =>
+        {
+            _hud.Visible = !open;
+            _weaponLayer.Visible = !open;
+        };
         _menus.RespawnRequested += () => { if (Combat != null) Respawn(); };
         _menus.QuitRequested += () => GetTree().Quit();
         AddChild(_menus);
@@ -285,10 +302,16 @@ public partial class Main : Node3D
 
         if (InputMapper.JustPressed(GameAction.DebugInfo)) _hud.SetDebug(!_hud.DebugOn);
 
+        _weapons.Pose(delta, b.Speed, b.OnGround, _player.LookDelta);
+        _props?.Update(delta, _view.Focus);
+
         if (Combat == null) return;
         var sim = Combat.Sim;
         int floor = sim.CurrentFloor;
-        _hud.SetOpenings(Combat.PortalScreenRects(_player.Camera));
+        var openings = Combat.PortalScreenRects(_player.Camera);
+        _hud.SetOpenings(openings);
+        _weapons.SetOpenings(openings);
+        _weapons.SetPortals(sim.Portals.Teal != null, sim.Portals.Violet != null);
         if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds);
         else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
 

@@ -31,6 +31,11 @@ public partial class PlayerController : Node3D
     /// <summary>True when the last thing the player touched was a gamepad, so hints can show its buttons.</summary>
     public bool UsingGamepad { get; private set; }
 
+    /// <summary>How far the view turned since the last step (yaw, pitch in radians), for weapon sway.</summary>
+    public Vector2 LookDelta { get; private set; }
+
+    private double _lastYaw, _lastPitch;
+
     /// <summary>Raised when the player goes through a portal, so the view can react.</summary>
     public event Action<Crossing>? Crossed;
 
@@ -160,6 +165,9 @@ public partial class PlayerController : Node3D
 
     private void UpdateCamera()
     {
+        LookDelta = new Vector2((float)Mathf.Wrap(_yaw - _lastYaw, -Math.PI, Math.PI), (float)(_pitch - _lastPitch));
+        _lastYaw = _yaw;
+        _lastPitch = _pitch;
         Position = new Vector3((float)Body.X, (float)(Body.Y + EyeHeight), (float)Body.Z);
         Rotation = new Vector3(0, (float)_yaw, 0);
         _camera.Rotation = new Vector3((float)_pitch, 0, 0);

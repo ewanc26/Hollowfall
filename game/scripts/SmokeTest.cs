@@ -88,6 +88,8 @@ public partial class SmokeTest : Node
         Check("an all-air chunk converts to no mesh", () =>
             ChunkMeshBuilder.ToArrayMesh(ChunkMesher.Build(0, 0, (_, _, _) => BlockType.Air)) == null);
 
+        Check("every enemy model is rigged: poses move the joints and children follow their parents", CheckEnemyRigs);
+
         await CheckMainSceneAsync();
 
         GD.Print($"==== {_passed} passed, {_failed} failed ====");
@@ -146,7 +148,7 @@ public partial class SmokeTest : Node
             for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             combat.UpdatePortalViews(main.Player.Camera);
 
-            bool enemyDrawn = combat.GetNodeOrNull<MeshInstance3D>($"Enemy_{enemy.Id}") != null;
+            bool enemyDrawn = combat.GetNodeOrNull<EnemyView>($"Enemy_{enemy.Id}") != null;
             bool portalsDrawn = combat.GetNodeOrNull<PortalView>("Portal_Teal") != null && combat.GetNodeOrNull<PortalView>("Portal_Violet") != null;
             bool linked = combat.Sim.Portals.Linked;
 
@@ -265,6 +267,55 @@ public partial class SmokeTest : Node
             _failed++;
             GD.PrintErr($"  FAIL {menuName}: {e.Message}");
         }
+    }
+
+    private bool CheckEnemyRigs()
+    {
+        EnemyView Make(EnemyKind kind, string pose)
+        {
+            var view = new EnemyView(kind);
+            AddChild(view);
+            view.ForcePose(pose);
+            for (int i = 0; i < 40; i++) view.Animate(EnemyState.Chasing, 1.0 / 30);
+            return view;
+        }
+
+        bool ok = true;
+        void Expect(bool condition, string what)
+        {
+            if (condition) return;
+            ok = false;
+            GD.PrintErr($"    rig: {what}");
+        }
+
+        foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Warden })
+        {
+            var idle = Make(kind, "idle");
+            var windup = Make(kind, "windup");
+            var walk = Make(kind, "walk");
+            var stunned = Make(kind, "stunned");
+
+            Expect(windup.Rig.Part("arm_l")!.RotationDegrees.X < -60, $"{kind} raises its arms on a windup");
+            Expect(Math.Abs(walk.Rig.Part("leg_l")!.RotationDegrees.X) + Math.Abs(walk.Rig.Part("leg_r")!.RotationDegrees.X) > 5, $"{kind} swings its legs when walking");
+            Expect(walk.Rig.Part("leg_l")!.RotationDegrees.X * walk.Rig.Part("leg_r")!.RotationDegrees.X < 0, $"{kind}'s legs swing in opposite directions");
+            Expect(stunned.Rig.Part("head")!.RotationDegrees.X > 20, $"{kind} slumps its head when stunned");
+
+            // The head hangs from the torso: leaning the torso carries it along.
+            var head = windup.Rig.Part("head")!;
+            Expect(head.GetParent() == windup.Rig.Part("torso"), $"{kind}'s head is parented to the torso");
+            Expect(head.GlobalPosition.DistanceTo(idle.Rig.Part("head")!.GlobalPosition) > 0.02, $"{kind}'s head moves when the torso leans");
+            Expect(windup.Rig.Part("arm_r")!.GetParent() == windup.Rig.Part("torso"), $"{kind}'s arms are parented to the torso");
+            foreach (var v in new[] { idle, windup, walk, stunned }) v.QueueFree();
+        }
+
+        var s0 = Make(EnemyKind.Spitter, "idle");
+        var s1 = Make(EnemyKind.Spitter, "windup");
+        Expect(s1.Rig.Part("body")!.Scale.X > 1.1f, "the Spitter swells when winding up");
+        Expect(s1.Rig.Part("mouth")!.Scale.X > 1.2f, "the Spitter's mouth opens wide when winding up");
+        Expect(s1.Rig.Part("tent_0")!.RotationDegrees.Length() > 1, "the Spitter's tentacles sway");
+        s0.QueueFree();
+        s1.QueueFree();
+        return ok;
     }
 
     private void Check(string name, Func<bool> test)

@@ -19,6 +19,9 @@ public sealed class ModelPart
 {
     public string Name { get; }
 
+    /// <summary>The part this one hangs from (a head from its torso), or null for a part attached to the model itself. A child moves, leans and scales with its parent.</summary>
+    public string? Parent { get; }
+
     /// <summary>Where the part's joint is, in the model's own space (y up, feet at 0, facing -Z).</summary>
     public Vec3 Pivot { get; }
 
@@ -28,9 +31,10 @@ public sealed class ModelPart
     /// <summary>Glowing geometry (eyes, cores, gems, flames): drawn unlit and bright, and used to show telegraphs.</summary>
     public MeshBuffer Glow { get; } = new();
 
-    internal ModelPart(string name, Vec3 pivot)
+    internal ModelPart(string name, Vec3 pivot, string? parent)
     {
         Name = name;
+        Parent = parent;
         Pivot = pivot;
     }
 
@@ -98,9 +102,11 @@ public sealed class ModelBuilder
     /// Starts a part that rotates about <paramref name="pivot"/>. Everything added to the part is positioned relative to
     /// that pivot, so an arm's hand sits below its shoulder whichever way the arm is posed.
     /// </summary>
-    public PartBuilder Part(string name, Vec3 pivot)
+    public PartBuilder Part(string name, Vec3 pivot, string? parent = null)
     {
-        var part = new PartBuilder(new ModelPart(name, pivot));
+        if (parent != null && _parts.All(p => p.Result.Name != parent))
+            throw new ArgumentException($"part {name} names a parent, {parent}, that has not been added yet", nameof(parent));
+        var part = new PartBuilder(new ModelPart(name, pivot, parent));
         _parts.Add(part);
         return part;
     }
