@@ -106,8 +106,8 @@ public partial class PlayerController : Node3D
             FireRevolver: live && InputMapper.Pressed(GameAction.FirePrimary),
             FireShotgun: live && InputMapper.Pressed(GameAction.FireSecondary),
             Parry: live && InputMapper.JustPressed(GameAction.Parry),
-            PortalBlue: live && InputMapper.JustPressed(GameAction.PortalBlue),
-            PortalOrange: live && InputMapper.JustPressed(GameAction.PortalOrange));
+            PortalTeal: live && InputMapper.JustPressed(GameAction.PortalTeal),
+            PortalViolet: live && InputMapper.JustPressed(GameAction.PortalViolet));
 
         if (!dead)
         {

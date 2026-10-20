@@ -78,6 +78,7 @@ public partial class Main : Node3D
 
         _menus = new Menus(Settings, SettingsPath) { Name = "Menus" };
         _menus.SettingsChanged += ApplySettings;
+        _menus.PromptStyleProvider = () => PromptStyle;
         _menus.MenuOpenChanged += open => _hud.Visible = !open;
         _menus.RespawnRequested += () => { if (Combat != null) Respawn(); };
         _menus.QuitRequested += () => GetTree().Quit();
@@ -107,12 +108,31 @@ public partial class Main : Node3D
         _view.ViewRadius = Settings.ViewRadius;
     }
 
-    private string Hints()
+    /// <summary>The button labels to show: for a gamepad, those of the connected controller unless the player chose a style.</summary>
+    public ControllerStyle PromptStyle
+    {
+        get
+        {
+            var pads = Input.GetConnectedJoypads();
+            string? name = pads.Count > 0 ? Input.GetJoyName(pads[0]) : null;
+            return ControllerStyles.Resolve(Settings.ControllerPrompts, name);
+        }
+    }
+
+    private List<(Binding? Binding, string Label)> Hints()
     {
         var slot = _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse;
-        string Key(GameAction a) => BindingNames.Display(Settings.Bindings.Get(a, slot));
-        return $"{Key(GameAction.FirePrimary)} revolver   {Key(GameAction.FireSecondary)} shotgun   {Key(GameAction.Parry)} parry   " +
-               $"{Key(GameAction.PortalBlue)} blue portal   {Key(GameAction.PortalOrange)} orange portal   {Key(GameAction.Jump)} jump   {Key(GameAction.Pause)} menu";
+        (Binding?, string) Hint(GameAction a, string label) => (Settings.Bindings.Get(a, slot), label);
+        return
+        [
+            Hint(GameAction.FirePrimary, "revolver"),
+            Hint(GameAction.FireSecondary, "shotgun"),
+            Hint(GameAction.Parry, "parry"),
+            Hint(GameAction.PortalTeal, "teal portal"),
+            Hint(GameAction.PortalViolet, "violet portal"),
+            Hint(GameAction.Jump, "jump"),
+            Hint(GameAction.Pause, "menu"),
+        ];
     }
 
     private static Godot.Environment MakeEnvironment()
@@ -206,20 +226,20 @@ public partial class Main : Node3D
     }
 
     /// <summary>
-    /// A scripted setup for screenshots and videos (HOLLOWFALL_DEMO=portals): drop to floor 0, put a blue portal on the
-    /// east wall and an orange one on the north wall, and look at the blue one.
+    /// A scripted setup for screenshots and videos (HOLLOWFALL_DEMO=portals): drop to floor 0, put a teal portal on the
+    /// east wall and an violet one on the north wall, and look at the teal one.
     /// </summary>
     private (PlayerView, PlayerActions) RunPortalDemo(PlayerView view, PlayerActions actions)
     {
         _demoFrame++;
         if (_demoFrame == 5) MovePlayerToFloor(0);
         var east = new Vec3(1, 0, 0);
-        if (_demoFrame == 30) return (view with { Forward = east }, actions with { PortalBlue = true });
-        if (_demoFrame == 32) return (view with { Forward = new Vec3(0, 0, -1) }, actions with { PortalOrange = true });
-        if (_demoFrame == 34 && Combat!.Sim.Portals.Blue is { } blue)
+        if (_demoFrame == 30) return (view with { Forward = east }, actions with { PortalTeal = true });
+        if (_demoFrame == 32) return (view with { Forward = new Vec3(0, 0, -1) }, actions with { PortalViolet = true });
+        if (_demoFrame == 34 && Combat!.Sim.Portals.Teal is { } teal)
         {
-            // Stand a few blocks in front of the blue portal, facing it.
-            var at = blue.Frame.Center + blue.Frame.Normal * 3.5;
+            // Stand a few blocks in front of the teal portal, facing it.
+            var at = teal.Frame.Center + teal.Frame.Normal * 3.5;
             _player.PlaceAt(new Vector3((float)at.X, (float)view.Feet.Y, (float)at.Z), -Math.PI / 2);
         }
         return (view, actions);
@@ -273,6 +293,6 @@ public partial class Main : Node3D
             $"{Engine.GetFramesPerSecond()} fps   {floorInfo}\n" +
             $"x {b.X:F1}  y {b.Y:F1}  z {b.Z:F1}   speed {b.Speed:F1}   {(_player.Flying ? "FLYING" : b.OnGround ? "walking" : "airborne")}" +
             "";
-        _hud.Update(delta, sim, sim.Portals, info, Hints());
+        _hud.Update(delta, sim, sim.Portals, info, Hints(), PromptStyle);
     }
 }

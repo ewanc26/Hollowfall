@@ -26,16 +26,29 @@ public partial class PortalView : Node3D
         render_mode unshaded, cull_back;
 
         uniform sampler2D view_tex : source_color, filter_linear;
-        uniform vec4 rim : source_color = vec4(0.2, 0.5, 1.0, 1.0);
+        uniform vec4 rim : source_color = vec4(0.1, 0.83, 0.77, 1.0);
         uniform float linked = 0.0;
 
+        // A portal is a chamfered gate: a 1 x 2 block opening with its corners cut off, a double frame, and a slow
+        // diagonal shimmer. Local coordinates are in blocks (x in -0.5..0.5, y in -1..1).
+        const float CHAMFER = 0.3;
+
         void fragment() {
-            // Distance to the quad's edge, in blocks (the quad is 1 wide, 2 tall).
-            float edge = min(min(UV.x, 1.0 - UV.x) * 1.0, min(UV.y, 1.0 - UV.y) * 2.0);
-            float rim_amount = smoothstep(0.14, 0.02, edge);
-            vec3 inside = linked > 0.5 ? texture(view_tex, SCREEN_UV).rgb : rim.rgb * 0.18;
-            ALBEDO = mix(inside, rim.rgb * 1.6, rim_amount);
-            ALPHA = 1.0;
+            vec2 p = (UV - vec2(0.5)) * vec2(1.0, 2.0);
+            vec2 a = abs(p);
+            float edge = min(min(0.5 - a.x, 1.0 - a.y), (0.5 + 1.0 - CHAMFER - a.x - a.y) * 0.7071);
+            if (edge < 0.0) discard;
+
+            float frame = smoothstep(0.115, 0.095, edge);
+            float inner_line = smoothstep(0.02, 0.0, abs(edge - 0.19)) * 0.8;
+            float shimmer = 0.5 + 0.5 * sin((p.x * 0.7 + p.y * 0.45) * 22.0 - TIME * 1.6);
+
+            vec3 inside = linked > 0.5
+                ? texture(view_tex, SCREEN_UV).rgb + rim.rgb * 0.05 * shimmer
+                : rim.rgb * (0.16 + 0.1 * shimmer);
+
+            vec3 colour = mix(inside, rim.rgb * 1.5, max(frame, inner_line));
+            ALBEDO = colour;
         }
         """;
 
@@ -51,7 +64,7 @@ public partial class PortalView : Node3D
     public PortalView(Portal portal)
     {
         Portal = portal;
-        _colour = portal.Color == PortalColor.Blue ? new Color(0.15f, 0.55f, 1f) : new Color(1f, 0.55f, 0.1f);
+        _colour = portal.Color == PortalColor.Teal ? new Color(0.1f, 0.83f, 0.77f) : new Color(0.64f, 0.29f, 1f);
     }
 
     public override void _Ready()

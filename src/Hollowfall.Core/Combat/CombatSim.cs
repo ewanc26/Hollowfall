@@ -9,7 +9,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalBlue = false, bool PortalOrange = false);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -168,8 +168,8 @@ public sealed class CombatSim
             }
         }
 
-        if (actions.PortalBlue) FirePortal(PortalColor.Blue, view);
-        if (actions.PortalOrange) FirePortal(PortalColor.Orange, view);
+        if (actions.PortalTeal) FirePortal(PortalColor.Teal, view);
+        if (actions.PortalViolet) FirePortal(PortalColor.Violet, view);
 
         if (actions.FireRevolver) Fire(WeaponSpec.Revolver, view);
         if (actions.FireShotgun) Fire(WeaponSpec.Shotgun, view);
@@ -497,7 +497,7 @@ public sealed class CombatSim
         if (Portals.Linked)
         {
             double direct = e.Feet.DistanceTo(view.Feet);
-            foreach (var entrance in new[] { Portals.Blue!, Portals.Orange! })
+            foreach (var entrance in new[] { Portals.Teal!, Portals.Violet! })
             {
                 var exit = Portals.Other(entrance)!;
                 var mirrored = PortalTransform.Point(exit, entrance, view.Feet);

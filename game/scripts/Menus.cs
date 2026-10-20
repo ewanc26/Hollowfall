@@ -1,5 +1,6 @@
 using Godot;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Ui;
 
 namespace Hollowfall.Game;
 
@@ -29,12 +30,16 @@ public partial class Menus : CanvasLayer
     private (GameAction Action, Slot Slot)? _listening;
     private double _listenLeft;
     private MenuScreen _current = MenuScreen.None;
+    private OptionButton? _promptBox;
 
     public Menus(GameSettings settings, string savePath)
     {
         _settings = settings;
         _savePath = savePath;
     }
+
+    /// <summary>Supplies the controller style to show on binding buttons; set by the game from the connected pad.</summary>
+    public Func<ControllerStyle> PromptStyleProvider { get; set; } = () => ControllerStyle.Xbox;
 
     public MenuScreen Current => _current;
     public bool IsOpen => _current != MenuScreen.None;
@@ -144,7 +149,7 @@ public partial class Menus : CanvasLayer
 
     private static Theme MakeTheme()
     {
-        var theme = new Theme();
+        var theme = new Theme { DefaultFont = UiFonts.Body, DefaultFontSize = 22 };
         StyleBoxFlat Box(Color c, Color border) => new()
         {
             BgColor = c,
@@ -170,8 +175,9 @@ public partial class Menus : CanvasLayer
         theme.SetStylebox("panel", "PanelContainer", Box(new Color(0.05f, 0.05f, 0.07f, 0.94f), new Color(0.25f, 0.25f, 0.3f)));
         theme.SetColor("font_color", "Button", Colors.White);
         theme.SetColor("font_disabled_color", "Button", new Color(0.5f, 0.5f, 0.55f));
-        theme.SetFontSize("font_size", "Button", 18);
-        theme.SetFontSize("font_size", "Label", 18);
+        theme.SetFontSize("font_size", "Button", 22);
+        theme.SetFontSize("font_size", "Label", 22);
+        theme.SetConstant("icon_max_width", "Button", 30);
         return theme;
     }
 
@@ -200,6 +206,7 @@ public partial class Menus : CanvasLayer
     private static Label Heading(string text, int size = 30)
     {
         var l = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center };
+        l.AddThemeFontOverride("font", UiFonts.Display);
         l.AddThemeFontSizeOverride("font_size", size);
         l.AddThemeColorOverride("font_color", new Color(1f, 0.8f, 0.3f));
         return l;
@@ -309,7 +316,7 @@ public partial class Menus : CanvasLayer
 
     private Control BuildSettings()
     {
-        var (screen, col) = Panel(620, 470);
+        var (screen, col) = Panel(620, 520);
         col.AddChild(Heading("SETTINGS"));
 
         Slider(col, "Mouse sensitivity", GameSettings.MouseSensitivityRange.Min, GameSettings.MouseSensitivityRange.Max, 0.0001,
@@ -322,6 +329,22 @@ public partial class Menus : CanvasLayer
             () => _settings.FieldOfView, v => _settings.FieldOfView = v, v => $"{v:F0}°");
         Slider(col, "Render distance", GameSettings.ViewRadiusRange.Min, GameSettings.ViewRadiusRange.Max, 1,
             () => _settings.ViewRadius, v => _settings.ViewRadius = (int)v, v => $"{v:F0} chunks");
+
+        var prompts = new HBoxContainer();
+        prompts.AddThemeConstantOverride("separation", 10);
+        prompts.AddChild(new Label { Text = "Controller prompts", CustomMinimumSize = new Vector2(220, 0) });
+        var promptBox = new OptionButton { CustomMinimumSize = new Vector2(220, 0) };
+        foreach (var style in Enum.GetValues<PromptStyle>()) promptBox.AddItem(style == PromptStyle.Auto ? "Auto (follow controller)" : style.ToString(), (int)style);
+        promptBox.Selected = (int)_settings.ControllerPrompts;
+        promptBox.ItemSelected += index =>
+        {
+            _settings.ControllerPrompts = (PromptStyle)(int)promptBox.GetItemId((int)index);
+            SettingsChanged?.Invoke();
+            RefreshBindingButtons();
+        };
+        prompts.AddChild(promptBox);
+        col.AddChild(prompts);
+        _promptBox = promptBox;
 
         CheckBox(col, "Invert mouse Y", () => _settings.InvertMouseY, v => _settings.InvertMouseY = v);
         CheckBox(col, "Invert gamepad Y", () => _settings.InvertPadY, v => _settings.InvertPadY = v);
@@ -417,9 +440,18 @@ public partial class Menus : CanvasLayer
 
     public void RefreshBindingButtons()
     {
+        var style = PromptStyleProvider();
         foreach (var ((action, slot), button) in _bindingButtons)
-            button.Text = slot == Slot.KeyboardMouse && ActionInfo.AnalogOnlyOnGamepad(action)
-                ? "mouse"
-                : BindingNames.Display(_settings.Bindings.Get(action, slot));
+        {
+            if (slot == Slot.KeyboardMouse && ActionInfo.AnalogOnlyOnGamepad(action))
+            {
+                button.Text = "mouse";
+                button.Icon = Glyphs.Get("mouse");
+                continue;
+            }
+            var binding = _settings.Bindings.Get(action, slot);
+            button.Text = BindingNames.Display(binding, style);
+            button.Icon = Glyphs.ForBinding(binding, style);
+        }
     }
 }

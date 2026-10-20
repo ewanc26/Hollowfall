@@ -104,7 +104,7 @@ public partial class CombatView : Node3D
 
     private void RefreshPortals()
     {
-        foreach (var color in new[] { PortalColor.Blue, PortalColor.Orange })
+        foreach (var color in new[] { PortalColor.Teal, PortalColor.Violet })
         {
             var portal = Sim.Portals.Get(color);
             if (_portals.TryGetValue(color, out var existing) && existing.Portal == portal) continue;

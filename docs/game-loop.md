@@ -80,7 +80,9 @@ computed from the floor itself (enemy count and path length) instead of being ha
 
 ## Portals
 
-Portals come from Valve's Portal series, and they change how the combat loop and the dungeons play.
+Linked portals are an established puzzle-game idea (Valve's Portal series is the best known), and they change how the combat loop and the
+dungeons play. Ours have their own look so they read as Hollowfall's: a chamfered, double-framed gate in teal and violet, not a
+glowing blue and orange oval.
 
 - **Traversal puzzles and shortcuts.** A dungeon floor is a graph of rooms, but a portal pair lets you ignore the graph:
   skip a locked arena's long way round, drop through a ceiling into the room below, or bring the exit to you.

@@ -6,6 +6,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Changed
 
+- Portals have their own identity: teal and violet chamfered double-frame gates with a diagonal shimmer, replacing the blue and orange ovals. The colours, actions (`PortalTeal`, `PortalViolet`), icons and text were renamed to match; saved bindings for the old action names fall back to the defaults.
 - The game is now called Hollowfall. Namespaces, projects, the solution, the Godot project and the environment variables (`HOLLOWFALL_SEED`, `HOLLOWFALL_SPAWN_FLOOR`) were renamed from `VoxelGame`.
 - Dungeon entrances are only placed where the surface is at or below y=84 (`DungeonMap.MaxEntranceY`), so the entrance spiral never exceeds about 46 blocks. Dungeons are still in about a fifth of regions (17-22% across five seeds).
 
@@ -16,6 +17,9 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Assets: Chakra Petch (titles) and Rajdhani (menus and HUD), both SIL OFL, with their licences; a generated vector set (`tools/Hollowfall.AssetGen`) of controller, mouse and keyboard prompts, HUD icons, style-rank emblems, the app icon and the README banner; and `assets/CREDITS.md`. A test fails if the committed files drift from the generator.
+- Controller prompts for every face button in three layouts: Xbox (A, B, X, Y), PlayStation (cross, circle, square, triangle) and Nintendo (labels swapped by position), with matching shoulders, triggers and menu buttons. Prompts follow the connected controller, or can be forced in Settings.
+- The HUD and menus show glyphs and keycaps for each binding, a rank emblem, a heart for health and the two portal icons on the crosshair.
 - Remappable controls for keyboard, mouse and gamepad. Core has `GameAction`, `BindingMap` (one keyboard/mouse and one gamepad binding per action, swap on conflict, Escape reserved for pause, required actions stay bound), clamped `GameSettings` with a defensive, atomically saved JSON store, and the dead-zone and look maths in `InputMath`. In Godot, `InputMapper` turns bindings into InputMap actions (physical keys, so WASD works on AZERTY).
 - Gamepad play: left stick moves, right stick looks (radial dead zone, response curve, adjustable speed), triggers fire, shoulders place portals.
 - Menus built in code and usable with keyboard, mouse or gamepad: a title screen, a pause menu, a Controls screen with click-to-rebind, and a Settings screen (sensitivity, gamepad look speed, dead zone, field of view, render distance, inverted Y). The game pauses while a menu is open, and hints on the HUD show the buttons for the device you are using.

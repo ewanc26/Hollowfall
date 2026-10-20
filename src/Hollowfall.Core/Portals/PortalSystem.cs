@@ -18,7 +18,7 @@ public readonly record struct PlaceResult(bool Placed, Portal? Portal, PlaceFail
 public readonly record struct Crossing(Portal Entered, Portal Exited, Vec3 Position, Vec3 Velocity, Vec3 Forward);
 
 /// <summary>
-/// A linked pair of portals (blue and orange). Placing one replaces the previous of its colour. Anything that
+/// A linked pair of portals (teal and violet). Placing one replaces the previous of its colour. Anything that
 /// crosses the face of one comes out of the other, keeping its speed. Pure and engine-free.
 /// </summary>
 public sealed class PortalSystem
@@ -28,25 +28,25 @@ public sealed class PortalSystem
     /// <summary>Slowest a body may leave a portal, so stepping in gently never leaves it stuck inside.</summary>
     public const double MinExitSpeed = 1.5;
 
-    public Portal? Blue { get; private set; }
-    public Portal? Orange { get; private set; }
+    public Portal? Teal { get; private set; }
+    public Portal? Violet { get; private set; }
 
     /// <summary>Both portals exist, so they work.</summary>
-    public bool Linked => Blue != null && Orange != null;
+    public bool Linked => Teal != null && Violet != null;
 
-    public Portal? Get(PortalColor color) => color == PortalColor.Blue ? Blue : Orange;
+    public Portal? Get(PortalColor color) => color == PortalColor.Teal ? Teal : Violet;
 
-    public Portal? Other(Portal p) => p.Color == PortalColor.Blue ? Orange : Blue;
+    public Portal? Other(Portal p) => p.Color == PortalColor.Teal ? Violet : Teal;
 
     public void Clear()
     {
-        Blue = null;
-        Orange = null;
+        Teal = null;
+        Violet = null;
     }
 
     public void Remove(PortalColor color)
     {
-        if (color == PortalColor.Blue) Blue = null; else Orange = null;
+        if (color == PortalColor.Teal) Teal = null; else Violet = null;
     }
 
     // ---- placement --------------------------------------------------------------------------
@@ -97,7 +97,7 @@ public sealed class PortalSystem
                 continue;
             }
 
-            if (color == PortalColor.Blue) Blue = portal; else Orange = portal;
+            if (color == PortalColor.Teal) Teal = portal; else Violet = portal;
             return new(true, portal, PlaceFailure.None);
         }
         return new(false, null, failure);
@@ -131,9 +131,9 @@ public sealed class PortalSystem
     public Func<int, int, int, BlockType> WithHoles(Func<int, int, int, BlockType> blockAt)
     {
         if (!Linked) return blockAt;
-        var blue = Blue!;
-        var orange = Orange!;
-        return (x, y, z) => blue.IsHole(x, y, z) || orange.IsHole(x, y, z) ? BlockType.Air : blockAt(x, y, z);
+        var teal = Teal!;
+        var violet = Violet!;
+        return (x, y, z) => teal.IsHole(x, y, z) || violet.IsHole(x, y, z) ? BlockType.Air : blockAt(x, y, z);
     }
 
     /// <summary>
@@ -144,7 +144,7 @@ public sealed class PortalSystem
     public Crossing? TryCross(Vec3 previous, Vec3 current, Vec3 velocity, Vec3 forward)
     {
         if (!Linked) return null;
-        foreach (var entered in new[] { Blue!, Orange! })
+        foreach (var entered in new[] { Teal!, Violet! })
         {
             var exited = Other(entered)!;
             var (_, _, c0) = entered.Frame.ToLocal(previous);
@@ -186,7 +186,7 @@ public sealed class PortalSystem
             double hitAt = wall;
 
             if (Linked)
-                foreach (var p in new[] { Blue!, Orange! })
+                foreach (var p in new[] { Teal!, Violet! })
                 {
                     var (_, _, c0) = p.Frame.ToLocal(o);
                     double facing = d.Dot(p.Frame.Normal);
