@@ -4,7 +4,7 @@ Guidance for AI coding agents working in **Hollowfall**.
 
 ## Project overview
 
-A voxel game in C# on .NET 10. `Hollowfall.Core` holds world data and seeded terrain generation, `Hollowfall.Cli` is a seed inspector, and `Hollowfall.Tests` is the xunit suite.
+A voxel dungeon crawler in C# on .NET 10. `Hollowfall.Core` holds world data, seeded terrain and dungeon generation, the combat and portal simulation, input rules and sound synthesis (no engine dependency), `game/` is the Godot shell, `Hollowfall.Cli` is a seed inspector, `tools/Hollowfall.AssetGen` writes the committed vector assets, and `Hollowfall.Tests` is the xunit suite.
 
 - Language: C#
 - Default branch: main
@@ -18,7 +18,7 @@ Godot is the shell; the game is C#. This is a hard rule, not a preference.
 - Keep game logic in `src/Hollowfall.Core`, which has no Godot dependency. Scripts under `game/scripts` are thin: they connect the engine to Core and nothing more.
 - Godot node classes must be `public partial class` and live in the `Hollowfall.Game` namespace.
 - `LanguagePolicyTests` fails `dotnet test` if any of this is broken, and a pre-commit hook rejects `.gd` files. If a task seems to call for GDScript, write the C# equivalent instead and say so.
-- Verify the Godot side with `./run-smoke-test.sh` (needs the Godot .NET editor, found via `GODOT=`, `PATH` or `/Applications/Godot_mono.app`).
+- Verify the Godot side with `./run-smoke-test.sh` (needs the Godot .NET editor, found via `GODOT=`, `PATH`, `/Applications/Godot_mono.app` or the Flatpak). It boots the real scene headless, and points `HOLLOWFALL_SETTINGS` and `HOLLOWFALL_RECORDS` at temporary files so it never touches your saves.
 
 ## Input: actions, never keys
 
