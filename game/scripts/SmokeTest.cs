@@ -5,6 +5,7 @@ using Hollowfall.Core.Input;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Meshing;
 using Hollowfall.Core.Story;
+using Hollowfall.Core.Replay;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
@@ -156,6 +157,7 @@ public partial class SmokeTest : Node
             CheckChestOpens(main);
             CheckTrapStrikes(main);
             CheckRunRecordsSaveAndReload(main);
+            await CheckReplaySavedByARealRunAsync(main);
             await CheckSeedChangesTheWorldAsync(main);
             main.QueueFree();
         }
@@ -521,6 +523,22 @@ public partial class SmokeTest : Node
             if (!(fileWritten && same)) GD.PrintErr($"    records: file={fileWritten} expected {expected} got {back}");
             return fileWritten && same;
         });
+    }
+
+    /// <summary>
+    /// The live physics loop records the run: the previous check completed floor 0 in the real scene, so a replay of it, made
+    /// from the inputs the physics loop captured, must be on disk beside the records, decode, and belong to this seed.
+    /// </summary>
+    private Task CheckReplaySavedByARealRunAsync(Main main)
+    {
+        Check("a floor completed in the real scene saves its replay", () =>
+        {
+            var saved = ReplayStore.Beside(Main.RecordsPath).Load(main.Settings.Seed, 0);
+            bool ok = saved is { } r && r.Floor == 0 && r.TickCount > 30 && r.Seed == main.Settings.Seed;
+            if (!ok) GD.PrintErr($"    replay: {(saved == null ? "nothing saved" : $"floor {saved.Floor}, {saved.TickCount} steps, seed {saved.Seed}")}");
+            return ok;
+        });
+        return Task.CompletedTask;
     }
 
     /// <summary>
