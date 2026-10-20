@@ -8,14 +8,16 @@ public static class SeedWords
 
     private static readonly string[] First =
     [
-        "amber", "ashen", "bleak", "cinder", "cold", "crimson", "dusk", "ember", "frost", "gilded", "grim", "hushed",
-        "iron", "jade", "lost", "mossy", "pale", "quiet", "rust", "silent", "sunken", "thorn", "umber", "violet",
+        "amber", "ashen", "bleak", "cinder", "cold", "crimson", "dreich", "drookit", "ember", "frost", "gilded", "grim",
+        "haar", "iron", "jade", "lost", "mossy", "pale", "quiet", "rust", "silent", "sunken", "thorn", "umber",
     ];
 
+    // A few Scots words among the dungeon ones: a cairn is a heap of stones, a howe a hollow or mound, a corrie a mountain
+    // bowl, a bothy a rough shelter, a kirk a church, a brae a hillside, a wynd a narrow lane.
     private static readonly string[] Second =
     [
-        "abyss", "barrow", "catacomb", "crypt", "deep", "delve", "fall", "gully", "hollow", "keep", "maw", "mine",
-        "pit", "reach", "shaft", "spire", "tomb", "vault", "warren", "well", "vein", "vale", "undercroft", "den",
+        "abyss", "barrow", "bothy", "brae", "cairn", "catacomb", "corrie", "crypt", "deep", "delve", "fall", "glen",
+        "hollow", "howe", "keep", "kirk", "maw", "pit", "shaft", "tomb", "vault", "warren", "well", "wynd",
     ];
 
     /// <summary>A seed made from a number: the same number always gives the same words.</summary>

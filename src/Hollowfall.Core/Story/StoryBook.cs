@@ -70,16 +70,16 @@ public static class StoryBook
 
     public static readonly IReadOnlyList<CardDef> Cards =
     [
-        new("card-up-1", DepthBand.Upper, "The Antechamber", "Where the cord begins."),
+        new("card-up-1", DepthBand.Upper, "The Antechamber", "Where the cord begins, tied to a yew older than the hill's name."),
         new("card-up-2", DepthBand.Upper, "The Sealed Gallery", "Seven names above the door. Six have been scratched out."),
         new("card-up-3", DepthBand.Upper, "The Threshold Stair", "The first step down is the last one anyone remembers."),
 
-        new("card-mid-1", DepthBand.Middle, "The Drowned Archive", "Everything here was written down. Nothing here was kept."),
+        new("card-mid-1", DepthBand.Middle, "The Drowned Archive", "The water down here lies very still. It looks like the way home. It is not."),
         new("card-mid-2", DepthBand.Middle, "The Ossuary", "The stone leans in to listen."),
         new("card-mid-3", DepthBand.Middle, "The Long Fold", "A door that opens onto itself is still a door."),
         new("card-mid-4", DepthBand.Middle, "The Gallery of Stitches", "Every seam is a promise somebody made."),
 
-        new("card-low-1", DepthBand.Lower, "The Throat", "Dust runs downhill. So do you."),
+        new("card-low-1", DepthBand.Lower, "The Throat", "The Cailleach's winter climbs up from here. Dust runs downhill. So do you."),
         new("card-low-2", DepthBand.Lower, "The Unspooling", "Here the cord grows thin."),
         new("card-low-3", DepthBand.Lower, "The Swallow", "The Hollow never needed to bite."),
 
@@ -105,7 +105,7 @@ public static class StoryBook
         new("up-warning-2", DepthBand.Upper, "warning", 2, "Odile's Rule",
             "Strike close. Never wait for mercy. Never rest in a room you did not clear. The Hollow heals the ones who press forward and buries the ones who stop."),
         new("up-warning-3", DepthBand.Upper, "warning", 3, "A Torn Page",
-            "Whoever lit these torches, thank you. Whoever put out the others, I understand. Some rooms should keep their dark."),
+            "Whoever keeps these torches trimmed, thank you. We have never once seen you, and Odile says that is the arrangement: leave a little cream out and do not look too hard. Some rooms should keep their dark, and some should keep their helpers."),
 
         // Middle: how the sealing worked, and what the place does to people.
         new("mid-gates-1", DepthBand.Middle, "gates", 1, "On the Folded Doors",
@@ -116,7 +116,7 @@ public static class StoryBook
             "Ansel stepped through a gate and saw his own back walking away. He laughed for an hour. The next day he did not laugh, and the day after that he would not step through anything."),
 
         new("mid-bones-1", DepthBand.Middle, "bones", 1, "The Count",
-            "Forty-one skulls on the shelf and not a mark on any of them. The Hollow does not kill, Brother Haldane says. It lets you fall until you stop being the sort of thing that gets up."),
+            "Forty-one skulls on the shelf and not a mark on any of them. Down at the cistern a woman was washing a shirt in the black water, and it was Haldane's size. The Hollow does not kill, he says. It lets you fall until you stop being the sort of thing that gets up."),
         new("mid-bones-2", DepthBand.Middle, "bones", 2, "Haldane's Sermon",
             "The stone leans inward and we lean with it. Pray if you like. The Hollow is no god. It is a debt, and debts do not hear prayers, they collect."),
         new("mid-bones-3", DepthBand.Middle, "bones", 3, "Unsent Letter",
