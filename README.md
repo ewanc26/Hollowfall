@@ -10,12 +10,13 @@ A voxel-based game written in C# on .NET 10.
 
 ## Status
 
-Early. Seeded terrain and dungeon generation work; there is no renderer, meshing
-or player yet. The game is a procedural voxel dungeon crawler.
+Early. Seeded terrain and dungeon generation work, and you can walk the world in
+Godot with a first-person controller. There are no monsters, items or combat yet.
+The game is a procedural voxel dungeon crawler.
 
 ## Layout
 
-- `src/VoxelGame.Core` — world data, terrain and dungeon generation (no engine dependency).
+- `src/VoxelGame.Core` — world data, terrain and dungeon generation, chunk meshing and player physics (no engine dependency).
 - `src/VoxelGame.Cli` — prints a top-down map and block statistics for a seed.
 - `game` — the Godot 4 (.NET) shell. Thin C# scripts that connect the engine to Core.
 - `tests/VoxelGame.Tests` — xunit tests, including determinism checks.
@@ -27,6 +28,21 @@ in any order or on any thread and always agree at their borders. All
 randomness comes from a SplitMix64 hash rather than `System.Random`, and noise
 is seeded Perlin with fractal layering. Biomes are chosen from height,
 temperature and humidity; caves come from two intersecting 3D noise fields.
+
+## Playing
+
+Open the Godot .NET editor on `game/`, or run it directly:
+
+```bash
+/Applications/Godot_mono.app/Contents/MacOS/Godot --path game
+```
+
+You spawn on the plaza of the nearest dungeon, facing its stair shaft. WASD to move, Space to jump,
+mouse to look (click to capture, Esc to release), F to toggle free-fly. Terrain is shown as flat-coloured
+blocks with baked ambient occlusion; you carry a torch for the dungeons.
+
+Environment variables: `VOXELGAME_SEED` picks the world (default `voxel`), and
+`VOXELGAME_SPAWN_FLOOR=1` starts inside that dungeon floor, for inspecting interiors.
 
 ## Language
 

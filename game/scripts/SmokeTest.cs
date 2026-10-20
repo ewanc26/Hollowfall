@@ -1,5 +1,6 @@
 using Godot;
 using VoxelGame.Core.Dungeon;
+using VoxelGame.Core.Meshing;
 using VoxelGame.Core.Terrain;
 using VoxelGame.Core.World;
 
@@ -15,7 +16,7 @@ public partial class SmokeTest : Node
     private int _passed;
     private int _failed;
 
-    public override void _Ready()
+    public override async void _Ready()
     {
         Check("terrain is deterministic", () =>
             new TerrainGenerator(7).GenerateChunk(2, 3).RawBlocks.SequenceEqual(new TerrainGenerator(7).GenerateChunk(2, 3).RawBlocks));
@@ -44,8 +45,47 @@ public partial class SmokeTest : Node
             return chunk.RawBlocks.ToArray().Contains(BlockType.Stairs);
         });
 
+        Check("a land chunk converts to a Godot mesh with surfaces", () =>
+        {
+            var world = new VoxelWorld(7);
+            var mesh = ChunkMeshBuilder.ToArrayMesh(ChunkMesher.Build(0, 0, world.GetBlock));
+            return mesh != null && mesh.GetSurfaceCount() >= 1 && mesh.GetAabb().Size.Y > 1;
+        });
+
+        Check("an all-air chunk converts to no mesh", () =>
+            ChunkMeshBuilder.ToArrayMesh(ChunkMesher.Build(0, 0, (_, _, _) => BlockType.Air)) == null);
+
+        await CheckMainSceneAsync();
+
         GD.Print($"==== {_passed} passed, {_failed} failed ====");
         GetTree().Quit(_failed == 0 ? 0 : 1);
+    }
+
+    /// <summary>Boots the real game scene and waits for the world to stream in and the player to land.</summary>
+    private async Task CheckMainSceneAsync()
+    {
+        const string name = "the main scene streams in a world and the player lands";
+        try
+        {
+            var main = GD.Load<PackedScene>("res://scenes/Main.tscn").Instantiate<Main>();
+            AddChild(main);
+
+            var view = main.GetNode<WorldView>("World");
+            var player = main.GetNode<PlayerController>("Player");
+            var deadline = Time.GetTicksMsec() + 20_000;
+            while (Time.GetTicksMsec() < deadline && !(view.ShownChunks >= 40 && player.Body.OnGround))
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            bool ok = view.ShownChunks >= 40 && player.Body.OnGround;
+            if (ok) { _passed++; GD.Print($"  ok   {name} ({view.ShownChunks} chunks, feet at y={player.Body.Y:F1})"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: chunks={view.ShownChunks} onGround={player.Body.OnGround}"); }
+            main.QueueFree();
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
     }
 
     private void Check(string name, Func<bool> test)

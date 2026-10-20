@@ -10,6 +10,10 @@ Everything that changes for someone using VoxelGame goes here, newest first, in 
 
 ### Added
 
+- Playable world in Godot: chunks stream in around you, are meshed on worker threads, and are drawn with a first-person controller (WASD, jump, mouse look, free-fly) and a HUD. The game spawns at the nearest dungeon entrance; `VOXELGAME_SEED` and `VOXELGAME_SPAWN_FLOOR` choose the world and a starting dungeon floor.
+- `ChunkMesher`: face-culled chunk meshes across chunk borders, with per-vertex ambient occlusion, separate opaque, cutout and water buffers, and an engine-free output format. `VoxelWorld` is a thread-safe chunk cache over the generator.
+- `PlayerBody` voxel physics (gravity, jumping, wall sliding, one-block auto-step) and `Navigation` path finding. Tests walk real dungeons from the surface plaza to the boss through real collision.
+- The Godot smoke test now boots the real scene and checks that the world streams in and the player lands.
 - `.mcp.json` registers the third-party Coding-Solo godot-mcp server (pinned to 0.1.1) so agents can run the game, read its output and edit scenes. `AGENTS.md` records how to use it without breaking the C#-only rule.
 - `--dungeon-stats` CLI option reports dungeon density and entrance depth over 256 regions.
 - Godot 4.7 (.NET) project shell in `game/`, referencing `VoxelGame.Core`, with a headless smoke test (`run-smoke-test.sh`).
