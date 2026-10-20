@@ -1,4 +1,5 @@
 using System.Text;
+using VoxelGame.Core.Dungeon;
 using VoxelGame.Core.Terrain;
 using VoxelGame.Core.World;
 
@@ -8,6 +9,12 @@ int radius = args.Length > 1 && int.TryParse(args[1], out var r) ? Math.Clamp(r,
 
 long seed = TerrainGenerator.SeedFromString(seedText);
 var gen = new TerrainGenerator(seed);
+
+if (args.Contains("--dungeon"))
+{
+    PrintDungeon(gen, args.Contains("--spawns"));
+    return;
+}
 
 if (args.Contains("--biomes"))
 {
@@ -106,3 +113,86 @@ static (int, int, int) Color(BlockType b) => b switch
     BlockType.Bedrock => (40, 40, 40),
     _ => (0, 0, 0),
 };
+
+static void PrintDungeon(TerrainGenerator gen, bool showSpawns)
+{
+    // Nearest dungeon to the world origin, searching outward through nearby regions.
+    DungeonSite? site = null;
+    double best = double.MaxValue;
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    for (int rx = -4; rx <= 3; rx++)
+        for (int rz = -4; rz <= 3; rz++)
+            if (gen.Dungeons!.GetSite(rx, rz) is { } s)
+            {
+                double d = (double)s.EntranceX * s.EntranceX + (double)s.EntranceZ * s.EntranceZ;
+                if (d < best) { best = d; site = s; }
+            }
+
+    if (site == null)
+    {
+        Console.WriteLine("No dungeon within 4 regions of the origin for this seed.");
+        return;
+    }
+    Console.WriteLine($"Searched 64 regions and built their dungeons in {sw.ElapsedMilliseconds} ms");
+    Console.WriteLine($"Dungeon in region ({site.RegionX},{site.RegionZ}): entrance at x={site.EntranceX} z={site.EntranceZ}, surface y={site.SurfaceY}, {site.FloorCount} floors\n");
+
+    foreach (var floor in site.Floors)
+    {
+        Console.WriteLine($"Floor {floor.Floor} (y={DungeonSite.FloorY(floor.Floor)}): {floor.Rooms.Count} rooms, {floor.Links.Count} links ({floor.Links.Count(l => l.Secret)} secret)");
+        var marks = new Dictionary<(int, int), char>();
+        foreach (var room in floor.Rooms)
+            marks[(room.CenterX, room.CenterZ)] = room.Role switch
+            {
+                RoomRole.Entrance => 'e',
+                RoomRole.Exit => '>',
+                RoomRole.Boss => 'B',
+                RoomRole.Treasure => '$',
+                RoomRole.Trap => '^',
+                RoomRole.Safe => 'S',
+                _ => room.Shape switch { RoomShape.Rect => 'r', RoomShape.L => 'l', RoomShape.Circle => 'c', _ => 'v' },
+            };
+        marks[(floor.EntranceX, floor.EntranceZ)] = '<';
+        if (showSpawns)
+            foreach (var sp in site.Spawns.Where(sp => sp.Floor == floor.Floor))
+                marks[(sp.X - site.OriginX, sp.Z - site.OriginZ)] = sp.Kind switch
+                {
+                    SpawnKind.Monster => 'm',
+                    SpawnKind.Boss => 'M',
+                    SpawnKind.Loot => '*',
+                    SpawnKind.Key => 'k',
+                    _ => 't',
+                };
+
+        for (int z = 0; z < FloorLayout.Size; z += 2)
+        {
+            var line = new StringBuilder();
+            for (int x = 0; x < FloorLayout.Size; x++)
+            {
+                if (marks.TryGetValue((x, z), out char m) || marks.TryGetValue((x, z + 1), out m)) { line.Append(m); continue; }
+                line.Append(floor.CellAt(x, z) switch
+                {
+                    CellKind.Floor => '.',
+                    CellKind.Door => '+',
+                    CellKind.SecretDoor => 'S',
+                    CellKind.Pillar => 'o',
+                    _ => floor.IsWallCell(x, z) ? '#' : ' ',
+                });
+            }
+            Console.WriteLine(line);
+        }
+        Console.WriteLine();
+    }
+
+    sw.Restart();
+    int chunkCount = 0;
+    for (int cx = site.OriginX >> 4; cx <= (site.OriginX + FloorLayout.Size - 1) >> 4; cx++)
+        for (int cz = site.OriginZ >> 4; cz <= (site.OriginZ + FloorLayout.Size - 1) >> 4; cz++, chunkCount++)
+            gen.GenerateChunk(cx, cz);
+    Console.WriteLine($"Generated the {chunkCount} chunks under this dungeon (terrain + dungeon) in {sw.ElapsedMilliseconds} ms\n");
+
+    var roles = site.Floors.SelectMany(f => f.Rooms).GroupBy(r => r.Role).OrderBy(g => g.Key);
+    Console.WriteLine("Rooms by role: " + string.Join(", ", roles.Select(g => $"{g.Key}={g.Count()}")));
+    Console.WriteLine("Spawns: " + string.Join(", ", site.Spawns.GroupBy(sp => sp.Kind).Select(g => $"{g.Key}={g.Count()}")));
+    Console.WriteLine("Legend: # wall  . floor  + door  S secret door  o pillar  < entrance  > stairs down  B boss  $ treasure  ^ trap  S safe room  e entrance room centre  r/l/c/v rect/L/circle/cavern room (centre)"
+    + (showSpawns ? "\nSpawns: m monster  M boss  * loot  k key  t trap" : ""));
+}
