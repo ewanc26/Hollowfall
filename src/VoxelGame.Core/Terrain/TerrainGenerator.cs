@@ -1,3 +1,4 @@
+using VoxelGame.Core.Dungeon;
 using VoxelGame.Core.World;
 
 namespace VoxelGame.Core.Terrain;
@@ -29,9 +30,13 @@ public sealed class TerrainGenerator
     private readonly PerlinNoise _river;
     private readonly (OreSpec Spec, PerlinNoise Noise)[] _ores;
 
-    public TerrainGenerator(long seed)
+    /// <summary>Where dungeons sit in this world, or null if dungeons are disabled.</summary>
+    public DungeonMap? Dungeons { get; }
+
+    public TerrainGenerator(long seed, bool enableDungeons = true)
     {
         Seed = seed;
+        Dungeons = enableDungeons ? new DungeonMap(this) : null;
         _continent = new PerlinNoise(SeedHash.Derive(seed, 1));
         _hills = new PerlinNoise(SeedHash.Derive(seed, 2));
         _ridge = new PerlinNoise(SeedHash.Derive(seed, 3));
@@ -148,6 +153,7 @@ public sealed class TerrainGenerator
                 FillColumn(chunk, lx, lz, ox + lx, oz + lz, cols[(lx + TreeMargin) * span + lz + TreeMargin]);
 
         PlaceVegetation(chunk, cols, span);
+        Dungeons?.SiteForChunk(chunkX, chunkZ)?.Apply(chunk);
         return chunk;
     }
 

@@ -10,12 +10,12 @@ A voxel-based game written in C# on .NET 10.
 
 ## Status
 
-Early. The seeded terrain generator is done; there is no renderer, meshing or
-player yet.
+Early. Seeded terrain and dungeon generation work; there is no renderer, meshing
+or player yet. The game is a procedural voxel dungeon crawler.
 
 ## Layout
 
-- `src/VoxelGame.Core` — world data and terrain generation (no engine dependency).
+- `src/VoxelGame.Core` — world data, terrain and dungeon generation (no engine dependency).
 - `src/VoxelGame.Cli` — prints a top-down map and block statistics for a seed.
 - `tests/VoxelGame.Tests` — xunit tests, including determinism checks.
 
@@ -26,6 +26,17 @@ in any order or on any thread and always agree at their borders. All
 randomness comes from a SplitMix64 hash rather than `System.Random`, and noise
 is seeded Perlin with fractal layering. Biomes are chosen from height,
 temperature and humidity; caves come from two intersecting 3D noise fields.
+
+## Dungeons
+
+Each 384-block region may hold one dungeon: 2 to 4 floors under a 96x96 footprint,
+entered from a stone plaza on the surface by a spiral staircase. A floor is a BSP
+layout of rect, L, circular and cavern rooms joined by corridors, with doors,
+loops and secret doors, and rooms get roles by rule (entrance, exit, boss,
+treasure, trap, safe). Voxelisation is a pure function of the seed and position, so
+any chunk can be generated alone. Spawn points for monsters, loot and keys are
+produced as data. Run `dotnet run --project src/VoxelGame.Cli -c Release -- <seed> 1 --dungeon --spawns`
+to see a floor plan.
 
 ## Building
 
