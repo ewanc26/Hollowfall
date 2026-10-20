@@ -10,6 +10,7 @@ Everything that changes for someone using VoxelGame goes here, newest first, in 
 
 ### Added
 
+- `.mcp.json` registers the third-party Coding-Solo godot-mcp server (pinned to 0.1.1) so agents can run the game, read its output and edit scenes. `AGENTS.md` records how to use it without breaking the C#-only rule.
 - `--dungeon-stats` CLI option reports dungeon density and entrance depth over 256 regions.
 - Godot 4.7 (.NET) project shell in `game/`, referencing `VoxelGame.Core`, with a headless smoke test (`run-smoke-test.sh`).
 - C#-only language policy for the whole repository, enforced by `LanguagePolicyTests` (no GDScript or GDExtension; scenes may only attach `.cs` scripts) and a pre-commit hook.
