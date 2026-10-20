@@ -1,0 +1,10 @@
+# Pre-commit hooks for VoxelGame — keep C# sources formatted.
+repos:
+  - repo: local
+    hooks:
+      - id: dotnet-format
+        name: dotnet format
+        entry: dotnet format --verify-no-changes
+        language: system
+        pass_filenames: false
+        types: [c#]
