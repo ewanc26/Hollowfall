@@ -43,7 +43,7 @@ still is dangerous. The game was designed around fast pace, constant action and 
 | Idea | In Hollowfall |
 |---|---|
 | Push forward | No regeneration, no pickups to retreat for. Health comes from blood. |
-| Blood heals | Hits within about 4 blocks heal, more for headshots and limbs, a lot for melee finishers. Distance matters: standing back to snipe heals nothing. |
+| Blood heals | Hits within about 4 blocks heal, more for headshots and limbs. Distance matters: standing back to snipe heals nothing. Melee finishers that heal a lot (`PlayerVitals.HealFromGib`) are in the rules but there is no melee attack yet. |
 | Hard damage | 35% of each hit becomes a temporary cap on health that drains after a delay. |
 | Style meter | Eight ranks with passive decay, bonuses, movement and freshness multipliers, damage knocks you down a rank. |
 | Parry | Time-limited window, telegraphed attacks, full heal, style, projectile reflection. |
@@ -62,22 +62,25 @@ computed from the floor itself (enemy count and path length) instead of being ha
 1. **Enter a room.** If it holds enemies, the doors lock and the encounter starts.
 2. **Fight.** Move constantly, hit things up close to heal, chain kills and tricks to climb the style rank,
    parry telegraphed attacks to recover.
-3. **Clear.** Doors open, loot and the floor key become available, and the rank for the floor keeps counting.
-4. **Descend.** The exit stairs on each floor need that floor's key. The last floor ends at the boss.
+3. **Clear.** Doors open, and the rank for the floor keeps counting. Chests heal you; locked ones (treasure and boss rooms)
+   spend a key, and each floor with an exit hides one key.
+4. **Descend.** The exit stairs are always open: you can skip a floor's fights, at the cost of its kills and style grades.
+   The last floor ends when the boss dies.
 5. **Score.** At the end of each floor you see time, kills and style ranks and the combined letter.
 6. **Repeat on a new seed**, or retry the same one for a better rank. Your best run of each floor is recorded and replayed as a translucent ghost to race (see `docs/features.md` 4.3).
 
 ## Build order
 
-1. **Rules in Core, tested first** (this branch): style meter, player vitals with blood and hard damage,
+1. **Rules in Core, tested first** (built): style meter, player vitals with blood and hard damage,
    parry, floor ranking. Engine-free, deterministic, no frame-rate dependence.
-2. **Combat simulation in Core:** ray casting against voxels, weapons, enemies with simple AI, projectiles,
+2. **Combat simulation in Core** (built): ray casting against voxels, weapons, enemies with simple AI, projectiles,
    encounters driven by the dungeon spawn data. All stepped with a fixed time step so a run can be replayed.
-3. **Playable in Godot:** shooting and parrying input, enemy visuals, HUD (health with hard damage, style
+3. **Playable in Godot** (built): shooting and parrying input, enemy visuals, HUD (health with hard damage, style
    meter, ranks), locking doors, end-of-floor rank screen.
-4. **Movement depth:** slide, dash, air control, slam, wall jump.
+4. **Movement depth** (not built): slide, dash, air control, slam, wall jump.
 5. **Portals** (built): linked pairs, momentum, portal-aware shooting and rendering.
-6. **Content and feel:** more enemy types, a second weapon, hit stop and sound, a boss, sharing seeds.
+6. **Content and feel** (partly built): three enemy types, a second weapon (the shotgun), synthesised sound, a boss (the Warden),
+   chests, keys and traps, typed seeds you can share and personal bests per seed are in. Still to do: more enemy types, hit stop.
 
 ## Chest loot
 
@@ -112,7 +115,7 @@ glowing blue and orange oval.
 - **Shooting through.** Hitscan shots, enemy projectiles and parried projectiles all continue out of the linked portal,
   so you can shoot an enemy that is behind you, or send a parried shot into a room you cannot see.
 - **Limits.** Portals need a flat, solid, portalable surface (stone brick, stone, dirt, sand and similar: not bedrock,
-  gates, stairs, pillars, leaves or snow) with the 1 x 2 opening clear in front. Locked arena doors are gates, so you
+  gates, secret doors, stairs, pillars, leaves, cactus, logs or snow) with the 1 x 2 opening clear in front. Locked arena doors are gates, so you
   cannot portal past them; a respawn removes your portals.
 
 How it works: the frame of each portal is an axis-aligned right-handed basis (`Right x Up = Normal`). A point in front of

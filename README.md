@@ -10,9 +10,9 @@ A voxel-based game written in C# on .NET 10.
 
 ## Status
 
-Early. Seeded terrain and dungeon generation work, and you can walk the world in
-Godot with a first-person controller. There are no monsters, items or combat yet.
-The game is a procedural voxel dungeon crawler.
+Early, but playable. Seeded terrain and multi-floor dungeons generate, and you can fight through them in Godot with a
+first-person controller: three enemy types and a boss, a revolver and a shotgun, parrying, a style meter, portals, chests,
+keys and spike traps, synthesised sound, a minimap and personal bests per seed. The game is a procedural voxel dungeon crawler.
 
 ## Layout
 
@@ -20,6 +20,8 @@ The game is a procedural voxel dungeon crawler.
 - `src/Hollowfall.Cli` — prints a top-down map and block statistics for a seed.
 - `game` — the Godot 4 (.NET) shell. Thin C# scripts that connect the engine to Core.
 - `tests/Hollowfall.Tests` — xunit tests, including determinism checks.
+- `tools/Hollowfall.AssetGen` — writes the committed vector glyphs, icons and the texture-atlas preview; a test fails if they drift from it.
+- `docs` — the game loop, art style and planned features.
 
 ## Terrain
 
@@ -64,11 +66,13 @@ Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view,
 gamepad, and controller prompts. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
 Nintendo letters, with the bottom and right buttons swapped), or you can pick a style.
 
-Terrain is shown as flat-coloured blocks with baked ambient occlusion, and you carry a torch for the dungeons.
-The HUD is kept clean: health, style, hints and a floor panel (floor, kills and time against par). The HUD fades out wherever it would cover a portal opening, and damage flashes are edge vignettes that leave the middle of the screen clear.
+Blocks wear 16 by 16 pixel textures drawn in code, tinted by each block's colour with baked ambient occlusion, and you carry a torch for the dungeons.
+The HUD is kept clean: health, style, hints, a floor panel (floor, kills, time against par and keys held) and a minimap that fills in as you explore. The HUD fades out wherever it would cover a portal opening, and damage flashes are edge vignettes that leave the middle of the screen clear.
 Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit
 locks away part of your health for a while, and a style meter rewards kills, headshots, parries and movement.
-Chests hold loot picked from the seed: blood, a style burst, a cleanse of hard damage, a short perk (more blood from hits, a longer parry window) or a spare key; locked chests are better.
+Chests hold loot picked from the seed: blood, a style burst, a cleanse of hard damage, a short perk (more blood from hits, a longer parry window) or a spare key; treasure and boss chests are locked, spend a key and give better loot. Spike traps warn before they strike.
+Pick a world by typing a seed (any text or number) on the title screen, or press Random; your best grade and time on each
+floor of each seed is saved to `records.json` beside `settings.json`.
 See [docs/game-loop.md](docs/game-loop.md) for the design of the loop and [docs/features.md](docs/features.md) for planned features.
 
 **Portals.** Q and E fire the two ends of a linked teal and violet pair onto flat stone walls, floors and ceilings (a 1 x 2
@@ -82,11 +86,13 @@ in the old opening (60 damage and 250 style; Wardens are immune).
 more than 20 blocks), costs you 30% of your speed and never hurts you. Hitting a wall ends the window. The numbers live in
 `MeteorTuning`.
 
-Environment variables: `HOLLOWFALL_SEED` picks the world (default `voxel`),
+Environment variables: `HOLLOWFALL_SEED` picks the world and overrides the seed saved in settings (default `voxel`),
 `HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, `HOLLOWFALL_DEMO=portals` runs a scripted
-portal setup for screenshots, and `HOLLOWFALL_DEMO=sever` closes the pair on a husk.
-`HOLLOWFALL_SPAWN_FLOOR=1` starts inside that dungeon floor, and `HOLLOWFALL_DEMO=portals` runs a scripted
-portal setup for screenshots. `HOLLOWFALL_DEMO=notes|ending|captions` stage the story screens, and `HOLLOWFALL_MENU=journal` opens the journal.
+portal setup for screenshots, `HOLLOWFALL_DEMO=sever` closes the pair on a husk, and `HOLLOWFALL_DEMO=notes|ending|captions` stage the story screens.
+`HOLLOWFALL_SETTINGS`, `HOLLOWFALL_RECORDS` and `HOLLOWFALL_STORY` set where settings, personal bests (with the `replays/` folder) and read notes are
+saved (the smoke test points them at temporary files), `HOLLOWFALL_SKIP_TITLE=1` skips the title screen,
+`HOLLOWFALL_MENU=title|pause|controls|settings|journal` opens that menu screen straight away, and `HOLLOWFALL_SHOWCASE=enemies|poses|weapons|props|effects`
+picks the page of the model showcase scene (see [docs/art-style.md](docs/art-style.md)).
 
 ## Language
 
@@ -102,8 +108,8 @@ entered from a stone plaza on the surface by a spiral staircase. A floor is a BS
 layout of rect, L, circular and cavern rooms joined by corridors, with doors,
 loops and secret doors, and rooms get roles by rule (entrance, exit, boss,
 treasure, trap, safe). Voxelisation is a pure function of the seed and position, so
-any chunk can be generated alone. Spawn points for monsters, loot and keys are
-produced as data. Run `dotnet run --project src/Hollowfall.Cli -c Release -- <seed> 1 --dungeon --spawns`
+any chunk can be generated alone. Spawn points for monsters, a boss, loot, keys and traps are
+produced as data, and the combat simulation turns them into encounters, chests, keys and spikes. Run `dotnet run --project src/Hollowfall.Cli -c Release -- <seed> 1 --dungeon --spawns`
 to see a floor plan.
 
 ## Story
