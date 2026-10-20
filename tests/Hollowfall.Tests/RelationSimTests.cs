@@ -178,11 +178,15 @@ public class CreatureSpawnTests
     }
 
     [Fact]
-    public void NoKelpieWaitsOnTheFirstFloorsOrdinaryRooms()
+    public void NoKelpieWaitsWhereYouArriveOrInAnOrdinaryRoomOnTheFirstFloor()
     {
         foreach (var site in Sites())
-            foreach (var sp in site.Spawns.Where(s => s.Kind == SpawnKind.Creature && s.Variant == (int)EnemyKind.Kelpie && s.Floor == 0))
-                Assert.NotEqual(RoomRole.Standard, site.Floors[0].Rooms[sp.RoomId].Role);
+            foreach (var sp in site.Spawns.Where(s => s.Kind == SpawnKind.Creature && s.Variant == (int)EnemyKind.Kelpie))
+            {
+                var role = site.Floors[sp.Floor].Rooms[sp.RoomId].Role;
+                Assert.NotEqual(RoomRole.Entrance, role);
+                if (sp.Floor == 0) Assert.NotEqual(RoomRole.Standard, role);
+            }
     }
 
     [Fact]
@@ -493,7 +497,8 @@ public class RelationSimTests
         selkie.Mind!.Memory.Clear();
         a.Run(5);
         Assert.Equal(Disposition.Allied, selkie.Mind.Disposition);
-        a.Shoot(selkie, 1.0);
+        a.Sim.Relations.PlayerHurt(selkie, 6, false, a.Sim.Enemies, a.Sim.Time); // an accident, an explosion, a portal: not a shot
+        a.Run(2);
         Assert.NotEqual(Disposition.Allied, selkie.Mind.Disposition);
         Assert.True(a.Sim.Relations.Reputation.Value(Faction.Selkies) < 90);
     }
@@ -615,7 +620,7 @@ public class RelationSimTests
         Assert.True(seeing.Mind.Memory.Anger > 0 || seeing.Mind.Memory.Fear > 0, "in view");
         Assert.Equal(0, hidden.Mind.Memory.Anger, 6);
         Assert.Contains(a.Events, e => e is WitnessAlerted w && w.Id == seeing.Id);
-        Assert.DoesNotContain(a.Events, e => e is WitnessAlerted w && w.Id == hidden.Id && w.SourceId == victim.Id && hidden.Mind.Memory.Anger > 0);
+        Assert.DoesNotContain(a.Events, e => e is WitnessAlerted w && w.Id == hidden.Id);
     }
 
     [Fact]
@@ -691,13 +696,64 @@ public class RelationSimTests
         var brownie = a.Place(EnemyKind.Brownie, 8);
         brownie.Mind!.Memory.Clear();
         a.Run(2);
-        var before = brownie.Mind.Disposition;
+        Assert.Equal(Disposition.Passive, brownie.Mind.Disposition);
         a.Sim.Relations!.PlayerGave(brownie, a.Sim.Time);
         Assert.Equal(12, a.Sim.Relations.Reputation.Value(Faction.Brownies), 1);
         Assert.True(a.Sim.Relations.Reputation.Value(Faction.Selkies) > 0);
         Assert.True(brownie.Mind.Memory.Gratitude >= Dispositions.GratefulAt);
         a.Run(2);
-        Assert.True(brownie.Mind.Disposition == Disposition.Curious || before == Disposition.Curious || brownie.Mind.Traits.Curiosity < 0.5);
+        Assert.Equal(Disposition.Curious, brownie.Mind.Disposition);
         Assert.NotEqual(Disposition.Aggressive, brownie.Mind.Disposition);
+    }
+
+    [Fact]
+    public void AnAllyIsWonByFightingTheHollowAndMakingAnOfferingUsingOnlyInteract()
+    {
+        var a = RelationArena.Make();
+        var rep = a.Sim.Relations!.Reputation;
+        var selkie = a.Place(EnemyKind.Selkie, 2, 1);
+        selkie.Mind!.Memory.Clear();
+        a.Run(2);
+        a.Run(1, actions: new PlayerActions(false, false, false, Interact: true));
+        Assert.DoesNotContain(a.Events, e => e is OfferingAccepted); // not yet: the Folk do not know you
+
+        for (int i = 0; i < 8; i++)
+        {
+            var husk = a.Place(EnemyKind.Husk, 9);
+            husk.SetHealth(1);
+            a.Shoot(husk, 1.2);
+            Assert.True(husk.Dead);
+        }
+        Assert.InRange(rep.Value(Faction.Selkies), 38, 40);
+        Assert.Equal(ReputationTier.Friendly, rep.Tier(Faction.Selkies));
+        a.Run(5);
+        Assert.Equal(Disposition.Curious, selkie.Mind.Disposition);
+
+        double health = a.Sim.Vitals.Health;
+        var close = a.View(selkie.Feet.X - a.X - 1.0, selkie.Feet.Z - a.Z); // walk up to her: friends do not run
+        a.Run(1, close, new PlayerActions(false, false, false, Interact: true));
+        var offer = Assert.Single(a.Events.OfType<OfferingAccepted>());
+        Assert.Equal(selkie.Id, offer.Id);
+        Assert.True(a.Sim.Vitals.Health < health, "an offering costs a little blood");
+        a.Run(5, close);
+        Assert.Equal(Disposition.Allied, selkie.Mind.Disposition);
+        Assert.Contains(a.Events, e => e is EntityAllied);
+
+        a.Run(1, close, new PlayerActions(false, false, false, Interact: true));
+        Assert.Single(a.Events.OfType<OfferingAccepted>()); // once per individual
+    }
+
+    [Fact]
+    public void ShotsAndExplosionsPassThroughAllies()
+    {
+        var a = RelationArena.Make();
+        a.Sim.Relations!.Reputation.Set(Faction.Selkies, 90);
+        var selkie = a.Place(EnemyKind.Selkie, 3);
+        a.Run(5);
+        Assert.Equal(Disposition.Allied, selkie.Mind!.Disposition);
+        var husk = a.Place(EnemyKind.Husk, 8);
+        a.Shoot(husk, 1.2);
+        Assert.Equal(selkie.Spec.Health, selkie.Health);
+        Assert.True(husk.Health < husk.Spec.Health);
     }
 }

@@ -291,12 +291,13 @@ public class DispositionMatrixTests
     }
 
     [Fact]
-    public void FriendlyCuriousCreaturesFollowAndShyOnesDoNot()
+    public void FriendsYouCanWalkUpToFollowAndShyOnesStillRun()
     {
         var brownie = SpeciesInfo.Of(EnemyKind.Brownie);
-        Assert.Equal(Disposition.Curious, Dispositions.Decide(new(brownie, Stance.Friendly, new Traits(0.1, 0.5, 0.9), false, false)));
-        Assert.Equal(Disposition.Passive, Dispositions.Decide(new(brownie, Stance.Friendly, new Traits(0.1, 0.5, 0.1), false, false)));
+        foreach (double curiosity in new[] { 0.0, 0.9 })
+            Assert.Equal(Disposition.Curious, Dispositions.Decide(new(brownie, Stance.Friendly, new Traits(0.1, 0.5, curiosity), false, false)));
         Assert.Equal(Disposition.Passive, Dispositions.Decide(new(SpeciesInfo.Of(EnemyKind.BeanNighe), Stance.Friendly, new Traits(0.1, 0.5, 0.9), false, false)));
+        Assert.Equal(Disposition.Passive, Dispositions.Decide(new(SpeciesInfo.Of(EnemyKind.Hare), Stance.Friendly, new Traits(0.1, 0.5, 0.9), false, false)));
     }
 }
 

@@ -78,7 +78,7 @@ public static class Dispositions
 
             case Stance.Friendly:
                 if (natural is Disposition.Passive or Disposition.Skittish or Disposition.Curious)
-                    return sp.CanFollow && i.Traits.Curiosity >= 0.5 ? Disposition.Curious : Disposition.Passive;
+                    return sp.CanFollow ? Disposition.Curious : Disposition.Passive; // a friend you can walk up to
                 return Disposition.Neutral;
 
             case Stance.Neutral:
@@ -267,6 +267,9 @@ public sealed class Mind
     public bool Scared { get; private set; }
     public bool Known { get; private set; }
     public bool BoonGiven { get; internal set; }
+
+    /// <summary>Whether the player has already made this creature an offering.</summary>
+    public bool Offered { get; internal set; }
 
     // Bookkeeping the sim keeps for the creature: the player's distance last tick (for approach speed) and an ally's strike timer.
     internal double LastDistance { get; set; } = double.NaN;
