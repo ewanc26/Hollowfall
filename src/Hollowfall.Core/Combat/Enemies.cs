@@ -31,24 +31,26 @@ public sealed record EnemySpec(
     double ProjectileDamage,
     double PreferredMin,
     double PreferredMax,
-    int Volley)
+    int Volley,
+    double HalfWidth = 0.3,
+    double Height = 1.8)
 {
     public bool IsRanged => ProjectileDamage > 0;
 
     public static EnemySpec Of(EnemyKind kind) => kind switch
     {
         EnemyKind.Husk => new(EnemyKind.Husk, 30, 3.4, 1.6, 20, 0.45, 1.1, 0, 0, 0, 0),
-        EnemyKind.Spitter => new(EnemyKind.Spitter, 20, 2.2, 0, 0, 0.6, 2.4, 15, 6, 12, 1),
-        _ => new(EnemyKind.Warden, 260, 2.8, 2.2, 35, 0.7, 2.0, 18, 5, 11, 3),
+        EnemyKind.Spitter => new(EnemyKind.Spitter, 20, 2.2, 0, 0, 0.6, 2.4, 15, 6, 12, 1, 0.38, 1.5),
+        _ => new(EnemyKind.Warden, 260, 2.8, 2.2, 35, 0.7, 2.0, 18, 5, 11, 3, 0.5, 2.3),
     };
 }
 
 public sealed class Enemy
 {
-    public const double HalfWidth = 0.3;
-    public const double Height = 1.8;
-    public const double HeadHeight = 1.35;
-    public const double LegHeight = 0.55;
+    /// <summary>The head is the top quarter of an enemy and the legs the bottom third, whatever its size.</summary>
+    public const double HeadFraction = 0.75;
+
+    public const double LegFraction = 0.305;
 
     internal Enemy(int id, EnemySpec spec, Vec3 feet, int floor, int roomId)
     {
@@ -72,7 +74,8 @@ public sealed class Enemy
     internal PlayerBody Body { get; }
 
     public Vec3 Feet => new(Body.X, Body.Y, Body.Z);
-    public Box Bounds => Box.AroundFeet(Feet, HalfWidth, Height);
+    /// <summary>The hit box: each kind has its own size, matching its model.</summary>
+    public Box Bounds => Box.AroundFeet(Feet, Spec.HalfWidth, Spec.Height);
     public bool Dead => State == EnemyState.Dead;
 
     /// <summary>True while the enemy is winding up an attack: the cue to parry (shown yellow in the UI).</summary>
@@ -91,7 +94,7 @@ public sealed class Enemy
     public HitZone ZoneAt(double hitY)
     {
         double rel = hitY - Body.Y;
-        return rel >= HeadHeight ? HitZone.Head : rel < LegHeight ? HitZone.Limb : HitZone.Torso;
+        return rel >= Spec.Height * HeadFraction ? HitZone.Head : rel < Spec.Height * LegFraction ? HitZone.Limb : HitZone.Torso;
     }
 }
 
