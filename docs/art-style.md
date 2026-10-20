@@ -41,6 +41,8 @@ To add a surface: add a `Tile`, paint it in `Paint`, map blocks to it in `TileFo
 
 Chests stand where loot spawns, keys turn in the air, spike traps fill trap rooms, and wall torches (`PropPlacer`, a pure function of the seed) light every room. Only the six torches nearest the player cast light.
 
+Opening a chest releases a **loot pickup** that floats out of the lid, turns and shrinks away. Each kind has its own silhouette and glow so it reads before you read the banner: a red **vial** (health), a teal **drop** (cleanse), a four-pointed amber **star** (style), a red-orange **fang** (Bloodlust) and a violet **shield disc** (Open guard); a spare key is the key model. They are single-part models of at most 120 triangles (tested), well inside the 260 budget.
+
 ## Checking the art
 
 ```bash

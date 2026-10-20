@@ -14,10 +14,13 @@ public partial class PropsView : Node3D
 {
     private const int MaxLights = 6;
     private const double LightRadius = 24;
+    private const double LootSeconds = 2.0;
 
     private readonly List<(int Index, Node3D Node, Vector3 Home, double Phase)> _keys = [];
     private readonly List<(ChestState Chest, ModelRig Rig)> _chests = [];
     private readonly List<(int Index, ModelRig Rig)> _traps = [];
+    private readonly HashSet<int> _released = [];
+    private readonly List<(Node3D Node, Vector3 From, double Age, double Phase)> _loot = [];
     private Interactables _items = null!;
     private readonly List<(ModelRig Rig, Vector3 Position, double Phase)> _torches = [];
     private readonly List<OmniLight3D> _lights = [];
@@ -39,6 +42,7 @@ public partial class PropsView : Node3D
                         // A deterministic turn so chests do not all face the same way.
                         chest.Root.RotationDegrees = new Vector3(0, ((spawn.X * 7 + spawn.Z * 13) & 3) * 90, 0);
                         AddChild(chest.Root);
+                        _chests.Add((_items.Chests.First(c => c.Index == index), chest));
                         break;
                     }
                 case SpawnKind.Key:
@@ -78,6 +82,40 @@ public partial class PropsView : Node3D
         }
     }
 
+    /// <summary>Opening a chest lets its loot out: the pickup rises from the lid, turns, and shrinks away as its effect lands.</summary>
+    private void ReleaseLoot(double delta)
+    {
+        foreach (var (chest, _) in _chests)
+        {
+            if (!chest.Opened || !_released.Add(chest.Index)) continue;
+            var model = ModelFactory.Build(ModelCatalog.ForLoot(chest.Loot.Kind), castShadows: false);
+            var from = new Vector3(chest.Spawn.X + 0.5f, chest.Spawn.Y + 0.4f, chest.Spawn.Z + 0.5f);
+            model.Root.Position = from;
+            model.Root.Scale = Vector3.One * 0.01f;
+            AddChild(model.Root);
+            _loot.Add((model.Root, from, 0, chest.Spawn.X * 0.37 + chest.Spawn.Z));
+        }
+
+        for (int i = _loot.Count - 1; i >= 0; i--)
+        {
+            var (node, from, age, phase) = _loot[i];
+            age += delta;
+            if (age >= LootSeconds)
+            {
+                node.QueueFree();
+                _loot.RemoveAt(i);
+                continue;
+            }
+            double t = age / LootSeconds;
+            double rise = 1 - (1 - t) * (1 - t);
+            float scale = (float)Math.Min(Math.Min(1, age / 0.25), (LootSeconds - age) / 0.45);
+            node.Position = from + new Vector3(0, (float)(rise + Math.Sin(age * 5 + phase) * 0.04), 0);
+            node.RotationDegrees = new Vector3(0, (float)(age * 220 + phase * 40) % 360, 0);
+            node.Scale = Vector3.One * (1.5f * Math.Max(0.01f, scale));
+            _loot[i] = (node, from, age, phase);
+        }
+    }
+
     /// <summary>Flickers the flames and hands the real lights to the torches nearest <paramref name="viewer"/>.</summary>
     public void Update(double delta, Vector3 viewer)
     {
@@ -96,6 +134,7 @@ public partial class PropsView : Node3D
                 float next = Mathf.MoveToward(lid.RotationDegrees.X, target, (float)(delta * 330));
                 lid.RotationDegrees = new Vector3(next, 0, 0);
             }
+        ReleaseLoot(delta);
         foreach (var (index, rig) in _traps)
             if (rig.Part("spikes") is { } spikes)
             {

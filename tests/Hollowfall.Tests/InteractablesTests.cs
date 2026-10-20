@@ -51,11 +51,14 @@ public class InteractablesTests
     [Fact]
     public void AnOrdinaryChestOpensForFreeAndHeals()
     {
-        var r = new Rig(At(SpawnKind.Loot, tier: 1));
-        r.Tick(Beside(offset: 1.5), interact: true);
+        // Use a chest whose seeded loot is health (others are covered in LootTests).
+        int x = Enumerable.Range(10, 500).First(i => LootTable.Roll(7, At(SpawnKind.Loot, i, tier: 1)).Kind == LootKind.Health);
+        var r = new Rig(At(SpawnKind.Loot, x, tier: 1));
+        r.Tick(Beside(x, offset: 1.5), interact: true);
         var opened = Assert.Single(r.Events.OfType<ChestOpened>());
         Assert.False(opened.WasLocked);
         Assert.Equal(Interactables.ChestHeal, opened.Healed);
+        Assert.Equal(LootKind.Health, opened.Loot!.Value.Kind);
         Assert.Equal(80, r.Health);
         Assert.True(r.Items.Chests[0].Opened);
     }
@@ -88,18 +91,20 @@ public class InteractablesTests
     [Fact]
     public void ALockedChestNeedsAKeyAndSpendsIt()
     {
-        var r = new Rig(At(SpawnKind.Key, 20, 20), At(SpawnKind.Loot, tier: 2));
+        int x = Enumerable.Range(10, 500).First(i => LootTable.Roll(7, At(SpawnKind.Loot, i, tier: 2)).Kind == LootKind.Health);
+        var r = new Rig(At(SpawnKind.Key, 20, 20), At(SpawnKind.Loot, x, tier: 2));
         r.Health = 10;
         Assert.True(r.Items.Chests[0].Locked);
-        r.Tick(Beside(), interact: true);
+        r.Tick(Beside(x), interact: true);
         Assert.Single(r.Events.OfType<ChestLocked>());
         Assert.False(r.Items.Chests[0].Opened);
 
         r.Tick(Beside(20, 20, 0.2), 0.2);
         Assert.Equal(1, r.Items.KeysHeld);
-        r.Tick(Beside(), interact: true);
+        r.Tick(Beside(x), interact: true);
         var opened = Assert.Single(r.Events.OfType<ChestOpened>());
         Assert.True(opened.WasLocked);
+        Assert.Equal(LootRarity.Rare, opened.Loot!.Value.Rarity);
         Assert.Equal(Interactables.LockedChestHeal, opened.Healed);
         Assert.Equal(0, r.Items.KeysHeld);
     }

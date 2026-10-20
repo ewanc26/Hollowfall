@@ -54,7 +54,7 @@ to `user://settings.json` (Godot's user data folder).
 | Teal / violet portal | Q / E | LB / RB |
 | Close portals (sever anything standing in them) | C | D-pad down |
 | Respawn | R | Y |
-| Open chests (a key for locked ones) | F | Left stick click |
+| Open chests (a key for locked ones; each holds seeded loot) | F | Left stick click |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
 | Pause menu | Esc | Start |
 | Debug overlay (fps, position, speed) | F3 | none |
@@ -67,6 +67,7 @@ Terrain is shown as flat-coloured blocks with baked ambient occlusion, and you c
 The HUD is kept clean: health, style, hints and a floor panel (floor, kills and time against par). The HUD fades out wherever it would cover a portal opening, and damage flashes are edge vignettes that leave the middle of the screen clear.
 Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit
 locks away part of your health for a while, and a style meter rewards kills, headshots, parries and movement.
+Chests hold loot picked from the seed: blood, a style burst, a cleanse of hard damage, a short perk (more blood from hits, a longer parry window) or a spare key; locked chests are better.
 See [docs/game-loop.md](docs/game-loop.md) for the design of the loop and [docs/features.md](docs/features.md) for planned features.
 
 **Portals.** Q and E fire the two ends of a linked teal and violet pair onto flat stone walls, floors and ceilings (a 1 x 2

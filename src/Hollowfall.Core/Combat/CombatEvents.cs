@@ -47,7 +47,8 @@ public sealed record PlayerDied : CombatEvent;
 
 public sealed record KeyCollected(int SpawnIndex) : CombatEvent;
 
-public sealed record ChestOpened(int SpawnIndex, double Healed, bool WasLocked) : CombatEvent;
+/// <summary><see cref="Loot"/> is what was inside; <see cref="Applied"/> is what it did (health healed, hard damage removed, style points, keys, or perk seconds).</summary>
+public sealed record ChestOpened(int SpawnIndex, double Healed, bool WasLocked, Loot? Loot = null, double Applied = 0) : CombatEvent;
 
 public sealed record ChestLocked(int SpawnIndex) : CombatEvent;
 

@@ -351,7 +351,11 @@ public partial class Main : Node3D
                 _hud.ShowBanner("KEY", 1.2);
                 break;
             case ChestOpened o:
-                _hud.ShowBanner(o.WasLocked ? $"LOCKED CHEST OPENED  +{o.Healed:F0} health" : $"CHEST  +{o.Healed:F0} health", 1.6);
+                _hud.ShowBanner(
+                    o.Loot is { } loot
+                        ? $"{(o.WasLocked ? "LOCKED CHEST" : "CHEST")}  {LootTable.Announce(loot, o.Applied)}"
+                        : o.WasLocked ? $"LOCKED CHEST OPENED  +{o.Healed:F0} health" : $"CHEST  +{o.Healed:F0} health",
+                    2.2);
                 break;
             case ChestLocked:
                 _hud.ShowBanner("locked: find the key on this floor", 1.8);

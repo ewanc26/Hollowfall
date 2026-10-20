@@ -25,14 +25,25 @@ public sealed class PlayerVitals
 
     public const double ParryInvulnerability = 0.35;
 
+    /// <summary>The most <see cref="HitHealScale"/> can reach.</summary>
+    public const double MaxHitHealScale = 4;
+
     private double _hardDamageDelay;
     private double _invulnerableFor;
+    private double _hitHealScale = 1;
 
     public double Health { get; private set; } = MaxHealth;
     public double HardDamage { get; private set; }
 
     /// <summary>The most health you can have right now: the maximum less hard damage.</summary>
     public double Ceiling => MaxHealth - HardDamage;
+
+    /// <summary>Multiplier on blood from hits (the Bloodlust perk). 1 normally; clamped to 1..4.</summary>
+    public double HitHealScale
+    {
+        get => _hitHealScale;
+        set => _hitHealScale = Math.Clamp(double.IsFinite(value) ? value : 1, 1, MaxHitHealScale);
+    }
 
     public bool Dead => Health <= 0;
     public bool Invulnerable => _invulnerableFor > 0;
@@ -69,7 +80,16 @@ public sealed class PlayerVitals
             HitZone.Limb => 20,
             _ => 10,
         };
-        return Heal(amount);
+        return Heal(amount * _hitHealScale);
+    }
+
+    /// <summary>Washes away all hard damage, returning the ceiling to full. Returns how much was removed.</summary>
+    public double Cleanse()
+    {
+        double removed = HardDamage;
+        HardDamage = 0;
+        _hardDamageDelay = 0;
+        return removed;
     }
 
     /// <summary>A finishing blow at point-blank range gibs the enemy and soaks you in blood.</summary>

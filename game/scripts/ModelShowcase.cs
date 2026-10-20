@@ -130,6 +130,18 @@ public partial class ModelShowcase : Node3D
         Place(ModelFactory.Build(ModelCatalog.SpikeTrap).Root, new Vector3(1.8f, 0, 0), "Spike trap", spin: 0.4, labelHeight: 0.05f);
         var torch = ModelFactory.Build(ModelCatalog.Torch);
         Place(torch.Root, new Vector3(3.4f, 0.8f, 0), "Torch", spin: 0.6, labelHeight: 0.05f);
+        // The loot a chest can release, one pickup per kind (a spare key is the key model above).
+        var loot = new[]
+        {
+            (ModelCatalog.LootHealth, "Health"), (ModelCatalog.LootCleanse, "Cleanse"), (ModelCatalog.LootStyle, "Style"),
+            (ModelCatalog.LootBloodlust, "Bloodlust"), (ModelCatalog.LootParry, "Open guard"),
+        };
+        for (int i = 0; i < loot.Length; i++)
+        {
+            var pickup = ModelFactory.Build(loot[i].Item1, castShadows: false);
+            pickup.Root.Scale = Vector3.One * 2.0f;
+            Place(pickup.Root, new Vector3(-2.6f + i * 1.3f, 1.75f, 0), loot[i].Item2, spin: 0.8, labelHeight: 1.45f);
+        }
         AddChild(new OmniLight3D { Position = new Vector3(3.4f, 1.5f, 0.2f), LightColor = new Color(1f, 0.6f, 0.25f), OmniRange = 4 });
     }
 

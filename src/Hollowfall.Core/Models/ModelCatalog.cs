@@ -52,6 +52,11 @@ public static class ModelCatalog
     private static readonly Lazy<LowPolyModel> KeyModel = new(BuildKey);
     private static readonly Lazy<LowPolyModel> SpikeTrapModel = new(BuildSpikeTrap);
     private static readonly Lazy<LowPolyModel> TorchModel = new(BuildTorch);
+    private static readonly Lazy<LowPolyModel> LootHealthModel = new(BuildLootHealth);
+    private static readonly Lazy<LowPolyModel> LootCleanseModel = new(BuildLootCleanse);
+    private static readonly Lazy<LowPolyModel> LootStyleModel = new(BuildLootStyle);
+    private static readonly Lazy<LowPolyModel> LootBloodlustModel = new(BuildLootBloodlust);
+    private static readonly Lazy<LowPolyModel> LootParryModel = new(BuildLootParry);
 
     public static LowPolyModel Husk => HuskModel.Value;
     public static LowPolyModel Spitter => SpitterModel.Value;
@@ -64,14 +69,30 @@ public static class ModelCatalog
     public static LowPolyModel Key => KeyModel.Value;
     public static LowPolyModel SpikeTrap => SpikeTrapModel.Value;
     public static LowPolyModel Torch => TorchModel.Value;
+    public static LowPolyModel LootHealth => LootHealthModel.Value;
+    public static LowPolyModel LootCleanse => LootCleanseModel.Value;
+    public static LowPolyModel LootStyle => LootStyleModel.Value;
+    public static LowPolyModel LootBloodlust => LootBloodlustModel.Value;
+    public static LowPolyModel LootParry => LootParryModel.Value;
 
-    public static IReadOnlyList<LowPolyModel> All => [Husk, Spitter, Warden, Orb, ReflectedOrb, Revolver, Shotgun, Chest, Key, SpikeTrap, Torch];
+    public static IReadOnlyList<LowPolyModel> All => [Husk, Spitter, Warden, Orb, ReflectedOrb, Revolver, Shotgun, Chest, Key, SpikeTrap, Torch, LootHealth, LootCleanse, LootStyle, LootBloodlust, LootParry];
 
     public static LowPolyModel ForEnemy(EnemyKind kind) => kind switch
     {
         EnemyKind.Husk => Husk,
         EnemyKind.Spitter => Spitter,
         _ => Warden,
+    };
+
+    /// <summary>The pickup that floats out of a chest for a kind of loot. A spare key is the key model itself.</summary>
+    public static LowPolyModel ForLoot(LootKind kind) => kind switch
+    {
+        LootKind.Health => LootHealth,
+        LootKind.Cleanse => LootCleanse,
+        LootKind.StyleBoost => LootStyle,
+        LootKind.Bloodlust => LootBloodlust,
+        LootKind.WideParry => LootParry,
+        _ => Key,
     };
 
     // ---- Husk: a hunched, long-armed thing with claws and a lantern jaw ------------------------
@@ -306,5 +327,66 @@ public static class ModelCatalog
             .Gem(V(0, 0.1, 0), V(0.07, 0.15, 0.07), Palette.Ember, glow: true)
             .Gem(V(0, 0.07, 0), V(0.04, 0.09, 0.04), Palette.EyeAmber, V(0, 45, 0), glow: true);
         return m.Anchor("flame", V(0, 0.46, -0.12)).Build();
+    }
+
+    // ---- loot pickups: each kind has its own silhouette and glow colour, centred about 0.15 above the model origin ----------
+
+    private static LowPolyModel BuildLootHealth()
+    {
+        // A blood vial: a glowing red body, a bone neck and a cork, banded in gold.
+        var m = new ModelBuilder("loot_health");
+        m.Part("vial", V(0, 0, 0))
+            .Prism(V(0, 0.13, 0), 0.085, 0.2, 6, Palette.Hot, 1, glow: true)
+            .Prism(V(0, 0.13, 0), 0.092, 0.035, 6, Palette.Gold)
+            .Prism(V(0, 0.27, 0), 0.04, 0.09, 6, Palette.Bone)
+            .Prism(V(0, 0.33, 0), 0.05, 0.035, 6, Palette.Wood);
+        return m.Build();
+    }
+
+    private static LowPolyModel BuildLootCleanse()
+    {
+        // A teal drop over a bone dish: clean water against blood.
+        var m = new ModelBuilder("loot_cleanse");
+        m.Part("drop", V(0, 0, 0))
+            .Gem(V(0, 0.2, 0), V(0.08, 0.15, 0.08), Palette.Teal, glow: true)
+            .Gem(V(0, 0.2, 0), V(0.04, 0.08, 0.04), Palette.White, V(0, 45, 0), glow: true)
+            .Prism(V(0, 0.02, 0), 0.12, 0.04, 6, Palette.Bone, 0.7);
+        return m.Build();
+    }
+
+    private static LowPolyModel BuildLootStyle()
+    {
+        // A four-pointed gold star standing in a cradle: the flashiest of the lot.
+        var m = new ModelBuilder("loot_style");
+        m.Part("star", V(0, 0.2, 0))
+            .Gem(V(0, 0, 0), V(0.07, 0.17, 0.07), Palette.EyeAmber, glow: true)
+            .Gem(V(0, 0, 0), V(0.17, 0.07, 0.07), Palette.EyeAmber, glow: true)
+            .Gem(V(0, 0, 0), V(0.05, 0.05, 0.05), Palette.White, V(0, 45, 0), glow: true);
+        m.Part("cradle", V(0, 0, 0))
+            .Prism(V(0, 0.025, 0), 0.1, 0.05, 4, Palette.Gold, 0.6, spin: 45);
+        return m.Build();
+    }
+
+    private static LowPolyModel BuildLootBloodlust()
+    {
+        // A fang of red crystal on a crimson base, leaning into the fight.
+        var m = new ModelBuilder("loot_bloodlust");
+        m.Part("fang", V(0, 0, 0))
+            .Gem(V(0, 0.22, 0), V(0.07, 0.19, 0.07), Palette.Hot, V(0, 0, 12), glow: true)
+            .Gem(V(0.09, 0.13, 0), V(0.04, 0.1, 0.04), Palette.Ember, V(0, 0, -25), glow: true)
+            .Gem(V(-0.08, 0.12, 0.02), V(0.035, 0.09, 0.035), Palette.Ember, V(0, 0, 28), glow: true)
+            .Prism(V(0, 0.025, 0), 0.11, 0.05, 6, Palette.Crimson, 0.75);
+        return m.Build();
+    }
+
+    private static LowPolyModel BuildLootParry()
+    {
+        // A violet shield disc with a bright boss: the same colour as the parry flash, set in a steel rim.
+        var m = new ModelBuilder("loot_parry");
+        m.Part("shield", V(0, 0.2, 0))
+            .Prism(V(0, 0, 0), 0.17, 0.035, 8, Palette.Steel, 1, V(90, 0, 0))
+            .Prism(V(0, 0, -0.012), 0.12, 0.03, 8, Palette.VioletGlow, 1, V(90, 0, 0), glow: true)
+            .Gem(V(0, 0, -0.03), V(0.05, 0.05, 0.04), Palette.White, glow: true);
+        return m.Build();
     }
 }
