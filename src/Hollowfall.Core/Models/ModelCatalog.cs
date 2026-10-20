@@ -75,7 +75,13 @@ public static class ModelCatalog
     public static LowPolyModel LootBloodlust => LootBloodlustModel.Value;
     public static LowPolyModel LootParry => LootParryModel.Value;
 
-    public static IReadOnlyList<LowPolyModel> All => [Husk, Spitter, Warden, Orb, ReflectedOrb, Revolver, Shotgun, Chest, Key, SpikeTrap, Torch, LootHealth, LootCleanse, LootStyle, LootBloodlust, LootParry];
+    public static IReadOnlyList<LowPolyModel> All =>
+    [
+        Husk, Spitter, Warden, Orb, ReflectedOrb, Revolver, Shotgun, Chest, Key, SpikeTrap, Torch,
+        LootHealth, LootCleanse, LootStyle, LootBloodlust, LootParry,
+        // ---- story: models added for the lore notes (append further models above this line, not below) ----
+        Scroll,
+    ];
 
     public static LowPolyModel ForEnemy(EnemyKind kind) => kind switch
     {
@@ -387,6 +393,24 @@ public static class ModelCatalog
             .Prism(V(0, 0, 0), 0.17, 0.035, 8, Palette.Steel, 1, V(90, 0, 0))
             .Prism(V(0, 0, -0.012), 0.12, 0.03, 8, Palette.VioletGlow, 1, V(90, 0, 0), glow: true)
             .Gem(V(0, 0, -0.03), V(0.05, 0.05, 0.04), Palette.White, glow: true);
+    // ---- story: the scroll a lore note is written on --------------------------------------------
+
+    private static readonly Lazy<LowPolyModel> ScrollModel = new(BuildScroll);
+
+    public static LowPolyModel Scroll => ScrollModel.Value;
+
+    private static LowPolyModel BuildScroll()
+    {
+        var m = new ModelBuilder("scroll");
+        // A rolled sheet lying on its side with a half-unrolled tongue in front, tied with a red ribbon.
+        m.Part("scroll", V(0, 0, 0))
+            .Prism(V(0, 0.075, 0), 0.07, 0.46, 8, Palette.Bone, 1, V(0, 0, 90))
+            .Prism(V(-0.24, 0.075, 0), 0.085, 0.045, 6, Palette.Wood, 1, V(0, 0, 90))
+            .Prism(V(0.24, 0.075, 0), 0.085, 0.045, 6, Palette.Wood, 1, V(0, 0, 90))
+            .Prism(V(0.03, 0.075, 0), 0.078, 0.05, 6, Palette.Crimson, 1, V(0, 0, 90))
+            .Box(V(0.02, 0.006, -0.17), V(0.34, 0.012, 0.2), Palette.Bone.Shade(0.12f), V(0, 8, 0));
+        m.Part("seal", V(0, 0.16, 0))
+            .Gem(V(0.03, 0, 0), V(0.028, 0.02, 0.028), Palette.EyeAmber, glow: true);
         return m.Build();
     }
 }

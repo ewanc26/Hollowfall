@@ -469,3 +469,18 @@ public class StoryProgressTests
         }
     }
 }
+
+public class ScrollModelTests
+{
+    [Fact]
+    public void TheScrollIsTinyAndItsSealGlows()
+    {
+        var scroll = Hollowfall.Core.Models.ModelCatalog.Scroll;
+        Assert.Equal("scroll", scroll.Id);
+        Assert.InRange(scroll.TriangleCount, 20, 150);
+        Assert.Contains(scroll.Parts, p => p.Name == "seal" && p.Glow.TriangleCount > 0);
+        Assert.InRange(scroll.Min.Y, -0.01, 0.01); // lies on the floor
+        Assert.True(scroll.Height < 0.3);
+        Assert.Contains(scroll, Hollowfall.Core.Models.ModelCatalog.All);
+    }
+}

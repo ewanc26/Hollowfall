@@ -40,6 +40,10 @@ public enum SoundId
     StepSnow,
     StepWood,
     StepWater,
+
+    // ---- story (appended; new sounds go below this line) ----
+    NoteRead,
+    TitleCard,
 }
 
 /// <summary>
@@ -97,6 +101,8 @@ public static class Synth
             SoundId.StepSnow => StepCrunch(0.18, 56, 1800, 22, 150, 0.7),
             SoundId.StepWood => Mix(0.16, (t, i) => Sine(t, 205) * Decay(t, 48) * 0.5 + Sine(t, 410) * Decay(t, 62) * 0.25 + Noise(i, 57) * Decay(t, 120) * 0.3),
             SoundId.StepWater => Splash(0.32),
+            SoundId.NoteRead => Mix(0.4, (t, i) => Noise(i, 31) * Math.Sin(Math.PI * Math.Min(1, t / 0.4)) * (0.55 + 0.45 * Math.Sin(t * 70)) * 0.35 + Sine(t, 330) * Decay(t, 32) * 0.12),
+            SoundId.TitleCard => Mix(2.2, (t, _) => (Sine(t, 110) * 0.5 * Decay(t, 2.2) + Sine(t, 165) * 0.3 * Decay(t, 3) + Sine(t, 277) * 0.18 * Decay(t, 5)) * Math.Min(1, t / 0.04)),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
