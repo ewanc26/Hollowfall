@@ -25,6 +25,7 @@ public sealed class TerrainGenerator
     private readonly PerlinNoise _caveA;
     private readonly PerlinNoise _caveB;
     private readonly PerlinNoise _detail;
+    private readonly (OreSpec Spec, PerlinNoise Noise)[] _ores;
 
     public TerrainGenerator(long seed)
     {
@@ -37,6 +38,7 @@ public sealed class TerrainGenerator
         _caveA = new PerlinNoise(SeedHash.Derive(seed, 6));
         _caveB = new PerlinNoise(SeedHash.Derive(seed, 7));
         _detail = new PerlinNoise(SeedHash.Derive(seed, 8));
+        _ores = OreSpec.Defaults.Select(o => (o, new PerlinNoise(SeedHash.Derive(seed, o.Salt)))).ToArray();
     }
 
     /// <summary>Convenience: accept a text seed like Minecraft does.</summary>
@@ -89,6 +91,18 @@ public sealed class TerrainGenerator
         return Biome.Plains;
     }
 
+    /// <summary>The ore at a position inside solid stone, or Stone if none. Pure function of the seed.</summary>
+    public BlockType StoneOrOre(int wx, int y, int wz)
+    {
+        foreach (var (spec, noise) in _ores)
+        {
+            if (y < spec.MinY || y > spec.MaxY) continue;
+            if (noise.Sample(wx * spec.Scale, y * spec.Scale, wz * spec.Scale) > spec.Threshold)
+                return spec.Block;
+        }
+        return BlockType.Stone;
+    }
+
     private bool IsCave(int wx, int y, int wz)
     {
         // Intersection of two near-zero "sheets" of 3D noise makes winding tunnels.
@@ -128,7 +142,7 @@ public sealed class TerrainGenerator
             if (y < BedrockLayers && (y == 0 || SeedHash.ToUnit(SeedHash.Hash(Seed, wx, wz, y)) < 0.5))
                 b = BlockType.Bedrock;
             else if (y < h - 3 || (y < h && col.Biome == Biome.Mountains))
-                b = BlockType.Stone;
+                b = StoneOrOre(wx, y, wz);
             else
                 b = SurfaceBlock(col.Biome, y == h, y, h);
 
