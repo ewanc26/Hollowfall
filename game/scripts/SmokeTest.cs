@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Input;
 using Hollowfall.Core.Meshing;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
@@ -19,6 +20,10 @@ public partial class SmokeTest : Node
 
     public override async void _Ready()
     {
+        // Never touch the real settings file from a test run.
+        string settingsPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-{System.Environment.ProcessId}.json");
+        System.Environment.SetEnvironmentVariable("HOLLOWFALL_SETTINGS", settingsPath);
+
         Check("terrain is deterministic", () =>
             new TerrainGenerator(7).GenerateChunk(2, 3).RawBlocks.SequenceEqual(new TerrainGenerator(7).GenerateChunk(2, 3).RawBlocks));
 
@@ -82,6 +87,7 @@ public partial class SmokeTest : Node
             else { _failed++; GD.PrintErr($"  FAIL {name}: chunks={view.ShownChunks} onGround={player.Body.OnGround}"); }
 
             await CheckCombatAsync(main);
+            await CheckInputAndMenusAsync(main);
             main.QueueFree();
         }
         catch (Exception e)
@@ -125,6 +131,74 @@ public partial class SmokeTest : Node
         {
             _failed++;
             GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+    }
+
+    /// <summary>Every action is mapped, bindings survive the trip through Godot events, and the menus open, pause and rebind.</summary>
+    private async Task CheckInputAndMenusAsync(Main main)
+    {
+        Check("every action is registered with its default inputs", () =>
+        {
+            foreach (var a in Enum.GetValues<GameAction>())
+            {
+                string name = InputMapper.Name(a);
+                if (!InputMap.HasAction(name)) return false;
+                if (InputMap.ActionGetEvents(name).Count != main.Settings.Bindings.All(a).Count()) return false;
+            }
+            return true;
+        });
+
+        Check("default bindings round-trip through Godot input events", () =>
+        {
+            foreach (var a in Enum.GetValues<GameAction>())
+                foreach (var b in main.Settings.Bindings.All(a))
+                {
+                    var ev = InputMapper.ToEvent(b);
+                    switch (ev)
+                    {
+                        case InputEventKey k: k.Pressed = true; break;
+                        case InputEventMouseButton m: m.Pressed = true; break;
+                        case InputEventJoypadButton j: j.Pressed = true; break;
+                    }
+                    if (ev == null || InputMapper.FromEvent(ev, includeGamepad: true, includeKeyboardMouse: true) != b) return false;
+                }
+            return true;
+        });
+
+        Check("a rebind changes the live input map and survives saving", () =>
+        {
+            var settings = main.Settings;
+            if (settings.Bindings.Rebind(GameAction.Parry, Binding.Key("G")) != RebindOutcome.Ok) return false;
+            InputMapper.Apply(settings.Bindings, settings.Deadzone);
+            bool mapped = InputMap.ActionGetEvents(InputMapper.Name(GameAction.Parry)).OfType<InputEventKey>().Any(k => k.PhysicalKeycode == Key.G);
+            bool saved = settings.TrySave(Main.SettingsPath) && GameSettings.Load(Main.SettingsPath).Bindings.Get(GameAction.Parry, Slot.KeyboardMouse) == Binding.Key("G");
+            settings.Bindings.ResetToDefaults();
+            InputMapper.Apply(settings.Bindings, settings.Deadzone);
+            return mapped && saved;
+        });
+
+        const string menuName = "menus pause the game, open every screen and resume";
+        try
+        {
+            var menus = main.Menus;
+            menus.Open(MenuScreen.Pause);
+            bool paused = GetTree().Paused && menus.Current == MenuScreen.Pause;
+            menus.OpenFrom(MenuScreen.Pause, MenuScreen.Controls);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            bool controls = menus.Current == MenuScreen.Controls;
+            menus.OpenFrom(MenuScreen.Pause, MenuScreen.Settings);
+            bool settings = menus.Current == MenuScreen.Settings;
+            menus.Close();
+            bool resumed = !GetTree().Paused && !menus.IsOpen;
+
+            bool ok = paused && controls && settings && resumed;
+            if (ok) { _passed++; GD.Print($"  ok   {menuName}"); }
+            else { _failed++; GD.PrintErr($"  FAIL {menuName}: paused={paused} controls={controls} settings={settings} resumed={resumed}"); }
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {menuName}: {e.Message}");
         }
     }
 

@@ -19,6 +19,7 @@ public enum GameAction
     PortalOrange,
     Respawn,
     FlyToggle,
+    FlyDown,
     Pause,
 }
 
@@ -93,6 +94,7 @@ public static class ActionInfo
         GameAction.PortalOrange => "Orange portal",
         GameAction.Respawn => "Respawn",
         GameAction.FlyToggle => "Free-fly",
+        GameAction.FlyDown => "Fly down",
         _ => "Pause menu",
     };
 
@@ -234,6 +236,7 @@ public sealed class BindingMap
             GameAction.PortalOrange => Binding.Key("E"),
             GameAction.Respawn => Binding.Key("R"),
             GameAction.FlyToggle => Binding.Key("F"),
+            GameAction.FlyDown => Binding.Key("Shift"),
             GameAction.Pause => PauseKey,
             _ => null,
         };
@@ -256,6 +259,7 @@ public sealed class BindingMap
             GameAction.PortalOrange => Binding.Button("RightShoulder"),
             GameAction.Respawn => Binding.Button("Y"),
             GameAction.FlyToggle => Binding.Button("RightStick"),
+            GameAction.FlyDown => Binding.Button("B"),
             GameAction.Pause => Binding.Button("Start"),
             _ => null,
         };

@@ -20,6 +20,16 @@ Godot is the shell; the game is C#. This is a hard rule, not a preference.
 - `LanguagePolicyTests` fails `dotnet test` if any of this is broken, and a pre-commit hook rejects `.gd` files. If a task seems to call for GDScript, write the C# equivalent instead and say so.
 - Verify the Godot side with `./run-smoke-test.sh` (needs the Godot .NET editor, found via `GODOT=`, `PATH` or `/Applications/Godot_mono.app`).
 
+## Input: actions, never keys
+
+All player input goes through `GameAction` and `BindingMap` (`Hollowfall.Core.Input`) so every control can be remapped
+and works on keyboard, mouse and gamepad.
+
+- A new player ability gets a `GameAction`, a label in `ActionInfo`, and default bindings for both slots in `BindingMap.Defaults`. Game scripts ask `InputMapper.Pressed(GameAction.X)`; they never name a key, button or axis. `NoHardCodedInputTests` fails if they do, and if an action is never read.
+- Escape is reserved for the pause menu. Required actions cannot be left unbound, and rebinding onto a used input swaps the two actions. These rules live in Core and are unit tested; keep new rules there too.
+- Settings are clamped and loaded defensively (`GameSettings.FromJson` never throws), and saved atomically. Add new options to `GameSettings` with a range and a default, and to the Settings screen.
+- Menus are code-built Godot controls that work with the keyboard, mouse and gamepad (focus, not hover). The game tree is paused while one is open.
+
 ## Agent control: use the Godot MCP
 
 Agents manipulate the engine through the `godot` MCP server in `.mcp.json` (Coding-Solo godot-mcp, pinned).
