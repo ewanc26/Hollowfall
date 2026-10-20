@@ -1,4 +1,5 @@
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Portals;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
@@ -8,7 +9,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalBlue = false, bool PortalOrange = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -62,6 +63,9 @@ public sealed class CombatSim
     private readonly Dictionary<string, double> _cooldowns = [];
     private double _parryWindow, _parryCooldown;
     private int _nextId = 1;
+
+    /// <summary>The player's portal pair. The host moves the player through it with <see cref="PortalWalker"/>.</summary>
+    public PortalSystem Portals { get; } = new();
 
     public PlayerVitals Vitals { get; } = new();
     public StyleMeter Style { get; } = new();
@@ -163,6 +167,9 @@ public sealed class CombatSim
                 if (_parryWindow <= 0) _parryCooldown = ParryCooldownSeconds;
             }
         }
+
+        if (actions.PortalBlue) FirePortal(PortalColor.Blue, view);
+        if (actions.PortalOrange) FirePortal(PortalColor.Orange, view);
 
         if (actions.FireRevolver) Fire(WeaponSpec.Revolver, view);
         if (actions.FireShotgun) Fire(WeaponSpec.Shotgun, view);
@@ -288,6 +295,7 @@ public sealed class CombatSim
         _projectiles.Clear();
         Vitals.Reset();
         Style.Reset();
+        Portals.Clear();
         _parryWindow = _parryCooldown = 0;
     }
 
@@ -304,32 +312,53 @@ public sealed class CombatSim
         for (int i = 0; i < weapon.Pellets; i++)
         {
             var dir = weapon.Pellets == 1 ? view.Forward : Spread(view.Forward, weapon.SpreadRadians);
-            double? wall = RayCast.FirstSolid(Blocks, view.Eye, dir, weapon.Range);
-            double reach = wall ?? weapon.Range;
 
+            // The shot may leave through a portal and carry on from the other one.
+            var segments = Portals.TraceRay(Blocks, view.Eye, dir, weapon.Range);
             Enemy? target = null;
-            double best = reach;
-            foreach (var e in _enemies)
+            Vec3 end = view.Eye;
+            double travelled = 0, best = double.MaxValue, bestTotal = 0;
+            var path = new List<(Vec3, Vec3)>();
+
+            foreach (var (origin, direction, length) in segments)
             {
-                if (e.Dead) continue;
-                if (RayCast.HitBox(view.Eye, dir, e.Bounds, reach) is { } d && d <= best) { best = d; target = e; }
+                Enemy? hitHere = null;
+                double nearest = length;
+                foreach (var e in _enemies)
+                {
+                    if (e.Dead) continue;
+                    if (RayCast.HitBox(origin, direction, e.Bounds, length) is { } d && d <= nearest) { nearest = d; hitHere = e; }
+                }
+
+                var stop = origin + direction.Normalized() * nearest;
+                path.Add((origin, stop));
+                end = stop;
+                if (hitHere != null)
+                {
+                    target = hitHere;
+                    best = nearest;
+                    bestTotal = travelled + nearest;
+                    break;
+                }
+                travelled += length;
             }
 
-            var end = view.Eye + dir.Normalized() * best;
-            if (i == 0) _events.Add(new ShotFired(weapon.Name, view.Eye, end));
+            if (i == 0) _events.Add(new ShotFired(weapon.Name, view.Eye, end, path));
             if (target == null) continue;
+            double distance = bestTotal;
+            _ = best;
 
             var zone = target.ZoneAt(end.Y);
             double mult = zone == HitZone.Head ? weapon.HeadMultiplier : zone == HitZone.Limb ? weapon.LimbMultiplier : 1.0;
             double damage = weapon.Damage * mult;
 
-            if (weapon.Pellets > 1 && best <= ShotgunParryReach && target.Telegraphing && !parried)
+            if (weapon.Pellets > 1 && distance <= ShotgunParryReach && target.Telegraphing && !parried)
             {
                 parried = true;
                 ParryEnemy(target, ParryKind.Shotgun);
             }
 
-            Vitals.HealFromHit(zone, best, weapon.PelletHeal);
+            Vitals.HealFromHit(zone, distance, weapon.PelletHeal);
             bool firstOnThisEnemy = hitThisShot.Add(target.Id);
             if (firstOnThisEnemy)
             {
@@ -338,6 +367,14 @@ public sealed class CombatSim
             }
             DamageEnemy(target, damage, zone, end, weapon.Name, view.Airborne);
         }
+    }
+
+    private void FirePortal(PortalColor color, PlayerView view)
+    {
+        var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks);
+        var p = result.Portal;
+        _events.Add(new PortalPlaced(color, result.Placed,
+            p?.Frame.Center ?? view.Eye, p?.Frame.Normal ?? new Vec3(0, 0, 0), p?.Frame.Up ?? new Vec3(0, 1, 0), result.Failure));
     }
 
     private Vec3 Spread(Vec3 forward, double radians)
@@ -526,7 +563,15 @@ public sealed class CombatSim
             p.Age += dt;
             var next = p.Position + p.Velocity * dt;
 
-            bool hitWall = BlockInfo.IsSolid(_world.GetBlock((int)Math.Floor(next.X), (int)Math.Floor(next.Y), (int)Math.Floor(next.Z)));
+            var seen = Portals.WithHoles(Blocks);
+            bool hitWall = BlockInfo.IsSolid(seen((int)Math.Floor(next.X), (int)Math.Floor(next.Y), (int)Math.Floor(next.Z)));
+            if (!hitWall && Portals.TryCross(p.Position, next, p.Velocity, p.Velocity) is { } through)
+            {
+                p.Position = through.Position;
+                p.Velocity = through.Velocity.Normalized() * p.Velocity.Length;
+                _events.Add(new PortalTraversed("projectile", through.Entered.Color));
+                continue;
+            }
             if (hitWall || p.Age > Projectile.LifetimeSeconds)
             {
                 Remove(p, exploded: p.Reflected && hitWall, hitWall ? p.Position : next);
