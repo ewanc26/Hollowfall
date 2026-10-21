@@ -8,7 +8,7 @@ public static class DialogueValidator
     public const int MaxChoices = 5;
 
     /// <summary>Accented letters his Gaelic and Scots use, on top of plain ASCII.</summary>
-    public const string ApprovedAccents = "òàèìùóáéíúÒÀ";
+    public const string ApprovedAccents = "òàèìùóáéíúÒÀÁÉÍÓÚ";
 
     public static bool ApprovedChar(char c) => c is >= ' ' and <= '~' or '\n' || ApprovedAccents.Contains(c);
 

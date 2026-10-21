@@ -535,6 +535,7 @@ public partial class Main : Node3D
                 if (_demoFrame == 5) MovePlayerToFloor((int)Math.Round((DungeonSite.FirstFloorY + 1 - alone.Y) / DungeonSite.FloorSpacing));
                 _player.PlaceAt(new Vector3(alone.X + 2.6f, alone.Y, alone.Z + 1.2f), Math.Atan2(2.6, 1.2), -0.25);
             }
+            Combat.Sim.Vitals.Reset(); // the teleport can drop you a block or two; the shot should not show it
             return;
         }
         if (_demoFrame is 5 or 40 or 41)
@@ -542,7 +543,7 @@ public partial class Main : Node3D
             if (_demoFrame == 5) MovePlayerToFloor(s.Pit.Floor);
             // Stand to the side of the line from the pit to the cat, so both show together.
             double ax = -s.Dz, az = s.Dx;
-            double away = demo switch { "cat_pit" => 3.6, "cat_sleep" => 7.5, "cat_sleep_close" => 2.7, "cat_talk" or "cat_talk_accents" => 2.0, _ => 3.0 };
+            double away = demo switch { "cat_pit" => 3.6, "cat_sleep" => 8.8, "cat_sleep_close" => 2.7, "cat_talk" or "cat_talk_accents" => 2.0, _ => 3.0 };
             double px = (s.Pit.X + s.X) / 2 + ax * away + s.Dx * (demo == "cat_pit" ? -1.4 : 0.2), pz = (s.Pit.Z + s.Z) / 2 + az * away + s.Dz * (demo == "cat_pit" ? -1.4 : 0.2);
             double tx = demo == "cat_pit" ? s.Pit.X : s.X, tz = demo == "cat_pit" ? s.Pit.Z : s.Z;
             double pitch = demo switch { "cat_pit" => -0.2, "cat_sleep_close" => -0.45, "cat_talk" or "cat_talk_accents" => -0.9, "cat_sleep" => -0.05, _ => -0.3 };
