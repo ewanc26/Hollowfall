@@ -432,3 +432,48 @@ public class PortalTests
         Assert.Fail("no dungeon found");
     }
 }
+
+public class HolonomyTests
+{
+    private static Frame F(Vec3 right, Vec3 up, Vec3 normal) => new(new Vec3(0, 0, 0), right, up, normal);
+
+    private static readonly Vec3 X = new(1, 0, 0), Y = new(0, 1, 0), Z = new(0, 0, 1);
+
+    private static Vec3 Neg(Vec3 v) => new(-v.X, -v.Y, -v.Z);
+
+    [Fact]
+    public void ABackAndForthThroughOnePairCloses()
+    {
+        var a = F(X, Y, Z);
+        var b = F(Z, Y, Neg(X));
+        var there = Holonomy.Vector([new Holonomy.Hop(a, b)], X);
+        var back = Holonomy.Vector([new Holonomy.Hop(b, a)], there);
+        Assert.Equal(X, back);
+    }
+
+    [Fact]
+    public void AChainOfHopsCanReverseAVelocity()
+    {
+        var loop = new[]
+        {
+            new Holonomy.Hop(F(X, Y, Z), F(Z, Y, Neg(X))),
+            new Holonomy.Hop(F(X, Z, Neg(Y)), F(Y, Neg(X), Z)),
+            new Holonomy.Hop(F(X, Y, Z), F(X, Y, Z)),
+        };
+        var v = Holonomy.Vector(loop, X);
+        Assert.Equal(Neg(X), v);
+    }
+
+    [Fact]
+    public void HopsPreserveLengthSoTheSpaceStaysLocallyFlat()
+    {
+        var loop = new[]
+        {
+            new Holonomy.Hop(F(X, Y, Z), F(Z, Y, Neg(X))),
+            new Holonomy.Hop(F(X, Z, Neg(Y)), F(Y, Neg(X), Z)),
+        };
+        var v = new Vec3(0.3, -1.2, 2.0);
+        var w = Holonomy.Vector(loop, v);
+        Assert.Equal(v.X * v.X + v.Y * v.Y + v.Z * v.Z, w.X * w.X + w.Y * w.Y + w.Z * w.Z, 9);
+    }
+}
