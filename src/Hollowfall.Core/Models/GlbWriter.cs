@@ -7,21 +7,23 @@ namespace Hollowfall.Core.Models;
 
 /// <summary>
 /// Writes a model as a binary glTF (.glb) file. Each part is a node placed at its pivot relative to its parent, with a child
-/// node "mesh_<part>" holding the solid and glowing surfaces; glow is marked KHR_materials_unlit. Positions are already relative to
-/// each pivot, and glTF shares Core's right-handed, y-up, counter-clockwise convention, so nothing is flipped.
+/// node "mesh_<part>" holding the solid and glowing surfaces; glow is marked KHR_materials_unlit. Each motion becomes a glTF
+/// animation whose channels target the part nodes. Positions are already relative to each pivot, and glTF shares Core's
+/// right-handed, y-up, counter-clockwise convention, so nothing is flipped.
 /// </summary>
 public static class GlbWriter
 {
     private const uint Magic = 0x46546C67, Version = 2, JsonChunk = 0x4E4F534A, BinaryChunk = 0x004E4942;
     private const int Float = 5126, UnsignedInt = 5125;
 
-    public static byte[] Encode(LowPolyModel model)
+    public static byte[] Encode(LowPolyModel model, IReadOnlyList<MotionClip> motions)
     {
         var state = new State(model);
         int root = state.AddNode(new JsonObject { ["name"] = model.Id });
         var children = new JsonArray();
         foreach (var part in model.Parts.Where(p => p.Parent == null)) children.Add(state.Visit(part));
         if (children.Count > 0) state.Nodes[root]["children"] = children;
+        var animations = motions.Select(state.AddAnimation).ToArray();
 
         var json = new JsonObject
         {
@@ -34,6 +36,7 @@ public static class GlbWriter
             ["bufferViews"] = new JsonArray(state.Views.Cast<JsonNode>().ToArray()),
             ["buffers"] = new JsonArray(new JsonObject { ["byteLength"] = state.Bin.Count }),
         };
+        if (animations.Length > 0) json["animations"] = new JsonArray(animations.Cast<JsonNode>().ToArray());
         if (state.Glowing)
         {
             json["materials"] = new JsonArray(new JsonObject
@@ -84,6 +87,7 @@ public static class GlbWriter
         public List<JsonObject> Accessors { get; } = [];
         public List<JsonObject> Views { get; } = [];
         public List<byte> Bin { get; } = [];
+        public Dictionary<string, int> PartNodes { get; } = [];
         public bool Glowing { get; private set; }
 
         public int AddNode(JsonObject node)
@@ -102,6 +106,7 @@ public static class GlbWriter
                 ["translation"] = new JsonArray(offset.X, offset.Y, offset.Z),
             };
             int index = AddNode(node);
+            PartNodes[part.Name] = index;
 
             var children = new JsonArray();
             if (!part.Solid.IsEmpty || !part.Glow.IsEmpty)
@@ -109,6 +114,37 @@ public static class GlbWriter
             foreach (var child in _model.Parts.Where(p => p.Parent == part.Name)) children.Add(Visit(child));
             if (children.Count > 0) node["children"] = children;
             return index;
+        }
+
+        public JsonObject AddAnimation(MotionClip clip)
+        {
+            int times = Accessor(Floats(clip.Times.Select(t => (float)t).ToArray()), Float, clip.Times.Length, "SCALAR",
+                new[] { (float)clip.Times[0] }, new[] { (float)clip.Times[^1] });
+            var samplers = new JsonArray();
+            var channels = new JsonArray();
+            foreach (var track in clip.Tracks)
+            {
+                int n = clip.Times.Length;
+                var rotations = track.Rotations.SelectMany(q => new[] { q.X, q.Y, q.Z, q.W }).ToArray();
+                var translations = track.Translations.SelectMany(v => new[] { (float)v.X, (float)v.Y, (float)v.Z }).ToArray();
+                var scales = track.Scales.SelectMany(s => new[] { (float)s, (float)s, (float)s }).ToArray();
+                var targets = new[]
+                {
+                    ("rotation", Accessor(Floats(rotations), Float, n, "VEC4")),
+                    ("translation", Accessor(Floats(translations), Float, n, "VEC3")),
+                    ("scale", Accessor(Floats(scales), Float, n, "VEC3")),
+                };
+                foreach (var (path, output) in targets)
+                {
+                    samplers.Add(new JsonObject { ["input"] = times, ["output"] = output, ["interpolation"] = "LINEAR" });
+                    channels.Add(new JsonObject
+                    {
+                        ["sampler"] = samplers.Count - 1,
+                        ["target"] = new JsonObject { ["node"] = PartNodes[track.Part], ["path"] = path },
+                    });
+                }
+            }
+            return new JsonObject { ["name"] = Motions.Name(clip.Motion), ["samplers"] = samplers, ["channels"] = channels };
         }
 
         private int AddMesh(ModelPart part)
