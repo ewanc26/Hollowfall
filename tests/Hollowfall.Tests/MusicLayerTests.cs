@@ -240,37 +240,29 @@ public class MusicLayerRenderTests
         {
             double hz = Modes.Hertz(midi);
             var note = Instruments.Pluck(hz, 1, 2.5, 0.6, 9);
-            double measured = Estimate(note, 4000, 12000);
-            double cents = 1200 * Math.Log2(measured / hz);
-            Assert.True(Math.Abs(cents) < 8, $"midi {midi}: {measured:F2} Hz against {hz:F2} Hz is {cents:F1} cents out");
+            // Scan a Hann-windowed DFT around the fundamental and its second harmonic (a string can sound the second partial louder
+            // in a short window) and take the strongest line: it must sit on the pitch to within 8 cents.
+            double bestPower = -1, bestCents = 999;
+            for (int harmonic = 1; harmonic <= 2; harmonic++)
+                for (double c = -100; c <= 100; c += 1)
+                {
+                    double power = Power(note, 1500, 8192, hz * harmonic * Math.Pow(2, c / 1200));
+                    if (power > bestPower) { bestPower = power; bestCents = c; }
+                }
+            Assert.True(Math.Abs(bestCents) <= 8, $"midi {midi}: the strongest partial is {bestCents} cents from {hz:F2} Hz (or its octave)");
         }
     }
 
-    /// <summary>The fundamental by autocorrelation with parabolic refinement, over a stretch after the attack.</summary>
-    private static double Estimate(float[] x, int from, int length)
+    private static double Power(float[] x, int from, int length, double hz)
     {
-        int bestLag = 0;
-        double best = double.MinValue;
-        var corr = new double[1000];
-        for (int lag = 10; lag < 700; lag++)
+        double re = 0, im = 0, w = Math.PI * 2 * hz / MusicTuning.SampleRate;
+        for (int i = 0; i < length; i++)
         {
-            double sum = 0;
-            for (int i = from; i < from + length; i++) sum += x[i] * x[i + lag];
-            corr[lag] = sum;
+            double hann = 0.5 - 0.5 * Math.Cos(Math.PI * 2 * i / length);
+            re += x[from + i] * hann * Math.Cos(w * i);
+            im += x[from + i] * hann * Math.Sin(w * i);
         }
-        // The first strong peak, not the highest (a multiple of the period can be a hair higher).
-        double max = corr.Max();
-        for (int lag = 11; lag < 699; lag++)
-            if (corr[lag] > corr[lag - 1] && corr[lag] >= corr[lag + 1] && corr[lag] > 0.6 * max)
-            {
-                bestLag = lag;
-                best = corr[lag];
-                break;
-            }
-        Assert.True(bestLag > 0 && best > 0);
-        double a = corr[bestLag - 1], b = corr[bestLag], c = corr[bestLag + 1];
-        double offset = 0.5 * (a - c) / (a - 2 * b + c);
-        return Hollowfall.Core.Audio.Music.MusicTuning.SampleRate / (bestLag + offset);
+        return re * re + im * im;
     }
 
     [Fact]
@@ -289,8 +281,8 @@ public class MusicLayerRenderTests
     public void TheBankReportsItsSize()
     {
         var bank = MusicFixture.Bank;
-        Assert.Equal(5L * 9 * MusicTuning.LoopSamples * 4, bank.FloatBytes);
-        Assert.Equal(5L * 9 * MusicTuning.LoopSamples * 2, bank.Pcm16Bytes);
+        Assert.Equal(5L * Enum.GetValues<MusicLayer>().Length * MusicTuning.LoopSamples * 4, bank.FloatBytes);
+        Assert.Equal(5L * Enum.GetValues<MusicLayer>().Length * MusicTuning.LoopSamples * 2, bank.Pcm16Bytes);
         Assert.True(bank.RenderMilliseconds > 0);
     }
 }

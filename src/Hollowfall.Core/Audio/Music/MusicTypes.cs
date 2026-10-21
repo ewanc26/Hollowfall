@@ -107,6 +107,9 @@ public enum MusicLayer
 
     /// <summary>A low heartbeat that grows as health falls.</summary>
     Heartbeat,
+
+    /// <summary>The fireside mood: a low hum and a soft, slow harp, for hearths and fire pits.</summary>
+    Hearth,
 }
 
 /// <summary>Short one-shots played over the music.</summary>
@@ -161,6 +164,9 @@ public sealed record MusicState
 
     /// <summary>Both portals are open and linked. A faint shimmer.</summary>
     public bool PortalLinked { get; init; }
+
+    /// <summary>The player is by a hearth or fire pit: the music turns to a soft harp and a low hum. Nothing sets this yet; the fire-pit feature will.</summary>
+    public bool NearHearth { get; init; }
 }
 
 public static class MusicContexts
@@ -207,6 +213,7 @@ public static class MusicTuning
         MusicLayer.Shimmer => 0.06,
         MusicLayer.Choir => 0.16,
         MusicLayer.Heartbeat => 0.12,
+        MusicLayer.Hearth => 0.10,
         _ => 0.1,
     };
 
@@ -229,6 +236,7 @@ public static class MusicTuning
         MusicLayer.Shimmer => 1.5,
         MusicLayer.Choir => 2.0,
         MusicLayer.Heartbeat => 1.0,
+        MusicLayer.Hearth => 2.5,
         _ => 2.0,
     };
 
@@ -243,6 +251,7 @@ public static class MusicTuning
         MusicLayer.Shimmer => 3.5,
         MusicLayer.Choir => 4.0,
         MusicLayer.Heartbeat => 2.5,
+        MusicLayer.Hearth => 3.5,
         _ => 4.0,
     };
 
@@ -269,6 +278,7 @@ public static class MusicTuning
         MusicLayer.Drone => 0.7,
         MusicLayer.Pulse => 0.6,
         MusicLayer.Heartbeat => 0.5,
+        MusicLayer.Hearth => 0.4,
         MusicLayer.Choir => 0.5,
         MusicLayer.DrumLight or MusicLayer.DrumHeavy => 0.3,
         MusicLayer.Harp or MusicLayer.Whistle => 0.25,
