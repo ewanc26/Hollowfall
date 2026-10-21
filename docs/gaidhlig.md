@@ -140,7 +140,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 137.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 143.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -260,6 +260,11 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 137.
 | `toast.boon` | The brownie warms the hearth for you (+{0} health) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.better` | {0} think better of you: {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.worse` | {0} now regard you as {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.title` | STANDING | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.subtitle` | How the dungeon's peoples regard you. Hurt a creature in front of its kin and they will remember. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.nobody` | Nobody here has an opinion of you yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.recent` | RECENT | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.nothingYet` | Nothing yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.edge` | A gap. Fire a portal across it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.alcove` | A high alcove. Fire a portal up into it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.afterFall` | You are set back at the edge. Fire a portal across the gap instead ({0}, then {1}). | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -277,6 +282,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 137.
 | `hint.menu` | menu | clàr-taice | Likely | DRU | a software translation of 'Menu'; not in the dictionaries checked |
 | `prompt.read` | {0}  read: {1} | {0}  leugh: {1} | Likely | WK | leugh, read (the imperative; Wiktionary quotes 'Leugh seo', Read this) |
 | `prompt.speak` | {0}  speak | {0}  bruidhinn | Likely | WK | bruidhinn, to speak or talk; the bare verb is the imperative |
+| `cat.warmth` | The fire is warm, and you feel a little better. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `prompt.closeHint` | {0} or {1} to close | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `prompt.leaveHint` | {0} or {1} to leave | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.died` | YOU DIED | THA THU MARBH | Likely | WK | Tha thu (you are) + marbh, dead |
