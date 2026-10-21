@@ -21,6 +21,9 @@ public partial class ReplayDirector : Node3D
     private ReplayStore _store = null!;
     private string _seed = "";
 
+    /// <summary>The character's stats this run was played with, so its replay re-simulates the same way.</summary>
+    private Hollowfall.Core.Progression.RunStats _stats;
+
     private bool _exactSteps = true;
     private int _trackFloor = -2;
     private GhostTrack? _track;
@@ -37,6 +40,7 @@ public partial class ReplayDirector : Node3D
         _sim = sim;
         _site = site;
         _seed = seed;
+        _stats = sim.Stats;
         _store = ReplayStore.Beside(recordsPath);
     }
 
@@ -61,7 +65,7 @@ public partial class ReplayDirector : Node3D
     public void OnFloorCompleted(FloorCompleted e)
     {
         if (!_exactSteps) return;
-        var replay = _recorder.Finish(_seed, _site.RegionX, _site.RegionZ, e.Floor, new FloorRecord(e.Result.Overall, e.Result.Points, e.Seconds));
+        var replay = _recorder.Finish(_seed, _site.RegionX, _site.RegionZ, e.Floor, new FloorRecord(e.Result.Overall, e.Result.Points, e.Seconds), _stats);
         if (replay != null && _store.TrySaveIfBest(replay)) GD.Print($"Hollowfall: saved the best run of floor {e.Floor + 1} ({replay.TickCount} steps)");
     }
 

@@ -172,10 +172,10 @@ public partial class Main : Node3D
         if (site != null)
         {
             Combat = new CombatView { Name = "Combat" };
-            var sim = new CombatSim(World, site);
+            _character = ProgressionStore.Load(ProgressionPath); // read before the run starts: its stats are fixed for the whole run
+            var sim = new CombatSim(World, site, _character.Stats);
             sim.EnableRelations(); // the Folk, wanderers and vermin; standing with each is kept per seed in relations.json
             _relations = RelationsStore.Load(RelationsPath);
-            _character = ProgressionStore.Load(ProgressionPath);
             Combat.Initialize(sim, site, _view);
             Combat.EventRaised += OnCombatEvent;
             Combat.EventRaised += e => { if (e is ReputationChanged or FloorCompleted) SaveRelations(); };
@@ -728,7 +728,7 @@ public partial class Main : Node3D
             floor,
             probes,
             (int)(sim?.Style.Rank ?? StyleRank.None),
-            sim == null ? 1 : sim.Vitals.Health / PlayerVitals.MaxHealth,
+            sim == null ? 1 : sim.Vitals.Health / sim.Vitals.Max,
             sim?.Dead ?? false,
             wulver,
             _storyUi.Modal || _storyUi.Speaking,

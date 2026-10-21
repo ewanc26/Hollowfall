@@ -170,8 +170,8 @@ public class ReplayTests
         Assert.Equal(ExpectedGoldenChecksum, ReplayCodec.Fnv32(bytes));
     }
 
-    private const int ExpectedGoldenLength = 4208;
-    private const uint ExpectedGoldenChecksum = 211259046; // changed on purpose with SimVersion 4 (the version is a byte in the header)
+    private const int ExpectedGoldenLength = 4210;
+    private const uint ExpectedGoldenChecksum = 3993741719; // changed on purpose: FormatVersion 3 records the run's two stats (two zero bytes here)
 
     [Fact]
     public void FileSizesStaySane()
