@@ -118,6 +118,10 @@ any chunk can be generated alone. Spawn points for monsters, a boss, loot, keys 
 produced as data, and the combat simulation turns them into encounters, chests, keys and spikes. Run `dotnet run --project src/Hollowfall.Cli -c Release -- <seed> 1 --dungeon --spawns`
 to see a floor plan.
 
+## Gaps
+
+Rooms are not all joined by corridors. Every room has at least one **gap**: two walled hallways with a door at the room, three steps up to a lip, and a pit you cannot cross on foot. Fire the teal portal at the far hallway, the violet one at the wall beside you, and step through. The pit is bare stone, spikes or water; a fall costs a little health (never the last point) and puts you back at the edge, so it never traps you. A few deeper links are shaft gaps: aim up into a tunnel above a sealed block. Corridors and secret doors remain, and the dungeon is always finishable (tests prove it with the real portal placement and walking physics). See `docs/game-loop.md`.
+
 ## Story
 
 Under the hill a Hollow is falling in on itself. Seven Wardens went down to hold it shut with the fold-craft and left a red cord behind them; six are only names now, and the seventh, who took the craft, is the boss at the bottom. You are a Delver, following the cord. The story is told in the margins and never gets in the way of the fight:

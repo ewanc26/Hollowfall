@@ -470,7 +470,7 @@ public partial class Main : Node3D
         var feet = GapCrossing.FeetAt(site, floor, hall[Math.Max(0, hall.Count - 1 - back)]);
         double yaw = Math.Atan2(-gap.DirX, -gap.DirZ);
         if (_demoFrame == 5) MovePlayerToFloor(floor);
-        if (_demoFrame is 8 or 9 || _demoFrame == 20) _player.PlaceAt(new Vector3((float)feet.X, (float)feet.Y, (float)feet.Z), yaw, kind == LinkKind.ShaftGap && back > 0 ? 0.35 : -0.1);
+        if (_demoFrame is 8 or 9 || _demoFrame == 20) _player.PlaceAt(new Vector3((float)feet.X, (float)feet.Y, (float)feet.Z), yaw, kind == LinkKind.ShaftGap && back > 0 ? 0.35 : -0.32);
         if (fire && plan != null)
         {
             var eye = new Vec3(_player.Body.X, _player.Body.Y + 1.62, _player.Body.Z);

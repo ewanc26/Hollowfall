@@ -130,6 +130,25 @@ opening, and the HUD fades out wherever it would overlap an opening. Enemies tre
 portal as a shortcut: if the player's reflection behind a portal's face is closer than the player, they walk into it and
 come out beside you.
 
+## Room links and gaps
+
+Rooms are joined by a mix of link types (`LinkKind`, chosen per link from the seed, the floor and the rooms' places in the graph; the numbers are in `LinkMix`).
+
+| Link | What it is |
+|---|---|
+| Corridor | The walkable 3-wide corridor with doors. Encounter doors lock and open as before. |
+| PortalGap | Two entrance hallways facing across a pit that cannot be crossed on foot. Each is 3 wide, with a door cell at the room (so an encounter can seal it), a flat landing, three steps up and 0 to 2 flat cells to the lip, which stands 3 blocks above the pit floor. The pit is 6 to 16 cells long (6 to 8 for the first gap out of the entrance room) and floored with bare stone (a fall costs 8 health), spikes (20) or water (0, but a slow climb out). Fire a portal at the far hallway and another beside you, and step through. |
+| ShaftGap | Rare, from floor 1: a hallway ending in a sealed 3-high block with a tunnel through its top, out of jump and step reach. Fire one portal up into the tunnel and one on the wall beside you. |
+| SecretDoor | As before: an extra loop behind a secret door. |
+
+**Guarantees.** Every room has at least one PortalGap, so an exit gap and an entrance hallway. A room with one way out leaves through a gap, and so do the entrance, the boss and the exit rooms. The first link out of the entrance room is a short bare-stone gap so the player learns the trick on an easy one. Gaps are cut into a straight stretch of the link's own corridor (into the facing edge of the rooms where the street between them is too short), so the room graph, depths and roles never change. If the rooms cannot all be given a gap, the floor is dug again with the same rooms (and only after 20 tries re-split).
+
+**Mix.** Every room needs a gap, so even floor 0 is about half gaps (the fewest the rule allows); each deeper floor turns more of the remaining links into gaps (40 percent of them on floor 1, 60 percent from floor 2), and the pit hazards get commoner (bare stone is the rule on floor 0, spikes and water below).
+
+**Proof.** `GapCrossing.Plan` finds a way over each gap with the real `PortalSystem.Place` and the real `PortalWalker` and body, and `DungeonReach` proves every room, the exit stairs and the boss are reached by walking plus those hops. The tests run both over seeds 1 to 30 and several regions.
+
+**Falling in.** The sim never lets a pit trap you: it takes a little health (never the last point), then after a moment puts you back at the last safe grounded cell on your own side (`PlayerFell`, `PlayerRecovered`). Enemies stop at the lip. The first time you stand at a lip the game says how to cross, with your real portal bindings.
+
 ## Principles
 
 - **Rules live in Core** as pure, fixed-step code. Godot scripts only translate input and draw.
