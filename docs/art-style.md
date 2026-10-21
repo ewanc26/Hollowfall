@@ -6,7 +6,7 @@ Everything in Hollowfall that is not a voxel is a **low-poly model built in code
 
 - **Flat shading only.** Every face of a model has one normal and one colour; no smoothing, no textures on models (blocks do wear textures, see below).
 - **Convex primitives.** `Box`, `Prism` (cylinders, cones, pyramids by `sides` and `taper`), `Wedge`, `Gem` (octahedron) and `Blob` (icosahedron).
-- **Triangle budgets** (tested): Warden 520, Wulver 450, Husk and Spitter 460, any other model 260, the whole catalogue under 3000.
+- **Triangle budgets** (tested): Warden 520, Wulver 450, Husk and Spitter 460, the cat 420, the fire pit 320, any other model 260, the whole catalogue under 3000 (it is 2900 now).
 - **One shared palette** (`ModelCatalog.Palette`). Enemies are told apart by silhouette and hue: rust Husk, violet Spitter, steel and crimson Warden.
 - **Glow is for meaning.** Eyes, cores, gems and flames are in the glow buffer, drawn unlit. While an enemy winds up an attack its glow flashes bright yellow, the cue to parry.
 - **Hit boxes match the art.** An enemy's model is as tall and wide as its `EnemySpec`, and a head shot lands on the head.
@@ -26,6 +26,8 @@ A model is a set of named parts, each with a pivot at its joint. Geometry is pos
 | Key, enemy orb | `key`, `orb` | none |
 | Chest | `base`, `lid` (hinged at the back edge) | none |
 | Wulver | `rock`, `fish`, `body`, `head`, `arm_l`, `arm_r`, `branch` | head and arms hang from `body`; `branch` (the yew, pivoting at the hand) from `arm_r` |
+| Fire pit | `stones`, `logs`, `embers`, `flame`, `tongue_a`, `tongue_b` | none; the flame and tongues are all emissive gems that scale and sway apart from each other |
+| Cat | `hearth`, `body`, `head`, `eyes`, `ear_l`, `ear_r`, `tail_1`, `tail_2`, `leg_fl`, `leg_fr`, `leg_bl`, `leg_br` | head, legs and `tail_1` hang from `body`; ears and `eyes` from `head`; `tail_2` from `tail_1`; `hearth` (stone seat and rug) stays still |
 
 Arms and legs have their pivot at the top and hang below it; feet touch y=0 at rest. A child follows its parent, so a leaning torso carries the head and arms. Poses are procedural (`EnemyView`): they move parts from the rest position the model defines, so there are no animation files and nothing to fall out of date. `ModelRigTests` checks the rules above, and the smoke test poses every enemy in the engine and checks the joints move and children follow.
 
@@ -79,10 +81,16 @@ Chests stand where loot spawns, keys turn in the air, spike traps fill trap room
 
 Opening a chest releases a **loot pickup** that floats out of the lid, turns and shrinks away. Each kind has its own silhouette and glow so it reads before you read the banner: a red **vial** (health), a teal **drop** (cleanse), a four-pointed amber **star** (style), a red-orange **fang** (Bloodlust) and a violet **shield disc** (Open guard); a spare key is the key model. They are single-part models of at most 120 triangles (tested), well inside the 260 budget.
 
+### Fire pits and the cat
+
+A **fire pit** is a ring of eight rough stones, three crossed logs, a bed of ash and a flame of emissive gems (a tall ember gem, an amber heart and a pale core, with two smaller tongues): the flame, embers and glow are in the glow buffer and unlit, as flames are. `PropsView` flickers them (the flame scales and sways; the tongues move out of step) and gives the nearest pits a real, warmer and wider light from the same pool of six that the wall torches use, so only the nearest few cast light. A soft crackle loop fades in with the distance to the nearest pit. A pit is decoration: no flame harms anyone.
+
+The **cat** is a Russian Blue: a short, dense, silvery blue-grey coat with a lighter back for a faint sheen, vivid green eyes in the glow buffer (their own part, so a slow blink can shut them), a slender body, a wedge-shaped head with wide-set ears and a small smile, long fine legs and a long tapering tail in two segments. He rests on a `hearth`: a stone seat and a dark cloth rug with a red hem, beside a pit, never in it. The model is built as a loaf lying down; `CatView` poses it from state with no animation files: asleep (curled, head low and to the side, ears back, eyes shut, slow breathing), and awake (tipped up on his haunches, head following the player, ears up, tail swaying, eyes open, a slow blink now and then and whenever you look at him).
+
 ## Checking the art
 
 ```bash
 HOLLOWFALL_SHOWCASE=enemies godot --path game res://scenes/Showcase.tscn
 ```
 
-Pages: `enemies`, `poses`, `weapons`, `props`, `effects`. The effects page shows the lake beside snow and gravel, three enemies being hit and burst on a loop, and dust; `HOLLOWFALL_SHOT=water` looks closely at the water's edge, and a walker crossing every surface prints the footstep sound it chose. Record frames with the movie writer, e.g. `godot --path game res://scenes/Showcase.tscn --write-movie out/f.png --fixed-fps 30 --quit-after 150`.
+Pages: `enemies`, `poses`, `weapons`, `props`, `cat` (a fire pit with the cat awake beside it), `catsleep`, `effects`. The effects page shows the lake beside snow and gravel, three enemies being hit and burst on a loop, and dust; `HOLLOWFALL_SHOT=water` looks closely at the water's edge, and a walker crossing every surface prints the footstep sound it chose. Record frames with the movie writer, e.g. `godot --path game res://scenes/Showcase.tscn --write-movie out/f.png --fixed-fps 30 --quit-after 150`.

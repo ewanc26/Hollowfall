@@ -127,6 +127,8 @@ All the words and every choice are in `Hollowfall.Core.Story`, a pure function o
 
 Somewhere out on the hills, a wolf stands holding a branch of yew. He is a dedication to the game's solo developer, and he is gentle. Go and say hello, and ask him a few things: he remembers what you chose.
 
+Fire pits burn in some of the dungeon's rooms, warm and harmless, and some of them hold a surprise.
+
 ## Agent control (MCP)
 
 Agents drive Godot through the off-the-shelf [Coding-Solo godot-mcp](https://github.com/Coding-Solo/godot-mcp)
