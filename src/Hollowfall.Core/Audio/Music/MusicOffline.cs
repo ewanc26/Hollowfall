@@ -63,6 +63,19 @@ public static class MusicOffline
         return output;
     }
 
+    /// <summary>Little-endian 16-bit samples, the form the engine keeps. Values outside -1 to 1 are clamped.</summary>
+    public static byte[] ToPcm16(float[] mono)
+    {
+        var bytes = new byte[mono.Length * 2];
+        for (int i = 0; i < mono.Length; i++)
+        {
+            short v = (short)Math.Clamp((int)Math.Round(mono[i] * short.MaxValue), short.MinValue, short.MaxValue);
+            bytes[i * 2] = (byte)(v & 0xFF);
+            bytes[i * 2 + 1] = (byte)((v >> 8) & 0xFF);
+        }
+        return bytes;
+    }
+
     /// <summary>The bytes of a mono 16-bit PCM WAV file.</summary>
     public static byte[] ToWav(float[] mono, int sampleRate = MusicTuning.SampleRate)
     {

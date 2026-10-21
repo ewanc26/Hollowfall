@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Audio.Music;
 using Hollowfall.Core.Storage;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
@@ -26,6 +27,8 @@ public partial class Main : Node3D
     private PropsView? _props;
     private ReplayDirector? _replay;
     private AudioDirector _audio = null!;
+    private MusicDirector _music = null!;
+    private bool _endingStingerSent;
     private EffectsDust _dust = null!;
     private RunRecords _records = new();
     private string _seedName = "";
@@ -64,6 +67,7 @@ public partial class Main : Node3D
 
     public static string StoryPath => Data.StoryPath;
 
+    public MusicDirector Music => _music;
     public StoryDirector Story => _story;
     public WulverDirector? Wulver => _wulver;
     public WulverView? WulverView => _wulverView;
@@ -108,6 +112,8 @@ public partial class Main : Node3D
 
         _audio = new AudioDirector { Name = "Audio", Settings = Settings };
         AddChild(_audio);
+        _music = new MusicDirector { Name = "Music", Settings = Settings, Seed = World.Seed, Audio = _audio };
+        AddChild(_music);
         _uiSound = id => _audio.Play(id);
         Menus.UiSound += _uiSound;
 
@@ -134,6 +140,7 @@ public partial class Main : Node3D
             Combat.Initialize(new CombatSim(World, site), site, _view);
             Combat.EventRaised += OnCombatEvent;
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
+            Combat.EventRaised += e => { if (MusicEvents.For(e, site.FloorCount - 1, site.Floors[^1].BossRoom?.Id ?? -1) is { } stinger) _music.Trigger(stinger); };
             Combat.EventRaised += e => _hud?.OnEvent(e);
             Combat.EventRaised += e => _story?.OnEvent(e);
             Combat.EventRaised += e => { if (e is PlayerDied) _deathCount++; else if (e is EnemyKilled) _killCount++; };
@@ -171,7 +178,7 @@ public partial class Main : Node3D
             _wulverView.Initialize(wulverSpot, false);
             AddChild(_wulverView);
             var wulverEncounter = new WulverEncounter(World.Seed, _seedName, wulverSpot, storyProgress.WulverFlags(_seedName), storyProgress.WulverVisits(_seedName));
-            _wulver = new WulverDirector(wulverEncounter, Combat.Sim.Vitals, Combat.Sim.Items.Perks, _storyUi, _wulverView, storyProgress, _seedName, StoryPath, id => _audio.Play(id))
+            _wulver = new WulverDirector(wulverEncounter, Combat.Sim.Vitals, Combat.Sim.Items.Perks, _storyUi, _wulverView, storyProgress, _seedName, StoryPath, PlayWithMotif)
             {
                 InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
                 MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
@@ -525,6 +532,35 @@ public partial class Main : Node3D
         _story.OnRespawn();
     }
 
+    /// <summary>A sound the story asked for; the Wulver's greeting also plays his motif in the music.</summary>
+    private void PlayWithMotif(Hollowfall.Core.Audio.SoundId id)
+    {
+        _audio.Play(id);
+        if (MusicEvents.For(id) is { } stinger) _music.Trigger(stinger);
+    }
+
+    /// <summary>What the music listens to this frame, read from the sim and the interface and built by Core's <see cref="MusicStateBuilder"/>.</summary>
+    private MusicState MusicNow()
+    {
+        var b = _player.Body;
+        var sim = Combat?.Sim;
+        int floor = sim?.CurrentFloor ?? -1;
+        var probes = sim == null ? [] : sim.Enemies.Where(e => e.Floor == floor).Select(e =>
+            new EnemyProbe(!e.Dead, e.Kind == EnemyKind.Warden, e.RoomId >= 0, Math.Sqrt((e.Feet.X - b.X) * (e.Feet.X - b.X) + (e.Feet.Z - b.Z) * (e.Feet.Z - b.Z))));
+        double wulver = _wulverView is { } w ? Math.Sqrt((w.Spot.X - b.X) * (w.Spot.X - b.X) + (w.Spot.Z - b.Z) * (w.Spot.Z - b.Z)) : double.MaxValue;
+        return MusicStateBuilder.Build(
+            floor,
+            probes,
+            (int)(sim?.Style.Rank ?? StyleRank.None),
+            sim == null ? 1 : sim.Vitals.Health / PlayerVitals.MaxHealth,
+            sim?.Dead ?? false,
+            wulver,
+            _storyUi.Modal || _storyUi.Speaking,
+            GetTree().Paused,
+            passiveNearby: false,
+            portalLinked: sim != null && sim.Portals.Teal != null && sim.Portals.Violet != null);
+    }
+
     private void ShowIntro() => _story.ShowIntroIfNew();
 
     private void OnCombatEvent(CombatEvent e)
@@ -583,6 +619,8 @@ public partial class Main : Node3D
         _weapons.Pose(delta, b.Speed, b.OnGround, _player.LookDelta);
         _props?.Update(delta, _view.Focus);
         _audio.Underground = Combat != null && Combat.Sim.CurrentFloor >= 0;
+        if (_music.FollowGame) _music.State = MusicNow();
+        if (_story.EndingShown && !_endingStingerSent) { _endingStingerSent = true; _music.Trigger(Stinger.Ending); }
         _dust.Active = _audio.Underground;
 
         if (Combat == null) return;
