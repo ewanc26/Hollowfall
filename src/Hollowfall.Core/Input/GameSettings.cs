@@ -15,6 +15,7 @@ public sealed class GameSettings
     public static readonly (double Min, double Max, double Default) FovRange = (60, 110, 80);
     public static readonly (double Min, double Max, double Default) VolumeRange = (0, 1, 0.8);
     public static readonly (double Min, double Max, double Default) AmbienceRange = (0, 1, 0.5);
+    public static readonly (double Min, double Max, double Default) MusicRange = (0, 1, 0.6);
     public static readonly (int Min, int Max, int Default) ViewRadiusRange = (3, 12, 6);
 
     private double _mouseSensitivity = MouseSensitivityRange.Default;
@@ -27,6 +28,7 @@ public sealed class GameSettings
     private double _master = VolumeRange.Default;
     private double _effects = 1.0;
     private double _ambience = AmbienceRange.Default;
+    private double _music = MusicRange.Default;
 
     /// <summary>Radians of turn per pixel of mouse movement.</summary>
     public double MouseSensitivity
@@ -98,6 +100,13 @@ public sealed class GameSettings
         set => _ambience = Clamp(value, AmbienceRange.Min, AmbienceRange.Max, AmbienceRange.Default);
     }
 
+    /// <summary>The adaptive music, relative to the master volume. 0 turns it off.</summary>
+    public double MusicVolume
+    {
+        get => _music;
+        set => _music = Clamp(value, MusicRange.Min, MusicRange.Max, MusicRange.Default);
+    }
+
     /// <summary>Which button labels to show for a gamepad. Auto follows the connected controller.</summary>
     public PromptStyle ControllerPrompts { get; set; } = PromptStyle.Auto;
 
@@ -122,6 +131,7 @@ public sealed class GameSettings
         MasterVolume = VolumeRange.Default;
         EffectsVolume = 1.0;
         AmbienceVolume = AmbienceRange.Default;
+        MusicVolume = MusicRange.Default;
         InvertMouseY = false;
         InvertPadY = false;
         ControllerPrompts = PromptStyle.Auto;
@@ -157,6 +167,7 @@ public sealed class GameSettings
             ["masterVolume"] = MasterVolume,
             ["effectsVolume"] = EffectsVolume,
             ["ambienceVolume"] = AmbienceVolume,
+            ["musicVolume"] = MusicVolume,
             ["invertMouseY"] = InvertMouseY,
             ["invertPadY"] = InvertPadY,
             ["controllerPrompts"] = ControllerPrompts.ToString(),
@@ -194,6 +205,7 @@ public sealed class GameSettings
         s.MasterVolume = Number(root, "masterVolume", VolumeRange.Default);
         s.EffectsVolume = Number(root, "effectsVolume", 1.0);
         s.AmbienceVolume = Number(root, "ambienceVolume", AmbienceRange.Default);
+        s.MusicVolume = Number(root, "musicVolume", MusicRange.Default);
         s.InvertMouseY = Flag(root, "invertMouseY");
         s.InvertPadY = Flag(root, "invertPadY");
         s.ControllerPrompts = Enum.TryParse<PromptStyle>(root["controllerPrompts"] is JsonValue v && v.TryGetValue<string>(out var cp) ? cp : null, out var prompts) && Enum.IsDefined(prompts)

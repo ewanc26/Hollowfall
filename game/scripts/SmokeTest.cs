@@ -152,6 +152,7 @@ public partial class SmokeTest : Node
             else { _failed++; GD.PrintErr($"  FAIL {name}: chunks={view.ShownChunks} onGround={player.Body.OnGround}"); }
 
             await CheckCombatAsync(main);
+            await CheckMusicAsync(main);
             await CheckInputAndMenusAsync(main);
             await CheckStoryAsync(main);
             CheckWulver(main);
@@ -168,6 +169,69 @@ public partial class SmokeTest : Node
             await CheckABotCanPlayTheWholeDungeonAsync(main);
             await CheckSeedChangesTheWorldAsync(main);
             main.QueueFree();
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+    }
+
+    /// <summary>The adaptive music in the real scene: it renders in the background, builds its streams, follows the state and obeys the music volume.</summary>
+    private async Task CheckMusicAsync(Main main)
+    {
+        const string name = "the adaptive music renders in the background, follows the game state and obeys the music volume";
+        try
+        {
+            var music = main.Music;
+            var deadline = Time.GetTicksMsec() + 60_000;
+            while (Time.GetTicksMsec() < deadline && !music.Ready && music.Failure == null) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            bool built = music.Ready && music.Failure == null
+                && Enum.GetValues<Hollowfall.Core.Audio.Music.MusicContext>().All(c => music.StreamCount(c) == Enum.GetValues<Hollowfall.Core.Audio.Music.MusicLayer>().Length);
+            if (!built) { _failed++; GD.PrintErr($"  FAIL {name}: ready={music.Ready} failure={music.Failure}"); return; }
+            GD.Print($"    music: render {music.RenderMilliseconds:F0} ms, build {music.BuildMilliseconds:F0} ms, {music.BufferBytes / 1048576.0:F1} MB of audio, engine static memory {OS.GetStaticMemoryUsage() / 1048576.0:F0} MB");
+
+            var layer = Hollowfall.Core.Audio.Music.MusicLayer.DrumLight;
+            var context = Hollowfall.Core.Audio.Music.MusicContext.Plain;
+            music.FollowGame = false;
+            var calm = new Hollowfall.Core.Audio.Music.MusicState { Underground = true, Floor = 0 };
+            music.State = calm;
+            music.ResetMix();
+            for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            double before = music.Mixer.Smoothed(layer);
+
+            music.State = calm with { EncounterActive = true, EnemiesNear = 4, StyleRank = 4 };
+            var until = Time.GetTicksMsec() + 8_000;
+            while (Time.GetTicksMsec() < until && music.Mixer.Smoothed(layer) < 0.1) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            double after = music.Mixer.Smoothed(layer);
+            bool follows = before < 0.01 && after >= 0.1 && music.Mixer.Combat;
+
+            // The Ambience slider scales the bed: the old drone is quiet and the music's drone layer carries it.
+            bool bed = music.Audio == null || music.Audio.BedReplaced;
+
+            // The music volume turns the whole thing down and back up.
+            var settings = main.Settings;
+            double saved = settings.MusicVolume;
+            settings.MusicVolume = 0;
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            bool silent = Enum.GetValues<Hollowfall.Core.Audio.Music.MusicLayer>().All(l => music.DbOf(context, l) <= -79.9f);
+            settings.MusicVolume = 1;
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            float loud = music.DbOf(context, layer);
+            double loudGain = music.GainOf(context, layer);
+            settings.MusicVolume = 0.5;
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            float half = music.DbOf(context, layer);
+            double halfGain = music.GainOf(context, layer);
+            settings.MusicVolume = saved;
+            music.FollowGame = true;
+            bool volume = silent && loud > -79 && Math.Abs(loud - Mathf.LinearToDb((float)(loudGain * 1.0 * settings.MasterVolume))) < 0.2 && Math.Abs(half - Mathf.LinearToDb((float)(halfGain * 0.5 * settings.MasterVolume))) < 0.2;
+
+            if (follows && bed && volume) { _passed++; GD.Print($"  ok   {name} (drum gain {before:F2} to {after:F2})"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: follows={follows} (drum {before:F3} to {after:F3}) bed={bed} volume={volume} (silent={silent}, {loud:F1} dB, half {half:F1} dB)"); }
         }
         catch (Exception e)
         {

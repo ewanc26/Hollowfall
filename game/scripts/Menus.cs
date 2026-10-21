@@ -450,6 +450,8 @@ public partial class Menus : CanvasLayer
             () => _settings.EffectsVolume, v => _settings.EffectsVolume = v, v => $"{v * 100:F0}%");
         Slider(col, "Ambience volume", GameSettings.AmbienceRange.Min, GameSettings.AmbienceRange.Max, 0.05,
             () => _settings.AmbienceVolume, v => _settings.AmbienceVolume = v, v => $"{v * 100:F0}%");
+        Slider(col, "Music volume", GameSettings.MusicRange.Min, GameSettings.MusicRange.Max, 0.05,
+            () => _settings.MusicVolume, v => _settings.MusicVolume = v, v => $"{v * 100:F0}%");
         Slider(col, "Render distance", GameSettings.ViewRadiusRange.Min, GameSettings.ViewRadiusRange.Max, 1,
             () => _settings.ViewRadius, v => _settings.ViewRadius = (int)v, v => $"{v:F0} chunks");
 

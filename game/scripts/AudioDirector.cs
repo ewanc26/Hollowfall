@@ -138,13 +138,19 @@ public partial class AudioDirector : Node
 
     private static Vector3 V(Vec3 v) => new((float)v.X, (float)v.Y, (float)v.Z);
 
+    /// <summary>
+    /// Set by the <see cref="MusicDirector"/> once the adaptive music is playing: its drone layer is the bed from then on (the Ambience
+    /// slider scales that layer), so the old looping drone goes quiet instead of doubling it.
+    /// </summary>
+    public bool BedReplaced { get; set; }
+
     /// <summary>Whether the player is underground, where the drone plays.</summary>
     public bool Underground { get; set; }
 
     /// <summary>Fades the drone in underground and applies the volume settings. Runs while paused, so the volume sliders are heard at once.</summary>
     public override void _Process(double delta)
     {
-        _ambienceLevel = Mathf.MoveToward((float)_ambienceLevel, Underground ? 1f : 0f, (float)(delta * 0.6));
+        _ambienceLevel = Mathf.MoveToward((float)_ambienceLevel, Underground && !BedReplaced ? 1f : 0f, (float)(delta * 0.6));
         double level = Settings.MasterVolume * Settings.AmbienceVolume * _ambienceLevel * SoundMap.Gain(SoundId.Ambience);
         _ambience.VolumeDb = level <= 1e-4 ? -80 : Mathf.LinearToDb((float)level);
     }

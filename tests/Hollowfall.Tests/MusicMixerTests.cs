@@ -1,6 +1,7 @@
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Audio.Music;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Input;
 
 namespace Hollowfall.Tests;
 
@@ -602,5 +603,65 @@ public class MusicOfflineTests
         var bytes = MusicOffline.ToWav(Rendered);
         Assert.Equal(44 + Rendered.Length * 2, bytes.Length);
         if (Environment.GetEnvironmentVariable("HOLLOWFALL_MUSIC_WAV") is { Length: > 0 } path) File.WriteAllBytes(path, bytes);
+    }
+}
+
+public class MusicSettingTests
+{
+    [Fact]
+    public void MusicVolumeDefaultsToSixtyPercentAndIsClamped()
+    {
+        var s = new GameSettings();
+        Assert.Equal(0.6, s.MusicVolume);
+        s.MusicVolume = 7;
+        Assert.Equal(1, s.MusicVolume);
+        s.MusicVolume = -2;
+        Assert.Equal(0, s.MusicVolume);
+        s.MusicVolume = double.NaN;
+        Assert.Equal(GameSettings.MusicRange.Default, s.MusicVolume);
+        s.MusicVolume = 0.2;
+        s.ResetToDefaults();
+        Assert.Equal(0.6, s.MusicVolume);
+    }
+
+    [Fact]
+    public void MusicVolumeSurvivesJsonAndASaveToATemporaryFile()
+    {
+        var s = new GameSettings { MusicVolume = 0.35 };
+        Assert.Equal(0.35, GameSettings.FromJson(s.ToJson()).MusicVolume, 6);
+
+        string path = Path.Combine(Path.GetTempPath(), $"hollowfall-music-settings-{Guid.NewGuid():N}.json");
+        try
+        {
+            Assert.True(s.TrySave(path));
+            Assert.Equal(0.35, GameSettings.Load(path).MusicVolume, 6);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"musicVolume\":\"loud\"}")]
+    [InlineData("{\"musicVolume\":null}")]
+    [InlineData("not json")]
+    public void AMissingOrDamagedMusicVolumeFallsBackToTheDefault(string json) =>
+        Assert.Equal(GameSettings.MusicRange.Default, GameSettings.FromJson(json).MusicVolume);
+
+    [Fact]
+    public void AnOutOfRangeFileValueIsClamped() =>
+        Assert.Equal(1, GameSettings.FromJson("{\"musicVolume\":99}").MusicVolume);
+
+    [Fact]
+    public void Pcm16ConvertsAndClamps()
+    {
+        var bytes = MusicOffline.ToPcm16([0f, 1f, -1f, 5f]);
+        Assert.Equal(8, bytes.Length);
+        Assert.Equal(0, BitConverter.ToInt16(bytes, 0));
+        Assert.Equal(short.MaxValue, BitConverter.ToInt16(bytes, 2));
+        Assert.Equal(-short.MaxValue, BitConverter.ToInt16(bytes, 4));
+        Assert.Equal(short.MaxValue, BitConverter.ToInt16(bytes, 6));
     }
 }
