@@ -33,6 +33,8 @@ public static class TileSelector
                 return Wall(DungeonThemes.ForY(y), face, wx, y, wz);
             case BlockType.BrickFloor:
                 return Floor(DungeonThemes.ForY(y), face, wx, y, wz);
+            case BlockType.CrackedFloor:
+                return Tile.FloorCracked;
             case BlockType.Pillar:
                 return DungeonThemes.ForY(y) switch { DungeonTheme.Mossy => Tile.MossPillar, DungeonTheme.Ashen => Tile.AshPillar, _ => Tile.Pillar };
             case BlockType.Stairs:

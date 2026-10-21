@@ -138,7 +138,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 125.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 126.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -218,6 +218,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 125.
 | `action.interact` | Open and use | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.closePortals` | Close portals (sever) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.pause` | Pause menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.slam` | Slam | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.title` | SETTINGS | ROGHAINNEAN | Verified | FF | capitals of Firefox gd's 'Roghainnean' |
 | `settings.language` | Language | Cànan | Verified | FF WK | Firefox gd's 'Language' header is Cànan; cànan, a language |
 | `settings.mouseSensitivity` | Mouse sensitivity | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
