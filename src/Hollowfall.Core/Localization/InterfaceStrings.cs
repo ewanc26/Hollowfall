@@ -77,6 +77,19 @@ public static class InterfaceStrings
             T("character.might", "Might {0}"),
             T("character.mightHint", "+5 percent damage from guns and parries a point"),
             T("character.nextRun", "Points take effect from your next run. A run keeps the stats it began with."),
+
+            // ---- quests (progression) ----
+            T("quest.title", "QUESTS"),
+            T("quest.none", "No quests yet. Ask among the Folk."),
+            T("quest.husks", "Clear the Husks"),
+            T("quest.spitters", "Clear the Spitters"),
+            T("quest.progress", "{0} of {1} defeated"),
+            T("quest.reward", "Reward: {0} experience and {1}"),
+            T("quest.take", "Take"),
+            T("quest.taken", "Taken"),
+            T("quest.done", "Finished"),
+            T("quest.nextRun", "Quests count the kills you make from now on, in every run."),
+            T("pause.quests", "Quests"),
             G("pause.journal", "Journal", "Leabhar-latha", ReviewStatus.Verified, "WK", "leabhar-latha, diary or journal"),
             T("pause.mainMenu", "Main menu"),
 

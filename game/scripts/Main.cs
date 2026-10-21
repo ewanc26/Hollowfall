@@ -307,6 +307,7 @@ public partial class Main : Node3D
         _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
         _menus.CharacterProvider = () => _character;
         _menus.SpendRequested += stat => { if (_character.Spend(stat)) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.QuestTakeRequested += quest => { if (_character.Quests.Take(quest)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.BagProvider = () => _character.Items;
         _menus.WearRequested += kind => { if (_character.Items.Wear(kind)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.TakeOffRequested += () => { if (_character.Items.TakeOff()) ProgressionStore.TrySave(_character, ProgressionPath); };
