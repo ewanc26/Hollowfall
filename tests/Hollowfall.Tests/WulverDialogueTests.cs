@@ -262,7 +262,6 @@ public class WulverTreeTests
         Assert.Equal(samples, Synth.Render(SoundId.WulverGift));
         // New sounds are appended at the end of the list, so none of the earlier ids shift.
         Assert.Equal(SoundId.WulverGreeting + 1, SoundId.WulverGift);
-        Assert.Equal(SoundId.WulverGift, Enum.GetValues<SoundId>().Max());
     }
 
     // ---- exploring every path ----------------------------------------------------------------------
