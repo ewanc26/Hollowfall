@@ -6,7 +6,7 @@ namespace Hollowfall.Core.Terrain;
 /// </summary>
 public static class DailySeed
 {
-    private const string Prefix = "daily-";
+    public const string Prefix = "daily-";
 
     /// <summary>The seed text for a day, for example <c>daily-2026-10-21</c>.</summary>
     public static string For(DateOnly day) => Prefix + day.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
