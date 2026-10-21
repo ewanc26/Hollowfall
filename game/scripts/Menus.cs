@@ -2,6 +2,7 @@ using Godot;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Localization;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Ui;
 
@@ -18,6 +19,9 @@ public enum MenuScreen
 
     /// <summary>How each faction regards the player (relationship system). Appended last so earlier values never shift.</summary>
     Standing,
+
+    /// <summary>The character: experience, level and the stat points to spend (progression). Appended after Standing.</summary>
+    Character,
 }
 
 /// <summary>
@@ -45,6 +49,7 @@ public partial class Menus : CanvasLayer
     private VBoxContainer _journalList = null!;
     private Label _journalTitle = null!;
     private VBoxContainer _standingList = null!;
+    private VBoxContainer _characterList = null!;
 
     /// <summary>Supplies the player's reputation for the Standing screen; null when the relationship system is off. Set by the game.</summary>
     public Func<Hollowfall.Core.Relations.Reputation?> StandingProvider { get; set; } = () => null;
@@ -53,6 +58,12 @@ public partial class Menus : CanvasLayer
     public IReadOnlyList<string> StandingLines => _standingLines;
 
     private readonly List<string> _standingLines = [];
+
+    /// <summary>Supplies the character for the Character screen; null when there is none. Set by the game.</summary>
+    public Func<Progression?> CharacterProvider { get; set; } = () => null;
+
+    /// <summary>Raised when the player spends a point on a stat. The host spends it and saves the character.</summary>
+    public event Action<Stat>? SpendRequested;
 
     public Menus(GameSettings settings, string savePath, Loc? loc = null)
     {
@@ -110,6 +121,7 @@ public partial class Menus : CanvasLayer
         _screens[MenuScreen.Settings] = BuildSettings();
         _screens[MenuScreen.Journal] = BuildJournal();
         _screens[MenuScreen.Standing] = BuildStanding();
+        _screens[MenuScreen.Character] = BuildCharacter();
         foreach (var s in _screens.Values)
         {
             s.Visible = false;
@@ -149,6 +161,7 @@ public partial class Menus : CanvasLayer
         Input.MouseMode = screen == MenuScreen.None ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
         if (screen == MenuScreen.Journal) RefreshJournal();
         if (screen == MenuScreen.Standing) RefreshStanding();
+        if (screen == MenuScreen.Character) RefreshCharacter();
         if (screen != MenuScreen.None) FocusFirst(_screens[screen]);
     }
 
@@ -197,7 +210,7 @@ public partial class Menus : CanvasLayer
         {
             if (_current == MenuScreen.None) Open(MenuScreen.Pause);
             else if (_current == MenuScreen.Pause) { Close(); ResumeRequested?.Invoke(); }
-            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing) Open(ReturnScreen());
+            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing or MenuScreen.Character) Open(ReturnScreen());
             GetViewport().SetInputAsHandled();
         }
     }
@@ -358,12 +371,13 @@ public partial class Menus : CanvasLayer
 
     private Control BuildPause()
     {
-        var (screen, col) = Panel(420, 520);
+        var (screen, col) = Panel(420, 580);
         col.AddChild(Heading(_loc.Tr("pause.title")));
         col.AddChild(MakeButton(_loc.Tr("pause.resume"), () => { Close(); ResumeRequested?.Invoke(); }));
         col.AddChild(MakeButton(_loc.Tr("pause.respawn"), () => { Close(); RespawnRequested?.Invoke(); }));
         col.AddChild(MakeButton(_loc.Tr("pause.journal"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Journal)));
         col.AddChild(MakeButton(_loc.Tr("pause.standing"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Standing)));
+        col.AddChild(MakeButton(_loc.Tr("pause.character"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Character)));
         col.AddChild(MakeButton(_loc.Tr("pause.mainMenu"), () => MainMenuRequested?.Invoke()));
         col.AddChild(MakeButton(_loc.Tr("menu.controls"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
         col.AddChild(MakeButton(_loc.Tr("menu.settings"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Settings)));
@@ -410,6 +424,60 @@ public partial class Menus : CanvasLayer
         footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
         col.AddChild(footer);
         return screen;
+    }
+
+    private Control BuildCharacter()
+    {
+        var (screen, col) = Panel(640, 520);
+        col.AddChild(Heading(_loc.Tr("character.title")));
+        _characterList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(560, 0) };
+        _characterList.AddThemeConstantOverride("separation", 12);
+        col.AddChild(_characterList);
+
+        var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
+        col.AddChild(footer);
+        return screen;
+    }
+
+    /// <summary>Rebuilds the character screen from the live progression. Called each time the screen opens and after a point is spent.</summary>
+    private void RefreshCharacter()
+    {
+        foreach (var child in _characterList.GetChildren()) child.QueueFree();
+        if (CharacterProvider() is not { } c)
+        {
+            _characterList.AddChild(new Label { Text = _loc.Tr("character.none") });
+            return;
+        }
+
+        string next = c.Level >= Progression.MaxLevel
+            ? _loc.Tr("character.maxLevel")
+            : _loc.Tr("character.nextLevel", c.Experience, Progression.ExperienceForLevel(c.Level + 1));
+        _characterList.AddChild(new Label { Text = _loc.Tr("character.level", c.Level) + "    " + next });
+        _characterList.AddChild(new Label { Text = _loc.Tr("character.points", c.PointsAvailable) });
+        _characterList.AddChild(StatRow(c, Stat.Vigour, "character.vigour", "character.vigourHint"));
+        _characterList.AddChild(StatRow(c, Stat.Might, "character.might", "character.mightHint"));
+
+        var note = new Label { Text = _loc.Tr("character.nextRun"), AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
+        note.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
+        note.AddThemeFontSizeOverride("font_size", 16);
+        _characterList.AddChild(note);
+    }
+
+    private HBoxContainer StatRow(Progression c, Stat stat, string nameKey, string hintKey)
+    {
+        var row = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        row.AddThemeConstantOverride("separation", 12);
+        int value = stat == Stat.Vigour ? c.Vigour : c.Might;
+        row.AddChild(new Label { Text = _loc.Tr(nameKey, value), CustomMinimumSize = new Vector2(190, 0) });
+        var hint = new Label { Text = _loc.Tr(hintKey), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        hint.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
+        hint.AddThemeFontSizeOverride("font_size", 16);
+        row.AddChild(hint);
+        var spend = MakeButton("+", () => { SpendRequested?.Invoke(stat); RefreshCharacter(); });
+        spend.Disabled = c.PointsAvailable <= 0;
+        row.AddChild(spend);
+        return row;
     }
 
     private static Color TierColour(Hollowfall.Core.Relations.ReputationTier tier) => tier switch
