@@ -307,4 +307,30 @@ public static class MusicTuning
     public const double EnemyRange = 24;
 
     public const int MaxEnemiesCounted = 6;
+
+    // ---- how loud each layer is wanted (before the master headroom), see MusicMixer.Targets ---------
+
+    /// <summary>The longest a frame may count for when smoothing, so a hitch cannot make the music jump.</summary>
+    public const double MaxStepSeconds = 0.1;
+
+    public const double DroneUnderground = 0.6, DroneSurface = 0.4, DroneBoss = 0.7;
+
+    public const double HarpCalm = 0.5, HarpSparse = 0.4, HarpGentle = 0.45, HarpInCombat = 0.12, HarpNearHearth = 0.3;
+
+    public const double WhistleSurface = 0.55, WhistleWulver = 0.75, WhistlePlain = 0.25, WhistleMossy = 0.3, WhistleNearHearth = 0.3;
+
+    public const double PulsePlain = 0.12, PulseMossy = 0.15, PulseAshen = 0.22;
+
+    /// <summary>The drum and pulse levels in combat are a base plus a share of the intensity (0 to 1).</summary>
+    public const double PulseBase = 0.35, PulseSpan = 0.35, DrumLightBase = 0.45, DrumLightSpan = 0.45, DrumHeavyBase = 0.5, DrumHeavySpan = 0.4;
+
+    public const double BossDrum = 0.9, BossPulse = 0.7, BossChoir = 0.85;
+
+    public const double ShimmerPassive = 0.35, ShimmerPortal = 0.22, ShimmerTension = 0.18, ShimmerTensionIntensity = 0.75;
+
+    public const double HeartbeatMax = 0.85, HearthLevel = 0.8;
+
+    // ---- intensity: how hard the fight is, 0 to 1 -----------------------------------------------
+
+    public const double IntensityBase = 0.15, IntensityEnemies = 0.4, IntensityStyle = 0.4, IntensityEncounter = 0.1;
 }
