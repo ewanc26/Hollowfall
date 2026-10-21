@@ -94,8 +94,9 @@ public partial class Main : Node3D
     private void AwardKill(EnemyKilled killed)
     {
         int before = _character.Level;
-        if (_character.Award(killed.Kind) == 0) return;
-        if (_character.Level != before) ProgressionStore.TrySave(_character, ProgressionPath);
+        _character.Award(killed.Kind);
+        bool questFinished = _character.RecordKill(killed).Count > 0;
+        if (_character.Level != before || questFinished) ProgressionStore.TrySave(_character, ProgressionPath);
     }
 
     public StoryDirector Story => _story;

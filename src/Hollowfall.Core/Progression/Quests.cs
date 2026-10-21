@@ -38,6 +38,18 @@ public sealed class QuestLog
 
     public bool IsDone(QuestId quest) => _done.Contains(quest);
 
+    /// <summary>Every quest taken, with its progress and whether it is finished.</summary>
+    public IEnumerable<(QuestId Quest, int Progress, bool Done)> Entries() =>
+        _progress.Select(p => (p.Key, p.Value, _done.Contains(p.Key)));
+
+    /// <summary>Restores a saved quest, its progress clamped below its count. A finished quest stays finished.</summary>
+    public void Restore(QuestId quest, int progress, bool done)
+    {
+        int count = Catalogue[quest].Count;
+        _progress[quest] = done ? count : Math.Clamp(progress, 0, count - 1);
+        if (done) _done.Add(quest);
+    }
+
     /// <summary>Takes a quest. Returns false if it is already taken or already finished.</summary>
     public bool Take(QuestId quest)
     {
