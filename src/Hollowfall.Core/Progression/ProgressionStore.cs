@@ -5,20 +5,28 @@ namespace Hollowfall.Core.Progression;
 
 /// <summary>
 /// Your character saved as <c>progression.json</c> in the data folder. Read defensively: a damaged or hand-edited file gives a
-/// fresh character rather than stopping the game, and every value is clamped on the way in. Saving is atomic.
+/// fresh character rather than stopping the game, and every value is clamped on the way in. Saving is atomic. Version 1 files
+/// (no bag) still load, with an empty bag.
 /// </summary>
 public static class ProgressionStore
 {
     public const int MaxFileBytes = 4 * 1024;
-    public const int Version = 1;
+    public const int Version = 2;
 
-    public static string ToJson(Progression progression) => new JsonObject
+    public static string ToJson(Progression progression)
     {
-        ["version"] = Version,
-        ["experience"] = progression.Experience,
-        ["vigour"] = progression.Vigour,
-        ["might"] = progression.Might,
-    }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        var items = new JsonObject();
+        foreach (var (kind, count) in progression.Items.Contents()) items[kind.ToString()] = count;
+        return new JsonObject
+        {
+            ["version"] = Version,
+            ["experience"] = progression.Experience,
+            ["vigour"] = progression.Vigour,
+            ["might"] = progression.Might,
+            ["items"] = items,
+            ["charm"] = progression.Items.Charm is { } worn ? worn.ToString() : null,
+        }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+    }
 
     public static Progression FromJson(string? json)
     {
@@ -33,6 +41,7 @@ public static class ProgressionStore
         if (root is null) return progression;
 
         progression.Restore(Number(root, "experience"), Number(root, "vigour"), Number(root, "might"));
+        progression.Items.Restore(ReadItems(root), ReadCharm(root));
         return progression;
     }
 
@@ -69,4 +78,24 @@ public static class ProgressionStore
             return (int)Math.Clamp(d, int.MinValue, int.MaxValue);
         return 0;
     }
+
+    /// <summary>The bag from the file: item names with counts. Names that are not known items are dropped.</summary>
+    private static List<(ItemKind Kind, int Count)> ReadItems(JsonObject root)
+    {
+        var list = new List<(ItemKind, int)>();
+        if (root["items"] is not JsonObject items) return list;
+        foreach (var (name, node) in items)
+        {
+            if (!Enum.TryParse<ItemKind>(name, out var kind) || !Enum.IsDefined(kind)) continue;
+            if (node is JsonValue v && v.TryGetValue<double>(out var d) && double.IsFinite(d))
+                list.Add((kind, (int)Math.Clamp(d, 0, int.MaxValue)));
+        }
+        return list;
+    }
+
+    /// <summary>The worn charm from the file, or null if there is none or the name is not known.</summary>
+    private static ItemKind? ReadCharm(JsonObject root) =>
+        root["charm"] is JsonValue v && v.TryGetValue<string>(out var name) && Enum.TryParse<ItemKind>(name, out var kind) && Enum.IsDefined(kind)
+            ? kind
+            : null;
 }
