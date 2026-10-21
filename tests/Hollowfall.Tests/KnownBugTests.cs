@@ -144,7 +144,7 @@ public class KnownBugTests
     }
 
     [Fact]
-    public void ReplaysAreRecordedUnderSimVersionFour() => Assert.Equal(4, Hollowfall.Core.Replay.RunReplay.SimVersion);
+    public void ReplaysAreRecordedUnderTheCurrentSimVersion() => Assert.Equal(5, Hollowfall.Core.Replay.RunReplay.SimVersion);
 
     [Fact]
     public void KillsInARoomThatMustBeFoughtAgainDoNotSurviveARespawn()

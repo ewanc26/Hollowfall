@@ -149,11 +149,14 @@ public sealed class CombatSim
         if (Relations == null || !_populated.Add(floor)) return;
         foreach (var sp in _site.Spawns.Where(s => s.Kind == SpawnKind.Creature && s.Floor == floor))
         {
-            var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of((EnemyKind)sp.Variant), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), floor, sp.RoomId));
+            var enemy = Adopt(new Enemy(_nextId++, SpecFor((EnemyKind)sp.Variant, floor, sp.RoomId), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), floor, sp.RoomId));
             _enemies.Add(enemy);
             _events.Add(new EnemySpawned(enemy.Id, enemy.Kind, enemy.Feet));
         }
     }
+
+    /// <summary>The spec for an enemy of <paramref name="kind"/> in this room: the base spec, changed by the room's mutator (see <see cref="RoomMutators"/>).</summary>
+    private EnemySpec SpecFor(EnemyKind kind, int floor, int roomId) => RoomMutators.Apply(EnemySpec.Of(kind), RoomMutators.For(_world.Seed, floor, roomId, kind));
 
     private void BuildEncounters(int floor)
     {
@@ -268,7 +271,7 @@ public sealed class CombatSim
     /// <summary>Adds an enemy outside any encounter, for tests, debugging and scripted fights.</summary>
     public Enemy SpawnEnemy(EnemyKind kind, Vec3 feet, int floor = 0, int roomId = -1)
     {
-        var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of(kind), feet, floor, roomId));
+        var enemy = Adopt(new Enemy(_nextId++, SpecFor(kind, floor, roomId), feet, floor, roomId));
         _enemies.Add(enemy);
         _events.Add(new EnemySpawned(enemy.Id, kind, feet));
         return enemy;
@@ -420,7 +423,7 @@ public sealed class CombatSim
         foreach (var sp in enc.Spawns)
         {
             var kind = sp.Kind == SpawnKind.Boss ? EnemyKind.Warden : (sp.X + sp.Z) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
-            var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of(kind), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), enc.Floor, enc.RoomId));
+            var enemy = Adopt(new Enemy(_nextId++, SpecFor(kind, enc.Floor, enc.RoomId), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), enc.Floor, enc.RoomId));
             _enemies.Add(enemy);
             enc.Enemies.Add(enemy);
             _events.Add(new EnemySpawned(enemy.Id, kind, enemy.Feet));
@@ -933,7 +936,7 @@ public sealed class CombatSim
         {
             var (wx, wy, wz) = _site.ToWorld(enc.Floor, cells[i].X, cells[i].Z);
             var kind = (wx + wz) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
-            var enemy = Adopt(new Enemy(_nextId++, EnemySpec.Of(kind), new Vec3(wx + 0.5, wy, wz + 0.5), enc.Floor, enc.RoomId));
+            var enemy = Adopt(new Enemy(_nextId++, SpecFor(kind, enc.Floor, enc.RoomId), new Vec3(wx + 0.5, wy, wz + 0.5), enc.Floor, enc.RoomId));
             _enemies.Add(enemy);
             enc.Enemies.Add(enemy);
             _events.Add(new EnemySpawned(enemy.Id, kind, enemy.Feet));
