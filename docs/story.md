@@ -108,6 +108,25 @@ Everything he says lives in one data file, `Story/Dialogue/WulverDialogue.cs`, r
 
 The developer's name is written in exactly one file, and spoken on exactly one path. The player must pick the choice that claims they made this place, AND one of these circumstances must hold: the world seed (ignoring case, accents, spaces and hyphens) is one of the developer's own names; or the ending has been reached on this seed and he has been visited at least three times; or the `makerKey` flag is set, which is earned by claiming first, then reaching the last floor carrying a key and showing it to him. The nodes on that path carry a guard, and the runner redirects to a kind reply ("A good many folk say that, and I let them") if the guard fails. When it holds he speaks to the maker by name in seven warm lines, and `makerKnown` makes later visits greet them by name with a different set. A test walks every path of the tree under every combination of those conditions and fails if the name appears anywhere else, and another scans all of Core and the game scripts for the names outside the dialogue file.
 
+## The cat by the fire
+
+A second hidden figure, and a gift. **Aodhán** is a Russian Blue who rests on a flat stone seat with a rug of dark cloth beside one fire pit in each world (never in the flames, never in danger: he is not an enemy and has no hit box). *Aodhán* is the Irish name usually glossed "little fire", and he is the only entity in the game with it. He speaks **Irish (Gaeilge)**, in a gentle, sleepy, dry voice, in short fixed phrases with the English beneath each line. Every Irish string, its source and its status are in [gaeilge.md](gaeilge.md), which also asks a fluent speaker to review them before release.
+
+`CatPlacer` chooses the cat's pit from the seed: a pit in a Safe room on the first two floors if there is one, else any Safe room, else the deepest pit on floor 1, else floor 0. The dungeon is the nearest one to the origin, as for the Wulver, so there is exactly one cat per world. He sleeps curled on his rug while you are far away; within about 8 blocks he wakes and sits up, turns his head to follow you, blinks slowly at you when you look at him, and purrs when you are close. The first time he comes into view a one-line caption appears, and nothing else. Press Interact within about 2.5 blocks to talk.
+
+### The tree
+
+Everything he says is in one file, `Story/Dialogue/CatDialogue.cs`, run by the same dialogue engine as the Wulver (`DialogueRunner`, `DialogueCondition`, `DialogueEffect`). There are **11 nodes and 33 choices**; no node is a dead end or unreachable, and every node offers a way to say goodbye (tested).
+
+- **Entries**, first match wins: the warm line (the third visit, once), the first meeting, and a plain return.
+- **First meeting:** a slow blink and a greeting. You can blink back, answer in Irish, or leave him to sleep. Then a hub: sit by the fire, stroke him, thank him, or say goodbye. Each choice sets a short flag (`blinked`, `petted`, `sat`, `thanked`, `heardSmall`), saved with the story progress, at most 16 per seed.
+- **Return visits** remember what you did: he greets you as a friend, and if you stroked or sat before he remembers.
+- **The warm line** plays only on the third visit to the cat and only once. It is a short, kind line about a little fire, with its English at the end.
+- **The gift:** sitting beside him gives a little warmth, once per run: your hard damage is washed away and you heal a little (20 health, never a full heal, no perk). A second sit gives nothing.
+- A flag list and visit count are the only things saved, in the same `story.json` as the Wulver's, through `DataHome`.
+
+A strict test keeps his name out of every file in Core and the game scripts except his own dialogue file, and out of every document except this one and `gaeilge.md`.
+
 ## How it is built
 
 - **Deterministic from the seed.** The dungeon name, the last Warden, the opener and boss lines, each floor's card and note thread, and where the notes lie are all pure functions of the seed (and the floor count), built from `SeededRandom` only.
