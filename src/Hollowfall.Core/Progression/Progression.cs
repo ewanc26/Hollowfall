@@ -32,6 +32,14 @@ public sealed class Progression
     private int _vigour;
     private int _might;
 
+    /// <summary>What you carry, and the charm you wear (see <see cref="Inventory"/>).</summary>
+    public Inventory Items { get; } = new();
+
+    /// <summary>
+    /// A friendly Brownie's boon: it leaves its cream. Returns true if the cream fitted in the bag; with a full bag it does not.
+    /// </summary>
+    public bool ReceiveBoon() => Items.Add(ItemKind.BrownieCream) == 1;
+
     public int Experience { get; private set; }
 
     public int Level => LevelFor(Experience);

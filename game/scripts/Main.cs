@@ -181,6 +181,7 @@ public partial class Main : Node3D
             Combat.EventRaised += e => { if (e is ReputationChanged or FloorCompleted) SaveRelations(); };
             Combat.EventRaised += e => { if (e is EnemyKilled killed) AwardKill(killed); };
             Combat.EventRaised += e => { if (e is FloorCompleted) ProgressionStore.TrySave(_character, ProgressionPath); };
+            Combat.EventRaised += e => { if (e is BoonGiven && _character.ReceiveBoon()) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => { if (MusicEvents.For(e, site.FloorCount - 1, site.Floors[^1].BossRoom?.Id ?? -1) is { } stinger) _music.Trigger(stinger); };
             Combat.EventRaised += e => _hud?.OnEvent(e);
