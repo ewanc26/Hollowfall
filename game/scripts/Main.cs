@@ -321,6 +321,10 @@ public partial class Main : Node3D
         }
     }
 
+    /// <summary>The player's real binding for an action on the device they last used, as shown in the hints.</summary>
+    private string PortalKeyName(GameAction action) =>
+        BindingNames.Display(Settings.Bindings.Get(action, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse));
+
     private List<(Binding? Binding, string Label)> Hints()
     {
         var slot = _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse;
@@ -406,10 +410,14 @@ public partial class Main : Node3D
             if (_demo is { } cd && cd.StartsWith("cat")) RunCatDemo(cd);
             if (_cat != null) actions = _cat.Filter(actions, view.Feet, !dead);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
+            if (_demo == "gap") (view, actions) = RunGapDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
             if (_replay != null) (view, actions) = _replay.Capture(delta, view, actions);
             Combat.Step(delta, view, actions);
             foreach (var impact in Combat.LastEvents.OfType<MeteorImpact>()) _player.KeepSpeed(impact.SpeedKept);
+            // Fell into a pit: the sim says where it is safe, and the body goes there (the replay records the new place on the next step).
+            foreach (var recovered in Combat.LastEvents.OfType<PlayerRecovered>())
+                _player.PlaceAt(new Vector3((float)recovered.Position.X, (float)recovered.Position.Y, (float)recovered.Position.Z), _player.Yaw);
         }
     }
 
@@ -436,6 +444,38 @@ public partial class Main : Node3D
             // Stand a few blocks in front of the teal portal, facing it.
             var at = teal.Frame.Center + teal.Frame.Normal * 3.5;
             _player.PlaceAt(new Vector3((float)at.X, (float)view.Feet.Y, (float)at.Z), -Math.PI / 2);
+        }
+        return (view, actions);
+    }
+
+    /// <summary>
+    /// A scripted setup for screenshots (HOLLOWFALL_DEMO=gap): stand at a gap and look across it. HOLLOWFALL_GAP is
+    /// <c>floor:kind:hazard[:cellsBack[:portals]]</c>, for example <c>1:portal:spikes</c> (the first spike pit on floor 1, from its lip), <c>0:portal:bare:5</c>
+    /// (five cells back from the lip, looking down the hallway) or <c>2:shaft:bare:2:portals</c> (a shaft gap with both portals fired).
+    /// </summary>
+    private (PlayerView, PlayerActions) RunGapDemo(PlayerView view, PlayerActions actions)
+    {
+        _demoFrame++;
+        var parts = (System.Environment.GetEnvironmentVariable("HOLLOWFALL_GAP") ?? "0:portal:bare").Split(':');
+        if (Combat == null || parts.Length < 3 || !int.TryParse(parts[0], out int floor)) return (view, actions);
+        var site = Combat.Site;
+        var kind = parts[1] == "shaft" ? LinkKind.ShaftGap : LinkKind.PortalGap;
+        var hazard = parts[2] switch { "spikes" => GapHazard.Spikes, "water" => GapHazard.Water, _ => GapHazard.Bare };
+        int back = parts.Length > 3 && int.TryParse(parts[3], out int b) ? b : 0;
+        bool fire = parts.Length > 4 && parts[4] == "portals";
+        var gap = site.Floors[floor].Gaps.FirstOrDefault(g => g.Kind == kind && (kind == LinkKind.ShaftGap || g.Hazard == hazard));
+        if (gap == null) return (view, actions);
+        var plan = GapCrossing.Plan(site, floor, gap, true);
+        var hall = gap.Hall(true);
+        var feet = GapCrossing.FeetAt(site, floor, hall[Math.Max(0, hall.Count - 1 - back)]);
+        double yaw = Math.Atan2(-gap.DirX, -gap.DirZ);
+        if (_demoFrame == 5) MovePlayerToFloor(floor);
+        if (_demoFrame is 8 or 9 || _demoFrame == 20) _player.PlaceAt(new Vector3((float)feet.X, (float)feet.Y, (float)feet.Z), yaw, kind == LinkKind.ShaftGap && back > 0 ? 0.35 : -0.1);
+        if (fire && plan != null)
+        {
+            var eye = new Vec3(_player.Body.X, _player.Body.Y + 1.62, _player.Body.Z);
+            if (_demoFrame == 30) return (view with { Forward = plan.FarAim, Eye = eye }, actions with { PortalTeal = true });
+            if (_demoFrame == 32) return (view with { Forward = plan.NearAim, Eye = eye }, actions with { PortalViolet = true });
         }
         return (view, actions);
     }
@@ -671,6 +711,13 @@ public partial class Main : Node3D
                 break;
             case TrapSprung t:
                 _hud.ShowBanner(_loc.Tr("banner.spikes", $"{t.Damage:F0}"), 0.8);
+                break;
+            case PlayerFell fell:
+                _hud.ShowBanner(GapHints.FallBanner(fell), 1.4);
+                if (fell.First) _storyUi.ShowCaption(GapHints.AfterTheFirstFall(PortalKeyName(GameAction.PortalTeal), PortalKeyName(GameAction.PortalViolet)), 7);
+                break;
+            case PitEdgeReached edge:
+                _storyUi.ShowCaption(GapHints.AtTheEdge(edge.Kind, PortalKeyName(GameAction.PortalTeal), PortalKeyName(GameAction.PortalViolet)), 9);
                 break;
             case PortalPlaced { Success: false } failed:
                 _hud.ShowBanner(_loc.Tr("banner.noPortal", failed.Failure), 1.2);
