@@ -147,11 +147,51 @@ public partial class AudioDirector : Node
     /// <summary>Whether the player is underground, where the drone plays.</summary>
     public bool Underground { get; set; }
 
+    private readonly Dictionary<SoundId, (AudioStreamPlayer Player, double Level)> _loops = [];
+
+    /// <summary>
+    /// Sets how loud a looping sound is, 0 to 1 (the fire's crackle, the cat's purr). The host calls this each frame with a level from the distance to the source;
+    /// the loop starts when the level rises above silence and stops when it falls to it.
+    /// </summary>
+    public void SetLoopLevel(SoundId id, double level)
+    {
+        if (!IsInsideTree() || !Synth.Loops(id) || id == SoundId.Ambience) return;
+        if (!_loops.TryGetValue(id, out var loop))
+        {
+            var player = new AudioStreamPlayer { Stream = _streams[id], VolumeDb = -80 };
+            AddChild(player);
+            loop = (player, 0);
+        }
+        _loops[id] = (loop.Player, Math.Clamp(level, 0, 1));
+    }
+
+    /// <summary>The level a looping sound was last set to (for tests).</summary>
+    public double LoopLevel(SoundId id) => _loops.TryGetValue(id, out var l) ? l.Level : 0;
+
+    /// <summary>Whether a looping sound is playing now (for tests).</summary>
+    public bool LoopPlaying(SoundId id) => _loops.TryGetValue(id, out var l) && l.Player.Playing;
+
+    private void UpdateLoops()
+    {
+        foreach (var (id, (player, level)) in _loops)
+        {
+            double volume = Settings.MasterVolume * Settings.EffectsVolume * SoundMap.Gain(id) * level;
+            if (volume <= 1e-4)
+            {
+                if (player.Playing) player.Stop();
+                continue;
+            }
+            if (!player.Playing) player.Play();
+            player.VolumeDb = Mathf.LinearToDb((float)volume);
+        }
+    }
+
     /// <summary>Fades the drone in underground and applies the volume settings. Runs while paused, so the volume sliders are heard at once.</summary>
     public override void _Process(double delta)
     {
         _ambienceLevel = Mathf.MoveToward((float)_ambienceLevel, Underground && !BedReplaced ? 1f : 0f, (float)(delta * 0.6));
         double level = Settings.MasterVolume * Settings.AmbienceVolume * _ambienceLevel * SoundMap.Gain(SoundId.Ambience);
         _ambience.VolumeDb = level <= 1e-4 ? -80 : Mathf.LinearToDb((float)level);
+        UpdateLoops();
     }
 }
