@@ -25,29 +25,6 @@ public class DungeonSiteTests
     private static bool CanStand(DungeonSite site, int x, int y, int z) =>
         !BlockInfo.IsSolid(Solid(site, x, y, z)) && !BlockInfo.IsSolid(Solid(site, x, y + 1, z)) && BlockInfo.IsSolid(Solid(site, x, y - 1, z));
 
-    /// <summary>Everything a player could walk to from a start position: 4-way moves, up or down one block.</summary>
-    private static HashSet<(int X, int Y, int Z)> Walk(DungeonSite site, (int X, int Y, int Z) start)
-    {
-        var seen = new HashSet<(int, int, int)> { start };
-        var stack = new Stack<(int X, int Y, int Z)>();
-        stack.Push(start);
-        while (stack.Count > 0)
-        {
-            var (x, y, z) = stack.Pop();
-            foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
-                foreach (int dy in new[] { 0, 1, -1 })
-                {
-                    var n = (x + dx, y + dy, z + dz);
-                    if (n.Item1 < site.OriginX || n.Item1 >= site.OriginX + FloorLayout.Size ||
-                        n.Item3 < site.OriginZ || n.Item3 >= site.OriginZ + FloorLayout.Size) continue;
-                    if (seen.Contains(n) || !CanStand(site, n.Item1, n.Item2, n.Item3)) continue;
-                    seen.Add(n);
-                    stack.Push(n);
-                }
-        }
-        return seen;
-    }
-
     private static bool InShaft(FloorLayout f, int x, int z) =>
         (Math.Abs(x - f.EntranceX) <= 1 && Math.Abs(z - f.EntranceZ) <= 1) ||
         (f.ExitStairs is { } e && Math.Abs(x - e.X) <= 1 && Math.Abs(z - e.Z) <= 1);
@@ -184,14 +161,15 @@ public class DungeonSiteTests
     }
 
     [Fact]
-    public void PlayerCanWalkFromTheSurfaceToTheBossOnFoot()
+    public void PlayerCanReachEveryRoomAndTheBossWithWalksAndPortalHops()
     {
         foreach (var (_, s) in Sites.Value.Take(25))
         {
-            var start = (s.EntranceX + DungeonSite.PlazaRadius, s.SurfaceY + 1, s.EntranceZ);
-            Assert.True(CanStand(s, start.Item1, start.Item2, start.Item3), "plaza edge must be standable");
+            var start = new Spot(s.EntranceX + DungeonSite.PlazaRadius, s.SurfaceY + 1, s.EntranceZ);
+            Assert.True(CanStand(s, start.X, start.Y, start.Z), "plaza edge must be standable");
 
-            var reach = Walk(s, start);
+            // Walking, plus every gap that the real portal placement and walking physics can cross.
+            var reach = DungeonReach.Analyse(s, start);
             for (int k = 0; k < s.FloorCount; k++)
             {
                 var floor = s.Floors[k];
@@ -201,13 +179,29 @@ public class DungeonSiteTests
                     if (floor.CellAt(room.CenterX, room.CenterZ) != CellKind.Floor) continue;
                     // A room's centre can fall inside a stair shaft; its steps are solid, so it is not a standing spot.
                     if (InShaft(floor, room.CenterX, room.CenterZ)) continue;
-                    Assert.True(reach.Contains((wx, wy, wz)), $"floor {k} room {room.Id} ({room.Role}) cannot be reached on foot");
+                    Assert.True(reach.ContainsKey(new Spot(wx, wy, wz)), $"floor {k} room {room.Id} ({room.Role}) cannot be reached");
                 }
             }
             var boss = s.Floors[^1].BossRoom!;
             var (bx, by, bz) = s.ToWorld(s.FloorCount - 1, boss.CenterX, boss.CenterZ);
-            Assert.Contains((bx, by, bz), reach);
+            Assert.Contains(new Spot(bx, by, bz), reach.Keys);
         }
+    }
+
+    [Fact]
+    public void WithoutPortalsSomeDungeonsCannotBeFinished()
+    {
+        // The gaps are the point: walking alone must not get you everywhere.
+        int stuck = 0;
+        foreach (var (_, s) in Sites.Value.Take(25))
+        {
+            var start = new Spot(s.EntranceX + DungeonSite.PlazaRadius, s.SurfaceY + 1, s.EntranceZ);
+            var walking = DungeonReach.Analyse(s, start, []);
+            var boss = s.Floors[^1].BossRoom!;
+            var (bx, by, bz) = s.ToWorld(s.FloorCount - 1, boss.CenterX, boss.CenterZ);
+            if (!walking.ContainsKey(new Spot(bx, by, bz))) stuck++;
+        }
+        Assert.True(stuck >= 20, $"only {stuck} of 25 dungeons needed a portal to reach the boss");
     }
 
     [Fact]

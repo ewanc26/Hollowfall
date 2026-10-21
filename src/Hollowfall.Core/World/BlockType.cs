@@ -27,6 +27,9 @@ public enum BlockType : byte
     Pillar,
     Stairs,
     Gate,
+
+    /// <summary>Iron spikes on the floor of a pit (appended: block values never shift).</summary>
+    Spikes,
 }
 
 public static class BlockInfo
@@ -43,5 +46,5 @@ public static class BlockInfo
     /// <summary>Surfaces a portal can be placed on: plain solid walls, floors and ceilings.</summary>
     public static bool Portalable(BlockType b) =>
         IsSolid(b) && b is not (BlockType.Bedrock or BlockType.Gate or BlockType.SecretDoor or BlockType.Stairs or BlockType.Pillar
-            or BlockType.Leaves or BlockType.Cactus or BlockType.Snow or BlockType.Log);
+            or BlockType.Leaves or BlockType.Cactus or BlockType.Snow or BlockType.Log or BlockType.Spikes);
 }

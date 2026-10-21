@@ -61,6 +61,9 @@ public enum Tile
     AshFloorEmbers,
     AshPillar,
     AshStairs,
+
+    // Gap pits.
+    Spikes,
 }
 
 /// <summary>
@@ -126,6 +129,7 @@ public static partial class BlockTextures
         BlockType.Stairs => Tile.Stairs,
         BlockType.Gate => Tile.Gate,
         BlockType.Door => Tile.Door,
+        BlockType.Spikes => Tile.Spikes,
         _ => Tile.Stone,
     };
 

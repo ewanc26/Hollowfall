@@ -93,7 +93,7 @@ public class CombatSimTests
                         int z = room.CenterZ + 2;
                         for (int x = room.Bounds.X + 1; x + 11 < room.Bounds.Right - 1; x++)
                         {
-                            bool clear = Enumerable.Range(0, 12).All(i => Enumerable.Range(-1, 3).All(dz => site.Floors[0].CellAt(x + i, z + dz) == CellKind.Floor));
+                            bool clear = Enumerable.Range(0, 12).All(i => Enumerable.Range(-1, 3).All(dz => site.Floors[0].CellAt(x + i, z + dz) == CellKind.Floor && site.Floors[0].RoomIdAt(x + i, z + dz) == room.Id));
                             if (!clear) continue;
                             return new Arena
                             {
@@ -599,6 +599,8 @@ public class CombatSimTests
         bool through = false, reflected = false;
         for (int i = 0; i < 60 * 8 && !through; i++)
         {
+            // Face the spitter, wherever it ends up after coming through the portal: parrying needs the shot in front of you.
+            view = view with { Forward = (spitter.Feet + new Vec3(0, 1.4, 0) - view.Eye).Normalized() };
             bool press = !reflected && a.Sim.Projectiles.Any(p => !p.Reflected && p.Position.DistanceTo(view.Eye) < 2.8);
             a.Sim.Tick(Dt, view, new PlayerActions(false, false, press));
             foreach (var e in a.Sim.DrainEvents())

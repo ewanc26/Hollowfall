@@ -6,7 +6,7 @@ namespace Hollowfall.Core.Dungeon;
 /// room is reachable), then given extra loops, some behind secret doors. Entirely a pure
 /// function of its inputs; it knows nothing about voxels or chunks.
 /// </summary>
-public sealed class FloorLayout
+public sealed partial class FloorLayout
 {
     public const int Size = 96;
     private const int MinLeaf = 20;
@@ -17,6 +17,14 @@ public sealed class FloorLayout
     private readonly short[] _roomAt = new short[Size * Size];
     private readonly List<Room> _rooms = [];
     private readonly List<RoomLink> _links = [];
+
+    // Mixed links: how many corridors dug each cell, the height of each cell's floor above the room floor, the route of each
+    // link, and the gaps built on them.
+    private readonly byte[] _digs = new byte[Size * Size];
+    private readonly byte[] _height = new byte[Size * Size];
+    private readonly bool[] _reserved = new bool[Size * Size];
+    private readonly List<LinkRoute> _routes = [];
+    private readonly List<GapSpec> _gaps = [];
 
     public int Floor { get; }
 
@@ -31,6 +39,21 @@ public sealed class FloorLayout
     public IReadOnlyList<Room> Rooms => _rooms;
     public IReadOnlyList<RoomLink> Links => _links;
     public ReadOnlySpan<CellKind> Cells => _cells;
+
+    /// <summary>The gaps (portal gaps and shaft gaps) that join rooms on this floor.</summary>
+    public IReadOnlyList<GapSpec> Gaps => _gaps;
+
+    /// <summary>How many blocks a cell's floor stands above the room floor (0 for most cells, 3 on gap hallways and shaft tunnels).</summary>
+    public int HeightAt(int x, int z) => (uint)x < Size && (uint)z < Size ? _height[z * Size + x] : 0;
+
+    /// <summary>The floor heights of every cell, for comparing layouts.</summary>
+    public ReadOnlySpan<byte> Heights => _height;
+
+    /// <summary>False only if no way to give every room a gap was found (it never is for the layouts the game makes).</summary>
+    public bool GapsComplete { get; private set; } = true;
+
+    /// <summary>Why the gaps could not be completed, for diagnostics.</summary>
+    public string? GapFailure { get; private set; }
 
     public Room EntranceRoom { get; private set; } = null!;
     public Room? ExitRoom { get; private set; }
@@ -73,20 +96,42 @@ public sealed class FloorLayout
         return false;
     }
 
+    /// <summary>How many times a floor is laid out again, with a different split, if a room cannot be given a gap.</summary>
+    public const int MaxLayoutAttempts = 200;
+
+    private const int RedigAttempts = 20;
+
     public static FloorLayout Generate(long seed, int floor, int entranceX, int entranceZ, bool lastFloor)
     {
         if (entranceX < 8 || entranceX > Size - 8 || entranceZ < 8 || entranceZ > Size - 8)
             throw new ArgumentOutOfRangeException(nameof(entranceX), "entrance must be at least 8 cells from the edge");
 
+        FloorLayout? best = null;
+        for (int attempt = 0; attempt < MaxLayoutAttempts; attempt++)
+        {
+            var layout = Build(seed, floor, entranceX, entranceZ, lastFloor, attempt);
+            if (layout.GapsComplete) return layout;
+            best ??= layout;
+        }
+        return best!;
+    }
+
+    private static FloorLayout Build(long seed, int floor, int entranceX, int entranceZ, bool lastFloor, int attempt)
+    {
         var layout = new FloorLayout(floor, entranceX, entranceZ, lastFloor);
-        var rng = new SeededRandom(seed, floor, 0, 300);
+        // Attempt 0 is the layout the floor always had. Later attempts keep the same split and rooms and only re-dig the corridors
+        // and loops (so the rooms stay as they were); after RedigAttempts of those the split itself is redrawn.
+        int redig = attempt % RedigAttempts, resplit = attempt / RedigAttempts;
+        var rng = new SeededRandom(seed, floor, 0, resplit == 0 ? 300 : 300 + 1000 * resplit);
 
         var root = layout.Split(new Rect(0, 0, Size, Size), 0, rng);
         layout.MakeRooms(root, rng);
         layout.PaintRooms();
+        if (redig > 0) rng = new SeededRandom(seed, floor, redig, 305 + 1000 * resplit);
         layout.ConnectTree(root, rng);
         layout.AddLoops(rng);
         layout.AssignRoles(rng);
+        layout.PlanLinks(new SeededRandom(seed, floor, attempt, 310));
         layout.PlacePillars();
         return layout;
     }
@@ -296,6 +341,7 @@ public sealed class FloorLayout
         var path = fh < fv ? h : fv < fh ? v : rng.Chance(0.5) ? h : v;
 
         var fresh = new HashSet<int>();
+        var dug = new HashSet<int>();
         foreach (var (px, pz) in path)
             for (int dx = -1; dx <= 1; dx++)
                 for (int dz = -1; dz <= 1; dz++)
@@ -303,6 +349,7 @@ public sealed class FloorLayout
                     int x = px + dx, z = pz + dz;
                     if (x < 1 || z < 1 || x >= Size - 1 || z >= Size - 1) continue;
                     int i = z * Size + x;
+                    if (dug.Add(i) && _digs[i] < byte.MaxValue) _digs[i]++;
                     if (_cells[i] == CellKind.Rock)
                     {
                         _cells[i] = CellKind.Floor;
@@ -313,15 +360,18 @@ public sealed class FloorLayout
         int linksBefore = _links.Count;
         int secretDoors = 0;
         int prevRoom = a;
+        int exitIndex = 0;
         for (int i = 1; i < path.Count; i++)
         {
             int before = _roomAt[path[i - 1].Z * Size + path[i - 1].X];
             int after = _roomAt[path[i].Z * Size + path[i].X];
             if (before == after) continue;
+            if (before >= 0 && after < 0) exitIndex = i - 1;
 
             if (after >= 0 && after != prevRoom)
             {
-                AddLink(prevRoom, after, secret);
+                if (AddLink(prevRoom, after, secret))
+                    _routes.Add(new LinkRoute(path, exitIndex, i, prevRoom, after));
                 prevRoom = after;
             }
 
@@ -338,13 +388,14 @@ public sealed class FloorLayout
         // simply an open loop; record it as one so the room graph stays truthful.
         if (secret && secretDoors == 0)
             for (int i = linksBefore; i < _links.Count; i++)
-                _links[i] = _links[i] with { Secret = false };
+                _links[i] = _links[i] with { Secret = false, Kind = LinkKind.Corridor };
     }
 
-    private void AddLink(int a, int b, bool secret)
+    private bool AddLink(int a, int b, bool secret)
     {
-        if (a == b || HasLink(a, b)) return;
-        _links.Add(new RoomLink(Math.Min(a, b), Math.Max(a, b), secret));
+        if (a == b || HasLink(a, b)) return false;
+        _links.Add(new RoomLink(Math.Min(a, b), Math.Max(a, b), secret, secret ? LinkKind.SecretDoor : LinkKind.Corridor));
+        return true;
     }
 
     private int MarkDoor((int X, int Z) at, bool perpendicularIsX, bool secret, HashSet<int> fresh)
@@ -451,7 +502,7 @@ public sealed class FloorLayout
             {
                 int x = room.CenterX + sx * dx, z = room.CenterZ + sz * dz;
                 int i = z * Size + x;
-                if (_cells[i] == CellKind.Floor && _roomAt[i] == room.Id && !NearStairs(x, z))
+                if (_cells[i] == CellKind.Floor && _roomAt[i] == room.Id && !NearStairs(x, z) && ClearOfGaps(x, z))
                     _cells[i] = CellKind.Pillar;
             }
         }

@@ -22,25 +22,11 @@ public class NotePlacerTests
 
     public static IEnumerable<(long Seed, DungeonSite Site)> AllSites => Sites.Value;
 
-    private static bool Walkable(FloorLayout floor, int x, int z) => floor.CellAt(x, z) is CellKind.Floor or CellKind.Door;
-
-    /// <summary>Every cell a player can walk to from the floor's stairs without opening a secret door.</summary>
+    /// <summary>Every cell a player can reach from the floor's stairs without opening a secret door, walking and crossing gaps by portal.</summary>
     private static HashSet<(int X, int Z)> Flood(FloorLayout floor)
     {
-        var start = (floor.EntranceX, floor.EntranceZ);
-        Assert.True(Walkable(floor, start.Item1, start.Item2), "the flood fill must start on a walkable cell");
-        var seen = new HashSet<(int, int)> { start };
-        var stack = new Stack<(int X, int Z)>([start]);
-        while (stack.Count > 0)
-        {
-            var (x, z) = stack.Pop();
-            foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
-            {
-                var n = (x + dx, z + dz);
-                if (Walkable(floor, n.Item1, n.Item2) && seen.Add(n)) stack.Push(n);
-            }
-        }
-        return seen;
+        Assert.True(LayoutWalk.Walkable(floor, floor.EntranceX, floor.EntranceZ), "the flood fill must start on a walkable cell");
+        return LayoutWalk.Reach(floor, floor.EntranceX, floor.EntranceZ, crossGaps: true);
     }
 
     [Fact]
@@ -140,7 +126,7 @@ public class NotePlacerTests
     }
 
     [Fact]
-    public void EveryNoteCanBeWalkedToFromTheFloorStartWithoutASecretDoor()
+    public void EveryNoteCanBeReachedFromTheFloorStartWithoutASecretDoor()
     {
         foreach (var (seed, site) in AllSites)
         {
