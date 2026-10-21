@@ -125,6 +125,7 @@ public static partial class BlockTextures
         BlockType.Flower => Tile.Flower,
         BlockType.StoneBrick or BlockType.SecretDoor => Tile.StoneBrick, // a secret door must look exactly like the wall it hides in
         BlockType.BrickFloor => Tile.BrickFloor,
+        BlockType.CrackedFloor => Tile.FloorCracked,
         BlockType.Pillar => Tile.Pillar,
         BlockType.Stairs => Tile.Stairs,
         BlockType.Gate => Tile.Gate,
