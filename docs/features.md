@@ -139,7 +139,7 @@ instead of a staircase, and it makes "push forward" literal.
 Needs a new `GameAction`. **Tests:** crack then break timing, no break over shafts, hole size, enemies in the radius damaged,
 falling through counts as a floor change. **Effort:** medium.
 
-### 3.2 Block Mortar (a weapon that digs)
+### 3.2 Block Mortar (a weapon that digs) (built)
 
 **Pitch.** A third weapon that trades damage for terrain.
 

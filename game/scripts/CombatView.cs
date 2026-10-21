@@ -184,16 +184,16 @@ public partial class CombatView : Node3D
     private void SyncProjectiles(double delta)
     {
         var alive = new HashSet<int>();
-        foreach (var p in Sim.Projectiles)
+        foreach (var (id, position, reflected) in Sim.Projectiles.Select(p => (p.Id, p.Position, p.Reflected)).Concat(Sim.Shells.Select(s => (s.Id, s.Position, false))))
         {
-            alive.Add(p.Id);
-            if (!_projectiles.TryGetValue(p.Id, out var view))
+            alive.Add(id);
+            if (!_projectiles.TryGetValue(id, out var view))
             {
-                view = new ProjectileView { Name = $"Projectile_{p.Id}" };
+                view = new ProjectileView { Name = $"Projectile_{id}" };
                 AddChild(view);
-                _projectiles[p.Id] = view;
+                _projectiles[id] = view;
             }
-            view.Follow(new Vector3((float)p.Position.X, (float)p.Position.Y, (float)p.Position.Z), p.Reflected, delta);
+            view.Follow(new Vector3((float)position.X, (float)position.Y, (float)position.Z), reflected, delta);
         }
 
         foreach (var id in _projectiles.Keys.Where(id => !alive.Contains(id)).ToList())
