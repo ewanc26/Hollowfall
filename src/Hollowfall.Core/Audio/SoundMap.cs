@@ -42,6 +42,7 @@ public static class SoundMap
         OmenSensed or OmenFulfilled => SoundId.OmenToll,
         BoonGiven or OfferingAccepted => SoundId.BoonChime,
         EntityAllied => SoundId.AllyJoin,
+        CreamUsed => SoundId.CreamSip,
         _ => null,
     };
 
@@ -56,6 +57,8 @@ public static class SoundMap
         SoundId.FireCrackle => 0.4,
         SoundId.CatPurr => 0.3,
         SoundId.CatMeow => 0.55,
+        SoundId.CreamSip => 0.6,
+        SoundId.CharmWear => 0.5,
         _ when Footsteps.IsStepSound(id) => 0.4,
         SoundId.PortalCross or SoundId.Hit => 0.6,
         _ => 0.75,

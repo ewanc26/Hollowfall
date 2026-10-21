@@ -3,10 +3,10 @@ namespace Hollowfall.Core.Progression;
 /// <summary>What you can carry. Appended to, never reordered, since the save file stores these by name.</summary>
 public enum ItemKind
 {
-    /// <summary>A jar of warm cream the Brownie is owed. Kept for later; using it is not in the game yet.</summary>
+    /// <summary>A jar of warm cream the Brownie is owed. Using one in a run heals <see cref="Inventory.CreamHeal"/>.</summary>
     BrownieCream,
 
-    /// <summary>A charm of rowan and thorn. Worn in the one charm slot; its effect is not in the game yet.</summary>
+    /// <summary>A charm of rowan and thorn. Worn in the one charm slot, it turns aside part of every blow (<see cref="Inventory.ThornWard"/>).</summary>
     ThornCharm,
 }
 
@@ -19,12 +19,18 @@ public enum ItemUse
 
 /// <summary>
 /// A bag with a fixed number of slots, each holding up to a set number of one kind of item, and one charm slot you can wear.
-/// Pure and deterministic. Nothing here changes a run yet: a run reads the character's stats, not the bag.
+/// Pure and deterministic. A run reads the cream and the worn charm once, when it starts, and records them in its replay.
 /// </summary>
 public sealed class Inventory
 {
     public const int Slots = 12;
     public const int MaxStack = 9;
+
+    /// <summary>Health a jar of cream gives back when it is used.</summary>
+    public const double CreamHeal = 40;
+
+    /// <summary>The share of each blow the thorn charm turns aside.</summary>
+    public const double ThornWard = 0.1;
 
     private readonly Dictionary<ItemKind, int> _counts = [];
 

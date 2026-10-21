@@ -52,6 +52,15 @@ public static class InterfaceStrings
             T("pause.respawn", "Respawn"),
             T("pause.standing", "Standing"),
             T("pause.character", "Character"),
+            T("pause.bag", "Bag"),
+            T("bag.title", "Bag"),
+            T("bag.slots", "Slots used: {0} of {1}"),
+            T("bag.none", "Nothing is carried yet."),
+            T("bag.creamHint", "Eat it in a run to heal {0}."),
+            T("bag.wear", "Wear"),
+            T("bag.takeOff", "Take off"),
+            T("bag.worn", "worn"),
+            T("bag.wearHint", "Worn charms take effect from your next run."),
 
             // ---- the character (progression) ----
             T("character.title", "CHARACTER"),
@@ -122,6 +131,7 @@ public static class InterfaceStrings
             T(ActionKey(GameAction.Pause), "Pause menu"),
             T(ActionKey(GameAction.Slam), "Slam"),
             T(ActionKey(GameAction.FireMortar), "Fire block mortar"),
+            T(ActionKey(GameAction.UseCream), "Use Brownie's cream"),
 
             // ---- settings ----
             G("settings.title", "SETTINGS", "ROGHAINNEAN", ReviewStatus.Verified, "FF", "capitals of Firefox gd's 'Roghainnean'"),

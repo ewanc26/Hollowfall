@@ -145,11 +145,11 @@ public class SoundMapTests
             new ReputationChanged(Relations.Faction.Brownies, Relations.ReputationTier.Neutral, Relations.ReputationTier.Wary),
             new EntityProvoked(1, Relations.Faction.Brownies), new EntityProvoked(1, Relations.Faction.Selkies), new EntityProvoked(1, Relations.Faction.Kelpies),
             new EntityProvoked(1, Relations.Faction.Wanderers), new EntityProvoked(1, Relations.Faction.Vermin),
-            new OmenSensed(1), new BoonGiven(1, "warmth", 5), new EntityAllied(1, Relations.Faction.Selkies),
+            new OmenSensed(1), new BoonGiven(1, "warmth", 5), new EntityAllied(1, Relations.Faction.Selkies), new CreamUsed(40),
         };
         var used = events.Select(SoundMap.For).Where(s => s != null).Select(s => s!.Value).ToHashSet();
         // Floor completion needs a result object; UI, ambience, footsteps and story sounds (reading a note, a title card) are played by the host directly.
-        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.Ambience, SoundId.NoteRead, SoundId.TitleCard, SoundId.WulverGreeting, SoundId.WulverGift, SoundId.FireCrackle, SoundId.CatMeow, SoundId.CatPurr }.Concat(Footsteps.StepSounds);
+        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.Ambience, SoundId.NoteRead, SoundId.TitleCard, SoundId.WulverGreeting, SoundId.WulverGift, SoundId.FireCrackle, SoundId.CatMeow, SoundId.CatPurr, SoundId.CharmWear }.Concat(Footsteps.StepSounds);
         foreach (var id in Enum.GetValues<SoundId>().Except(exempt)) Assert.Contains(id, used);
     }
 

@@ -187,6 +187,7 @@ public partial class Main : Node3D
             Combat.EventRaised += e => { if (e is EnemyKilled killed) AwardKill(killed); };
             Combat.EventRaised += e => { if (e is FloorCompleted) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => { if (e is BoonGiven && _character.ReceiveBoon()) ProgressionStore.TrySave(_character, ProgressionPath); };
+            Combat.EventRaised += e => { if (e is CreamUsed && _character.Items.Remove(ItemKind.BrownieCream) > 0) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => { if (MusicEvents.For(e, site.FloorCount - 1, site.Floors[^1].BossRoom?.Id ?? -1) is { } stinger) _music.Trigger(stinger); };
             Combat.EventRaised += e => _hud?.OnEvent(e);
@@ -292,6 +293,9 @@ public partial class Main : Node3D
         _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
         _menus.CharacterProvider = () => _character;
         _menus.SpendRequested += stat => { if (_character.Spend(stat)) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.BagProvider = () => _character.Items;
+        _menus.WearRequested += kind => { if (_character.Items.Wear(kind)) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.TakeOffRequested += () => { if (_character.Items.TakeOff()) ProgressionStore.TrySave(_character, ProgressionPath); };
         AddChild(_menus);
         if (_wulver != null)
         {
@@ -863,6 +867,7 @@ public partial class Main : Node3D
         _weapons.SetPortals(sim.Portals.Teal != null, sim.Portals.Violet != null);
         if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds, sim.Items.KeysHeld);
         else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
+        _hud.SetCream(sim.CreamsLeft);
         {
             _hud.SetMap(sim.Map, floor, new Vector2((float)(b.X - Combat.Site.OriginX), (float)(b.Z - Combat.Site.OriginZ)), (float)_player.Yaw);
         }

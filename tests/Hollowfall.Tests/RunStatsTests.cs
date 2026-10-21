@@ -71,10 +71,10 @@ public class RunStatsTests
         var replay = new RunReplay("old", 0, 0, 0, 0, new FloorRecord(OverallGrade.C, 1, 1), frames);
         byte[] v3 = ReplayCodec.Encode(replay);
 
-        // Rebuild the same run in format 2: drop the two stat bytes after the sim version, set the version and re-checksum.
+        // Rebuild the same run in format 2: drop the four item and stat bytes after the sim version (all zero here), set the version and re-checksum.
         var payload = new List<byte>(v3[..^4]);
         payload[4] = RunReplay.FormatVersionWithoutStats;
-        payload.RemoveRange(6, 2);
+        payload.RemoveRange(6, 4);
         uint sum = ReplayCodec.Fnv32(payload);
         payload.AddRange(BitConverter.GetBytes(sum));
 
