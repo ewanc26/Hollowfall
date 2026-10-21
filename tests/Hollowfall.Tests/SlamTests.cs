@@ -79,7 +79,7 @@ public class SlamTests
     }
 
     [Fact]
-    public void FirstSlamCracksAndASecondWithinThreeSecondsBreaksAThreeByThreeHole()
+    public void FirstSlamCracksAndASecondWithinThreeSecondsBreaksARoundHole()
     {
         const int x = 500, y = 40, z = 500;
         var world = Brick3x3(x, y, z);
@@ -90,8 +90,10 @@ public class SlamTests
 
         Assert.Equal(FloorSlam.Broken, breach.Land(world, x, y, z, 2.9));
         Assert.Equal(BlockType.Air, Block(world, x, y, z));
-        Assert.Equal(BlockType.Air, Block(world, x + 1, y, z + 1));
-        Assert.Equal(BlockType.Air, Block(world, x - 1, y, z));
+        Assert.False(BlockHole.IsSolid(BlockType.BrickFloor, world.HoleAt(x + 1, y, z + 1), 0, 5, 0), "the corner nearest the impact is dug");
+        Assert.True(BlockHole.IsSolid(BlockType.BrickFloor, world.HoleAt(x + 1, y, z + 1), 9, 5, 9), "the far corner is still floor");
+        Assert.Equal(BlockType.BrickFloor, Block(world, x - 1, y, z));
+        Assert.False(BlockHole.IsSolid(BlockType.BrickFloor, world.HoleAt(x - 1, y, z), 0, 5, 4), "the edge beside the impact is dug");
     }
 
     [Fact]
@@ -142,7 +144,7 @@ public class SlamTests
         breach.Land(world, x, y, z, 1);
 
         Assert.Equal(BlockType.Pillar, Block(world, x + 1, y, z));
-        Assert.Equal(BlockType.Air, Block(world, x - 1, y, z - 1));
+        Assert.NotNull(world.HoleAt(x - 1, y, z - 1));
     }
 }
 
