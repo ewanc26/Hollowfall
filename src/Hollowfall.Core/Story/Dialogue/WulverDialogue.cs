@@ -1,3 +1,5 @@
+using Hollowfall.Core.Localization;
+using static Hollowfall.Core.Localization.WulverGreetings;
 using static Hollowfall.Core.Story.Dialogue.DialogueCondition;
 
 namespace Hollowfall.Core.Story.Dialogue;
@@ -53,6 +55,9 @@ public static class WulverDialogue
 
     private static DialogueLine L(string text, DialogueCondition? when = null, params string[] alternatives) => new(text, when, alternatives.Length > 0 ? alternatives : null);
 
+    /// <summary>A short Gàidhlig line (with the English beneath), said only when the interface is in Gàidhlig or Bilingual.</summary>
+    private static DialogueLine G(params LocEntry[] entries) => new(Line(entries), GaelicShown);
+
     private static DialogueChoice C(string text, string? next, DialogueCondition? when = null, params DialogueEffect[] effects) => new(text, next, when, effects.Length > 0 ? effects : null);
 
     private static DialogueNode N(string id, DialogueLine[] lines, DialogueChoice[] choices, DialogueEffect[]? enter = null, DialogueCondition? guard = null, string? fallback = null) =>
@@ -71,6 +76,7 @@ public static class WulverDialogue
             // ---- the first meeting ----
             N("first_intro",
                 [
+                    G(Hello, Welcome),
                     L("Ah. You found the hill. Stand easy; I do not bite, whatever the ears suggest.", null, "Ah. There you are. Stand easy; I do not bite, whatever the ears suggest."),
                     L("I am Eòghann. The old stories call me the Wulver, and I have given up arguing with them. Mostly I fish, and I keep an eye on the yew."),
                 ],
@@ -129,12 +135,13 @@ public static class WulverDialogue
                     C("Leave.", "farewell_ret"),
                 ]),
             N("fish_leave",
-                [L("Good. That is the whole craft, you know: someone is cold, and you were passing. I shall say nothing of it, and neither will the fish.")],
+                [G(Thanks), L("Good. That is the whole craft, you know: someone is cold, and you were passing. I shall say nothing of it, and neither will the fish.")],
                 [C("Ask about the yew.", "yew_intro"), C("Leave.", "farewell_ret")]),
             N("fish_keep",
                 [L("Aye, fair enough. A hungry person is as good a windowsill as any. Eat it warm, and be honest with yourself about the next one.")],
                 [C("Ask about the yew.", "yew_intro"), C("Leave.", "farewell_ret")]),
             Farewell("farewell_first",
+                G(Goodbye),
                 L("Off you go, then. Come back when you have more to tell me, or less breath. Mind the weather.", null, "Go well, then. Come back when you have more to tell me. Mind the weather.")),
 
             // ---- the yew ----
@@ -207,6 +214,7 @@ public static class WulverDialogue
             // ---- return visits ----
             N("hub",
                 [
+                    G(Weather),
                     L("Sit, then. What is on your mind? The hill keeps no timetable."),
                     L("You asked me once who I was. I am still working out the answer, mind.", Flag(AskedWhoIAm)),
                     L("You have the look of a regular. I shall have to start charging in fish.", VisitsAtLeast(4)),
@@ -218,6 +226,7 @@ public static class WulverDialogue
                     C("Leave.", "farewell_ret"),
                 ]),
             Return("ret_welcome",
+                G(Welcome),
                 L("Ah, back up the hill. The wolf is still here, as promised.", null, "There you are again. The rock kept your place."),
                 L("I hear a windowsill was warmer for you. Good.", Flag(GaveFishBack)),
                 L("The yew has not changed its mind since you left.", Flag(HeardYew)),
@@ -229,6 +238,7 @@ public static class WulverDialogue
             Return("ret_deep", L("You have the cold stone smell on you. Deep, then. Good; the air up here is free.")),
             Return("ret_notes", L("You have been reading the old scraps, by the way you look at the sky. Folk write things down when the dark has been talking too long. It is kind of you to listen.")),
             Farewell("farewell_ret",
+                G(Goodbye),
                 L("Slàinte. The hill will be here.", null, "Mind yourself on the stairs. They are patient, and you are not."),
                 L("And well done with the windowsill.", Flag(GaveFishBack)),
                 L("Eat that fish while it is warm.", Flag(KeptFish)),

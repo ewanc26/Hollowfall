@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Terrain;
 using System.Text.Json.Nodes;
 
@@ -110,6 +111,15 @@ public sealed class GameSettings
     /// <summary>Which button labels to show for a gamepad. Auto follows the connected controller.</summary>
     public PromptStyle ControllerPrompts { get; set; } = PromptStyle.Auto;
 
+    /// <summary>The language of the interface. Anything unknown in a saved file is English.</summary>
+    public Language Language
+    {
+        get => _language;
+        set => _language = Languages.Clamp(value);
+    }
+
+    private Language _language = Language.English;
+
     public bool InvertMouseY { get; set; }
     public bool InvertPadY { get; set; }
 
@@ -135,6 +145,7 @@ public sealed class GameSettings
         InvertMouseY = false;
         InvertPadY = false;
         ControllerPrompts = PromptStyle.Auto;
+        Language = Language.English;
         Bindings = BindingMap.CreateDefault();
     }
 
@@ -171,6 +182,7 @@ public sealed class GameSettings
             ["invertMouseY"] = InvertMouseY,
             ["invertPadY"] = InvertPadY,
             ["controllerPrompts"] = ControllerPrompts.ToString(),
+            ["language"] = Language.ToString(),
             ["bindings"] = bindings,
         };
         return root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
@@ -211,6 +223,8 @@ public sealed class GameSettings
         s.ControllerPrompts = Enum.TryParse<PromptStyle>(root["controllerPrompts"] is JsonValue v && v.TryGetValue<string>(out var cp) ? cp : null, out var prompts) && Enum.IsDefined(prompts)
             ? prompts
             : PromptStyle.Auto;
+
+        s.Language = Languages.Parse(root["language"] is JsonValue lv && lv.TryGetValue<string>(out var languageText) ? languageText : null);
 
         if (root["bindings"] is JsonObject saved)
             foreach (var a in Enum.GetValues<GameAction>())

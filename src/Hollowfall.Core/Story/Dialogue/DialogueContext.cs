@@ -1,3 +1,5 @@
+using Hollowfall.Core.Localization;
+
 namespace Hollowfall.Core.Story.Dialogue;
 
 /// <summary>
@@ -38,6 +40,9 @@ public sealed record DialogueContext
 
     /// <summary>Whether the ending has been reached on this seed (saved).</summary>
     public bool EndingReached { get; init; }
+
+    /// <summary>The interface language. In Gàidhlig and Bilingual a few of his lines also come in Gàidhlig, with the English beneath.</summary>
+    public Language Language { get; init; } = Language.English;
 
     /// <summary>What he remembers, as short ids.</summary>
     public IReadOnlySet<string> Flags { get; init; } = NoFlags;

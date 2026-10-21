@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Hollowfall.Core.Localization;
 
 namespace Hollowfall.Core.Story.Dialogue;
 
@@ -46,6 +47,9 @@ public abstract class DialogueCondition
     public static DialogueCondition GiftGiven { get; } = new Atom(c => c.GiftGiven);
 
     public static DialogueCondition EndingReached { get; } = new Atom(c => c.EndingReached);
+
+    /// <summary>The interface is in Gàidhlig or Bilingual, so his short Gàidhlig lines are said.</summary>
+    public static DialogueCondition GaelicShown { get; } = new Atom(c => Languages.ShowsGaelic(c.Language));
 
     public static DialogueCondition FinalFloor { get; } = new Atom(c => c.FinalFloorReached);
 
