@@ -341,6 +341,7 @@ public sealed partial class FloorLayout
                 int x = cx + latX * l, z = cz + latZ * l;
                 int i = z * Size + x;
                 _roomAt[i] = -1;
+                if (Math.Abs(l) != 2) _gapAt[i] = (short)_gaps.Count;
                 if (Math.Abs(l) == 2)
                 {
                     _cells[i] = CellKind.Rock;

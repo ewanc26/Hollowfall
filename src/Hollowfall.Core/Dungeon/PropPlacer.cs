@@ -54,7 +54,41 @@ public static class PropPlacer
                         wx + 0.5 - c.Dx * 0.5, wy + Height, wz + 0.5 - c.Dz * 0.5));
                 }
             }
+            GapTorches(site, floor, seed, spots);
         }
         return spots;
+    }
+
+    /// <summary>
+    /// Torches for the gaps, which belong to no room (their <c>RoomId</c> is -1): one on the wall at each pit edge so the drop and the far
+    /// side are lit, another further back in a long hallway, and one inside a shaft gap's tunnel so the alcove you aim at is visible.
+    /// </summary>
+    private static void GapTorches(DungeonSite site, FloorLayout floor, long seed, List<TorchSpot> spots)
+    {
+        var rng = new SeededRandom(seed, floor.Floor, 1, 700);
+
+        void Add((int X, int Z) centre, int dirX, int dirZ, int side)
+        {
+            // The torch stands in the cell beside the centre line and faces back toward it, with solid wall behind.
+            int latX = -dirZ * side, latZ = dirX * side;
+            int x = centre.X + latX, z = centre.Z + latZ;
+            if (floor.CellAt(x, z) != CellKind.Floor || floor.CellAt(x + latX, z + latZ) != CellKind.Rock) return;
+            int height = floor.HeightAt(x, z);
+            var (wx, wy, wz) = site.ToWorld(floor.Floor, x, z);
+            spots.Add(new TorchSpot(floor.Floor, -1, x, z, -latX, -latZ, wx + 0.5 + latX * 0.5, wy + height + Height, wz + 0.5 + latZ * 0.5));
+        }
+
+        foreach (var gap in floor.Gaps)
+        {
+            foreach (bool first in new[] { true, false })
+            {
+                var hall = gap.Hall(first); // door first, pit edge last
+                var (dx, dz) = gap.Toward(first);
+                Add(hall[^1], dx, dz, rng.Chance(0.5) ? 1 : -1);
+                int back = hall.Count - 1 - MinSpacing;
+                if (back >= 1) Add(hall[back], dx, dz, rng.Chance(0.5) ? 1 : -1);
+            }
+            if (gap.Kind == LinkKind.ShaftGap) Add(gap.Span[gap.Span.Count / 2], gap.DirX, gap.DirZ, rng.Chance(0.5) ? 1 : -1);
+        }
     }
 }

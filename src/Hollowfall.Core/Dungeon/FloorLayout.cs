@@ -23,6 +23,7 @@ public sealed partial class FloorLayout
     private readonly byte[] _digs = new byte[Size * Size];
     private readonly byte[] _height = new byte[Size * Size];
     private readonly bool[] _reserved = new bool[Size * Size];
+    private readonly short[] _gapAt = new short[Size * Size];
     private readonly List<LinkRoute> _routes = [];
     private readonly List<GapSpec> _gaps = [];
 
@@ -45,6 +46,9 @@ public sealed partial class FloorLayout
 
     /// <summary>How many blocks a cell's floor stands above the room floor (0 for most cells, 3 on gap hallways and shaft tunnels).</summary>
     public int HeightAt(int x, int z) => (uint)x < Size && (uint)z < Size ? _height[z * Size + x] : 0;
+
+    /// <summary>The gap whose hallway, pit or tunnel covers this cell, or null.</summary>
+    public GapSpec? GapAt(int x, int z) => (uint)x < Size && (uint)z < Size && _gapAt[z * Size + x] is var i and >= 0 ? _gaps[i] : null;
 
     /// <summary>The floor heights of every cell, for comparing layouts.</summary>
     public ReadOnlySpan<byte> Heights => _height;
@@ -73,6 +77,7 @@ public sealed partial class FloorLayout
         EntranceZ = entranceZ;
         IsLastFloor = last;
         Array.Fill(_roomAt, (short)-1);
+        Array.Fill(_gapAt, (short)-1);
     }
 
     public CellKind CellAt(int x, int z) =>
