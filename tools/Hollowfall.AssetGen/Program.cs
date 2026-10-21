@@ -21,6 +21,18 @@ foreach (var (path, content) in GlyphSet.All())
 }
 Console.WriteLine($"{GlyphSet.All().Count} files, {written} written");
 
+int staticWritten = 0;
+var statics = Hollowfall.Core.Assets.StaticAssets.All();
+foreach (var (path, bytes) in statics)
+{
+    string full = Path.Combine(root, path);
+    Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+    if (File.Exists(full) && File.ReadAllBytes(full).AsSpan().SequenceEqual(bytes)) continue;
+    File.WriteAllBytes(full, bytes);
+    staticWritten++;
+}
+Console.WriteLine($"{statics.Count} static assets, {staticWritten} written");
+
 // A preview of the block texture atlas, enlarged so the pixels can be judged. The game builds the atlas itself at run time.
 var (preview, pw, ph) = PngWriter.Upscale(BlockTextures.Rgba, BlockTextures.Width, BlockTextures.Height, 8);
 string previewPath = Path.Combine(root, "docs", "texture-atlas.png");
