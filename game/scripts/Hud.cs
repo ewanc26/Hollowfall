@@ -325,13 +325,13 @@ public partial class Hud : CanvasLayer
                 Flash(new Color(0.5f, 0.85f, 1f, 0.45f), 0.25);
                 break;
             case Hollowfall.Core.Combat.ReputationChanged rep:
-                ShowToast(Hollowfall.Core.Relations.StandingBoard.Toast(rep), rep.New > rep.Old);
+                ShowToast(Hollowfall.Core.Relations.StandingBoard.Toast(rep, Loc), rep.New > rep.Old);
                 break;
             case Hollowfall.Core.Combat.OmenSensed:
-                ShowToast("A washerwoman wrings out her cloth nearby. Something is coming.", false, 4.5);
+                ShowToast(Loc.Tr("toast.omen"), false, 4.5);
                 break;
             case Hollowfall.Core.Combat.BoonGiven boon:
-                ShowToast($"The brownie warms the hearth for you (+{boon.Amount:0} health)", true);
+                ShowToast(Loc.Tr("toast.boon", $"{boon.Amount:0}"), true);
                 break;
             case MeteorImpact meteor:
                 Flash(new Color(1f, 0.55f, 0.15f, 0.4f), 0.3);

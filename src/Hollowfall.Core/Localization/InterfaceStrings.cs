@@ -133,6 +133,18 @@ public static class InterfaceStrings
             T("hud.result.rank", "RANK  {0}"),
             T("hud.result.stats", "Time {0}    Kills {1}    Style {2}"),
             T("hud.result.restarts", "Restarts {0}  (−{0} points)"),
+            T("toast.omen", "A washerwoman wrings out her cloth nearby. Something is coming."),
+            T("toast.boon", "The brownie warms the hearth for you (+{0} health)"),
+            T("standing.better", "{0} think better of you: {1}"),
+            T("standing.worse", "{0} now regard you as {1}"),
+
+            // ---- gaps and falls ----
+            T("gap.edge", "A gap. Fire a portal across it ({0}), then another beside you ({1}), and step through."),
+            T("gap.alcove", "A high alcove. Fire a portal up into it ({0}), then another beside you ({1}), and step through."),
+            T("gap.afterFall", "You are set back at the edge. Fire a portal across the gap instead ({0}, then {1})."),
+            T("gap.fellBare", "FELL  -{0}"),
+            T("gap.spikes", "SPIKES  -{0}"),
+            T("gap.splash", "SPLASH  climbing out"),
 
             // ---- hints under the HUD ----
             T("hint.revolver", "revolver"),

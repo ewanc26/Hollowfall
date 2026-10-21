@@ -138,7 +138,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 102.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 112.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -229,6 +229,16 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 102.
 | `hud.result.rank` | RANK  {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hud.result.stats` | Time {0}    Kills {1}    Style {2} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hud.result.restarts` | Restarts {0}  (−{0} points) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `toast.omen` | A washerwoman wrings out her cloth nearby. Something is coming. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `toast.boon` | The brownie warms the hearth for you (+{0} health) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.better` | {0} think better of you: {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.worse` | {0} now regard you as {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `gap.edge` | A gap. Fire a portal across it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `gap.alcove` | A high alcove. Fire a portal up into it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `gap.afterFall` | You are set back at the edge. Fire a portal across the gap instead ({0}, then {1}). | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `gap.fellBare` | FELL  -{0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `gap.spikes` | SPIKES  -{0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `gap.splash` | SPLASH  climbing out | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hint.revolver` | revolver | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hint.shotgun` | shotgun | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hint.parry` | parry | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |

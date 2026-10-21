@@ -763,11 +763,11 @@ public partial class Main : Node3D
                 _hud.ShowBanner(_loc.Tr("banner.spikes", $"{t.Damage:F0}"), 0.8);
                 break;
             case PlayerFell fell:
-                _hud.ShowBanner(GapHints.FallBanner(fell), 1.4);
-                if (fell.First) _storyUi.ShowCaption(GapHints.AfterTheFirstFall(PortalKeyName(GameAction.PortalTeal), PortalKeyName(GameAction.PortalViolet)), 7);
+                _hud.ShowBanner(GapHints.FallBanner(fell, _loc), 1.4);
+                if (fell.First) _storyUi.ShowCaption(GapHints.AfterTheFirstFall(PortalKeyName(GameAction.PortalTeal), PortalKeyName(GameAction.PortalViolet), _loc), 7);
                 break;
             case PitEdgeReached edge:
-                _storyUi.ShowCaption(GapHints.AtTheEdge(edge.Kind, PortalKeyName(GameAction.PortalTeal), PortalKeyName(GameAction.PortalViolet)), 9);
+                _storyUi.ShowCaption(GapHints.AtTheEdge(edge.Kind, PortalKeyName(GameAction.PortalTeal), PortalKeyName(GameAction.PortalViolet), _loc), 9);
                 break;
             case PortalPlaced { Success: false } failed:
                 _hud.ShowBanner(_loc.Tr("banner.noPortal", failed.Failure), 1.2);
