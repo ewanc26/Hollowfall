@@ -46,6 +46,11 @@ public static class BlockInfo
     /// <summary>Hides the faces of neighbouring blocks: a solid, full, non-see-through cube.</summary>
     public static bool Occludes(BlockType b) => IsSolid(b) && b != BlockType.Leaves;
 
+    /// <summary>What a Block Mortar shell can dig out: brick, stone, earth and sand. Never bedrock, plates, gates or door frames.</summary>
+    public static bool Breakable(BlockType b) =>
+        b is BlockType.Stone or BlockType.StoneBrick or BlockType.BrickFloor or BlockType.CrackedFloor or BlockType.Dirt
+            or BlockType.Grass or BlockType.Sand;
+
     /// <summary>Surfaces a portal can be placed on: plain solid walls, floors and ceilings.</summary>
     public static bool Portalable(BlockType b) =>
         IsSolid(b) && b is not (BlockType.Bedrock or BlockType.Gate or BlockType.SecretDoor or BlockType.Stairs or BlockType.Pillar

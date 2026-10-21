@@ -82,6 +82,22 @@ public class TasPlaytestTests
     }
 
     [Fact]
+    public void ABreachQueuesTheChunksItChangedForRemeshing()
+    {
+        var a = CombatSimTests.MakeArena();
+        int bx = (int)Math.Floor(a.X), bz = (int)Math.Floor(a.Z), by = (int)Math.Floor(a.Y) - 1;
+        a.World.SetBlock(bx, by, bz, BlockType.BrickFloor);
+        var feet = new Vec3(bx + 0.5, by + 1, bz + 0.5);
+
+        a.Sim.Slam(feet, 2);
+        a.Sim.TakeDirtyChunks();
+        a.Sim.Slam(feet, 2);
+
+        Assert.Equal(BlockType.Air, a.World.GetBlock(bx, by, bz));
+        Assert.Contains((bx >> 4, bz >> 4), a.Sim.TakeDirtyChunks());
+    }
+
+    [Fact]
     public void SlamOnTheGroundDoesNothing()
     {
         var a = CombatSimTests.MakeArena();

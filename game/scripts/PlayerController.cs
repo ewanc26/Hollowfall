@@ -130,6 +130,7 @@ public partial class PlayerController : Node3D
         var actions = new PlayerActions(
             FireRevolver: live && InputMapper.Pressed(GameAction.FirePrimary),
             FireShotgun: live && InputMapper.Pressed(GameAction.FireSecondary),
+            FireMortar: live && InputMapper.Pressed(GameAction.FireMortar),
             Parry: live && InputMapper.JustPressed(GameAction.Parry),
             PortalTeal: live && InputMapper.JustPressed(GameAction.PortalTeal),
             PortalViolet: live && InputMapper.JustPressed(GameAction.PortalViolet),
