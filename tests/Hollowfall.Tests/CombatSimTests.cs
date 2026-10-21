@@ -689,4 +689,50 @@ public class CombatSimTests
         Assert.Equal(-1, site.FloorIndexAt(site.OriginX + 10, site.SurfaceY + 1, site.OriginZ + 10));
         Assert.Equal(-1, site.FloorIndexAt(site.OriginX - 5, DungeonSite.FloorY(0) + 1, site.OriginZ + 10));
     }
+
+    [Fact]
+    public void SlamShockwaveHurtsOnlyEnemiesInItsRadius()
+    {
+        var a = MakeArena();
+        var near = Place(a, EnemyKind.Husk, 2);
+        var far = Place(a, EnemyKind.Husk, 6);
+        double nearBefore = near.Health, farBefore = far.Health;
+
+        a.Sim.Slam(a.View().Feet, 1);
+
+        Assert.True(near.Health < nearBefore);
+        Assert.Equal(farBefore, far.Health);
+    }
+
+    [Fact]
+    public void AirSlamFromHighAwardsMoreThanGroundSlam()
+    {
+        var ground = MakeArena();
+        ground.Sim.Slam(ground.View().Feet, 2);
+        var air = MakeArena();
+        air.Sim.Slam(air.View().Feet, 12);
+
+        Assert.True(air.Sim.Style.TotalScore > ground.Sim.Style.TotalScore);
+    }
+
+    [Fact]
+    public void SecondSlamOnTheSameTileBreaksAHoleUnderfoot()
+    {
+        var a = MakeArena();
+        var view = a.View();
+        int x = (int)Math.Floor(view.Feet.X), y = (int)Math.Floor(view.Feet.Y) - 1, z = (int)Math.Floor(view.Feet.Z);
+        for (int dx = -1; dx <= 2; dx++)
+            for (int dz = -1; dz <= 1; dz++)
+                a.World.SetBlock(x + dx, y, z + dz, BlockType.BrickFloor);
+
+        a.Sim.Slam(view.Feet, 1);
+        Assert.Equal(BlockType.CrackedFloor, a.World.GetBlock(x, y, z));
+
+        Run(a.Sim, view, 60);
+        a.Sim.Slam(view.Feet, 1);
+
+        Assert.Equal(BlockType.Air, a.World.GetBlock(x, y, z));
+        Assert.Equal(BlockType.Air, a.World.GetBlock(x + 1, y, z - 1));
+        Assert.Equal(BlockType.BrickFloor, a.World.GetBlock(x + 2, y, z));
+    }
 }
