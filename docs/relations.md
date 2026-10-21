@@ -14,6 +14,7 @@ The Scottish folklore behind the Folk (brownies, selkies, kelpies, the Bean Nigh
 | Factions and the graph | `Factions.cs` | Who is who, how each faction regards each other, and the ripple table |
 | Reputation | `Reputation.cs` | The player's standing with each faction, tiers, hysteresis, decay |
 | Saving | `RelationsStore.cs` | `relations.json` in the data folder (`DataHome.RelationsPath`, env `HOLLOWFALL_RELATIONS`) |
+| Character | `Progression/Progression.cs`, `ProgressionStore.cs` | `progression.json` in the data folder (`DataHome.ProgressionPath`, env `HOLLOWFALL_PROGRESSION`). Phase 2 (see below) |
 | Species and personality | `Species.cs` | What each kind of creature is by nature; bravery, grudge and curiosity drawn from the seed |
 | Memory | `Memory.cs` | Anger, fear and gratitude of one individual, and how they fade |
 | Disposition and brain | `Behaviour.cs` | Standing + temperament + personality + memory become a disposition, then an intent; `Mind` bundles one creature |
@@ -203,6 +204,6 @@ The cistern pool is a model too (`cistern_pool`), laid once per pool at a water-
 
 ## Later phases
 
-Phase 2: character progression and stats. Phase 3: inventory and equipment (and the cream the Brownie is owed). Phase 4: quests and
+Phase 2 (in progress, issue #3): character progression and stats. Built so far: experience from the Hollow (10 for a Husk, 12 for a Spitter, 60 for a Warden; creatures give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour (+10 maximum health per point) and Might (+5 percent damage per point) to spend them on. Still to do: the simulation reading those stats, and a screen to spend points. Phase 3: inventory and equipment (and the cream the Brownie is owed). Phase 4: quests and
 merchants, using standing for prices and access. The relationship system is built so each of those reads `Reputation` and `Mind` rather
 than adding new state.

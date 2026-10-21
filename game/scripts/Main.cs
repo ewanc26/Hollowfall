@@ -5,6 +5,7 @@ using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Localization;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.Relations;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
@@ -74,8 +75,12 @@ public partial class Main : Node3D
 
     public MusicDirector Music => _music;
     public static string RelationsPath => Data.RelationsPath;
+    public static string ProgressionPath => Data.ProgressionPath;
 
     private RelationsStore _relations = new();
+
+    /// <summary>Your character across runs (experience and stat points), kept in progression.json.</summary>
+    private Progression _character = new();
 
     /// <summary>Records where this seed's standings stand now, in relations.json (atomic, bounded). Cheap: it only runs when a tier changes or a floor ends.</summary>
     private void SaveRelations()
@@ -83,6 +88,14 @@ public partial class Main : Node3D
         if (Combat?.Sim.Relations is not { } relations) return;
         _relations.Record(_seedName, relations.Reputation);
         _relations.TrySave(RelationsPath);
+    }
+
+    /// <summary>Gives experience for a defeated enemy. The character is saved when a level is gained and when a floor ends, not on every kill.</summary>
+    private void AwardKill(EnemyKilled killed)
+    {
+        int before = _character.Level;
+        if (_character.Award(killed.Kind) == 0) return;
+        if (_character.Level != before) ProgressionStore.TrySave(_character, ProgressionPath);
     }
 
     public StoryDirector Story => _story;
@@ -162,9 +175,12 @@ public partial class Main : Node3D
             var sim = new CombatSim(World, site);
             sim.EnableRelations(); // the Folk, wanderers and vermin; standing with each is kept per seed in relations.json
             _relations = RelationsStore.Load(RelationsPath);
+            _character = ProgressionStore.Load(ProgressionPath);
             Combat.Initialize(sim, site, _view);
             Combat.EventRaised += OnCombatEvent;
             Combat.EventRaised += e => { if (e is ReputationChanged or FloorCompleted) SaveRelations(); };
+            Combat.EventRaised += e => { if (e is EnemyKilled killed) AwardKill(killed); };
+            Combat.EventRaised += e => { if (e is FloorCompleted) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => { if (MusicEvents.For(e, site.FloorCount - 1, site.Floors[^1].BossRoom?.Id ?? -1) is { } stinger) _music.Trigger(stinger); };
             Combat.EventRaised += e => _hud?.OnEvent(e);
