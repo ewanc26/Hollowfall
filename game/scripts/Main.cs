@@ -39,6 +39,8 @@ public partial class Main : Node3D
     private NotesView? _notesView;
     private WulverDirector? _wulver;
     private WulverView? _wulverView;
+    private CatDirector? _cat;
+    private CatView? _catView;
     private int _deathCount, _killCount, _deepestFloor = -1;
     private double _playSeconds;
 
@@ -71,6 +73,9 @@ public partial class Main : Node3D
     public StoryDirector Story => _story;
     public WulverDirector? Wulver => _wulver;
     public WulverView? WulverView => _wulverView;
+    public CatDirector? Cat => _cat;
+    public CatView? CatView => _catView;
+    public PropsView? Props => _props;
     public StoryUi StoryUi => _storyUi;
     public string SeedName => _seedName;
 
@@ -147,7 +152,8 @@ public partial class Main : Node3D
             Combat.EventRaised += e => { if (e is ShotFired shot) _weapons?.Fire(shot.Weapon); };
             AddChild(Combat);
             _props = new PropsView { Name = "Props" };
-            _props.Initialize(site, Combat.Sim.Items);
+            _props.Initialize(site, Combat.Sim.Items, FirePitPlacer.Place(site, World.Seed));
+            _props.CrackleLevel = level => _audio.SetLoopLevel(Hollowfall.Core.Audio.SoundId.FireCrackle, level);
             AddChild(_props);
             _replay = new ReplayDirector { Name = "Replay" };
             _replay.Initialize(Combat.Sim, site, seedText, RecordsPath);
@@ -185,6 +191,22 @@ public partial class Main : Node3D
                 Facts = () => new WulverFacts(_deathCount, _killCount, _deepestFloor, site!.FloorCount, _story.NotesRead, Combat.Sim.Items.KeysHeld > 0, false),
             };
             GD.Print($"Hollowfall: the Wulver stands at ({wulverSpot.X:F1}, {wulverSpot.Y:F1}, {wulverSpot.Z:F1}), {wulverSpot.Distance:F0} blocks from the entrance");
+        }
+
+        // The cat: asleep on a little seat beside one fire pit, found by following the warmth.
+        if (Combat != null && CatPlacer.Place(site, World.Seed) is { } catSpot)
+        {
+            _catView = new CatView { Name = "Cat" };
+            _catView.Initialize(catSpot);
+            _catView.Woke += () => _audio.Play(Hollowfall.Core.Audio.SoundId.CatMeow, new Vector3((float)catSpot.X, (float)catSpot.Y + 0.4f, (float)catSpot.Z), 0.8f);
+            AddChild(_catView);
+            var catEncounter = new CatEncounter(World.Seed, _seedName, catSpot, storyProgress.CatFlags(_seedName), storyProgress.CatVisits(_seedName));
+            _cat = new CatDirector(catEncounter, Combat.Sim.Vitals, _storyUi, storyProgress, _seedName, StoryPath, (id, at) => _audio.Play(id, at))
+            {
+                InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+            };
+            GD.Print($"Hollowfall: something warm rests on floor {catSpot.Pit.Floor} at ({catSpot.X:F1}, {catSpot.Y:F1}, {catSpot.Z:F1})");
         }
 
         // The weapons in your hands, drawn under the HUD.
@@ -375,6 +397,8 @@ public partial class Main : Node3D
             if (_demo is { } d && d.StartsWith("wulver")) RunWulverDemo(d);
             actions = _story.Filter(actions, view.Feet, !dead);
             if (_wulver != null) actions = _wulver.Filter(actions, view.Feet, !dead);
+            if (_demo is { } cd && cd.StartsWith("cat")) RunCatDemo(cd);
+            if (_cat != null) actions = _cat.Filter(actions, view.Feet, !dead);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
             if (_replay != null) (view, actions) = _replay.Capture(delta, view, actions);
@@ -490,6 +514,45 @@ public partial class Main : Node3D
                 GetTree().CreateTimer(0.8, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(0);
                 GetTree().CreateTimer(1.2, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(0);
             }
+        }
+    }
+
+    /// <summary>
+    /// HOLLOWFALL_DEMO=cat_pit stands the player by a fire pit; cat_sleep a few steps from the sleeping cat (cat_sleep_close, nearer, kept asleep);
+    /// cat_awake stands in front of him, awake; cat_talk walks up and opens his conversation.
+    /// </summary>
+    private void RunCatDemo(string demo)
+    {
+        _demoFrame++;
+        if (_catView == null || Combat == null) return;
+        var s = _catView.Spot;
+        _catView.ForceSleep = demo == "cat_sleep_close";
+        if (demo == "cat_pit_alone" && _props != null && _props.PitPositions.Where(p => new Vector2(p.X - (float)s.X, p.Z - (float)s.Z).Length() > 6).Cast<Vector3?>().FirstOrDefault() is { } alone)
+        {
+            // A pit with no cat: stand three blocks off, looking at its flames.
+            if (_demoFrame is 5 or 40)
+            {
+                if (_demoFrame == 5) MovePlayerToFloor((int)Math.Round((DungeonSite.FirstFloorY + 1 - alone.Y) / DungeonSite.FloorSpacing));
+                _player.PlaceAt(new Vector3(alone.X + 2.6f, alone.Y, alone.Z + 1.2f), Math.Atan2(2.6, 1.2), -0.25);
+            }
+            return;
+        }
+        if (_demoFrame is 5 or 40 or 41)
+        {
+            if (_demoFrame == 5) MovePlayerToFloor(s.Pit.Floor);
+            // Stand to the side of the line from the pit to the cat, so both show together.
+            double ax = -s.Dz, az = s.Dx;
+            double away = demo switch { "cat_pit" => 3.6, "cat_sleep" => 7.5, "cat_sleep_close" => 2.7, "cat_talk" or "cat_talk_accents" => 2.0, _ => 3.0 };
+            double px = (s.Pit.X + s.X) / 2 + ax * away + s.Dx * (demo == "cat_pit" ? -1.4 : 0.2), pz = (s.Pit.Z + s.Z) / 2 + az * away + s.Dz * (demo == "cat_pit" ? -1.4 : 0.2);
+            double tx = demo == "cat_pit" ? s.Pit.X : s.X, tz = demo == "cat_pit" ? s.Pit.Z : s.Z;
+            double pitch = demo switch { "cat_pit" => -0.2, "cat_sleep_close" => -0.45, "cat_talk" or "cat_talk_accents" => -0.9, "cat_sleep" => -0.05, _ => -0.3 };
+            _player.PlaceAt(new Vector3((float)px, (float)s.Y, (float)pz), Math.Atan2(px - tx, pz - tz), pitch);
+        }
+        if (demo is "cat_talk" or "cat_talk_accents" && _demoFrame == 90)
+        {
+            _cat?.Talk();
+            // The game is paused while the panel is open, so the press is timed on the real clock: blink back, which gets the first Irish welcome with its accent.
+            if (demo == "cat_talk_accents") GetTree().CreateTimer(0.4, processAlways: true).Timeout += () => _storyUi.PressDialogueChoice(0);
         }
     }
 
@@ -635,6 +698,11 @@ public partial class Main : Node3D
         _story.Tick(delta, floor);
         _notesView?.Update(delta);
         _wulverView?.Update(delta, new Vector3((float)b.X, (float)b.Y, (float)b.Z));
+        if (_catView != null)
+        {
+            _catView.Update(delta, new Vector3((float)b.X, (float)b.Y, (float)b.Z), -_player.Camera.GlobalTransform.Basis.Z);
+            _audio.SetLoopLevel(Hollowfall.Core.Audio.SoundId.CatPurr, _catView.PurrLevel);
+        }
         var openings = Combat.PortalScreenRects(_player.Camera);
         _hud.SetOpenings(openings);
         _weapons.SetOpenings(openings);

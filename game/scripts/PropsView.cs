@@ -24,9 +24,20 @@ public partial class PropsView : Node3D
     private Interactables _items = null!;
     private readonly List<(ModelRig Rig, Vector3 Position, double Phase)> _torches = [];
     private readonly List<OmniLight3D> _lights = [];
+    private readonly List<(ModelRig Rig, Vector3 Position, double Phase)> _pits = [];
     private double _time;
 
-    public void Initialize(DungeonSite site, Interactables items)
+    /// <summary>Called every frame with how loud the fire's crackle should be, 0 to 1, by the distance to the nearest fire pit (the host plays the loop).</summary>
+    public Action<float>? CrackleLevel { get; set; }
+
+    /// <summary>How many fire pits are drawn, and how many real lights are lit this frame (for tests).</summary>
+    public int PitCount => _pits.Count;
+
+    public int LightsOn => _lights.Count(l => l.Visible);
+
+    public IReadOnlyList<Vector3> PitPositions => [.. _pits.Select(p => p.Position)];
+
+    public void Initialize(DungeonSite site, Interactables items, IReadOnlyList<FirePitSpot>? pits = null)
     {
         _items = items;
         for (int index = 0; index < site.Spawns.Count; index++)
@@ -72,6 +83,17 @@ public partial class PropsView : Node3D
             torch.Root.Rotation = new Vector3(0, (float)Math.Atan2(-t.FaceX, -t.FaceZ), 0);
             AddChild(torch.Root);
             _torches.Add((torch, position, t.CellX * 0.91 + t.CellZ * 1.3));
+        }
+
+        // Fire pits: a ring of stones, logs and a flame of glowing gems. They are warmth and decoration; nothing in them hurts.
+        foreach (var pit in pits ?? [])
+        {
+            var rig = ModelFactory.Build(ModelCatalog.FirePit, castShadows: false);
+            var position = new Vector3((float)pit.X, (float)pit.Y, (float)pit.Z);
+            rig.Root.Position = position;
+            rig.Root.RotationDegrees = new Vector3(0, (pit.CellX * 37 + pit.CellZ * 11) % 360, 0);
+            AddChild(rig.Root);
+            _pits.Add((rig, position, pit.CellX * 0.77 + pit.CellZ * 1.9));
         }
 
         for (int i = 0; i < MaxLights; i++)
@@ -142,15 +164,43 @@ public partial class PropsView : Node3D
                 spikes.Scale = new Vector3(1, (float)Math.Max(0.12, ext), 1);
             }
 
-        var near = new List<(double Distance, int Index)>();
+        // Torches and fire pits share the few real lights: the nearest ones win. A pit is warmer, wider and a little brighter.
+        var near = new List<(double Distance, Vector3 Position, double Phase, bool Pit)>();
         for (int i = 0; i < _torches.Count; i++)
         {
             var (rig, position, phase) = _torches[i];
             double flicker = 0.85 + 0.15 * Math.Sin(_time * 11 + phase) * Math.Sin(_time * 7.3 + phase * 2);
             if (rig.Part("flame") is { } flame) flame.Scale = new Vector3(1, (float)(0.9 + 0.2 * flicker), 1);
             double d = position.DistanceTo(viewer);
-            if (d < LightRadius) near.Add((d, i));
+            if (d < LightRadius) near.Add((d, position + new Vector3(0, 0.45f, 0), phase, false));
         }
+
+        double nearestPit = double.MaxValue;
+        foreach (var (rig, position, phase) in _pits)
+        {
+            double flicker = 0.8 + 0.2 * Math.Sin(_time * 9.1 + phase) * Math.Sin(_time * 5.3 + phase * 1.7) + 0.06 * Math.Sin(_time * 23 + phase);
+            if (rig.Part("flame") is { } flame)
+            {
+                flame.Scale = new Vector3(1 - 0.06f * (float)flicker, (float)(0.8 + 0.4 * flicker), 1 - 0.06f * (float)flicker);
+                flame.RotationDegrees = new Vector3((float)(4 * Math.Sin(_time * 3.1 + phase)), 0, (float)(5 * Math.Sin(_time * 2.3 + phase * 2)));
+            }
+            if (rig.Part("tongue_a") is { } a)
+            {
+                a.Scale = new Vector3(1, (float)(0.7 + 0.5 * Math.Max(0, Math.Sin(_time * 7.7 + phase))), 1);
+                a.RotationDegrees = new Vector3(0, 0, (float)(10 * Math.Sin(_time * 4.1 + phase)));
+            }
+            if (rig.Part("tongue_b") is { } t)
+            {
+                t.Scale = new Vector3(1, (float)(0.7 + 0.5 * Math.Max(0, Math.Sin(_time * 6.3 + phase * 1.3 + 1))), 1);
+                t.RotationDegrees = new Vector3(0, 0, (float)(-10 * Math.Sin(_time * 3.3 + phase)));
+            }
+            rig.SetGlow("embers", new Color(1, (float)(0.6 + 0.4 * flicker), (float)(0.5 + 0.3 * flicker)));
+            double d = position.DistanceTo(viewer);
+            nearestPit = Math.Min(nearestPit, d);
+            if (d < LightRadius) near.Add((d - 3, position + new Vector3(0, 0.5f, 0), phase, true)); // -3: a pit wins a tie against a torch
+        }
+        CrackleLevel?.Invoke(nearestPit >= 18 ? 0 : (float)Math.Pow(Math.Clamp(1 - (nearestPit - 2) / 16, 0, 1), 1.6));
+
         near.Sort((a, b) => a.Distance.CompareTo(b.Distance));
         for (int i = 0; i < _lights.Count; i++)
         {
@@ -159,10 +209,15 @@ public partial class PropsView : Node3D
                 _lights[i].Visible = false;
                 continue;
             }
-            var (_, position, phase) = _torches[near[i].Index];
-            _lights[i].Visible = true;
-            _lights[i].GlobalPosition = position + new Vector3(0, 0.45f, 0);
-            _lights[i].LightEnergy = (float)(1.1 + 0.25 * Math.Sin(_time * 9 + phase));
+            var (_, position, phase, pit) = near[i];
+            var light = _lights[i];
+            light.Visible = true;
+            light.GlobalPosition = position;
+            light.OmniRange = pit ? 12 : 9;
+            light.LightColor = pit ? new Color(1f, 0.55f, 0.2f) : new Color(1f, 0.62f, 0.28f);
+            light.LightEnergy = pit
+                ? (float)(1.9 + 0.35 * Math.Sin(_time * 8 + phase) * Math.Sin(_time * 5.1 + phase) + 0.12 * Math.Sin(_time * 21 + phase))
+                : (float)(1.1 + 0.25 * Math.Sin(_time * 9 + phase));
         }
     }
 }

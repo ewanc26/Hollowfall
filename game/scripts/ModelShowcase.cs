@@ -51,6 +51,8 @@ public partial class ModelShowcase : Node3D
             case "poses": BuildPoses(); break;
             case "weapons": BuildWeapons(); break;
             case "props": BuildProps(); break;
+            case "cat": BuildCat(false); break;
+            case "catsleep": BuildCat(true); break;
             case "effects": AddChild(new EffectsShowcase(_camera)); break;
             default: BuildEnemies(); break;
         }
@@ -148,9 +150,28 @@ public partial class ModelShowcase : Node3D
         Place(ModelFactory.Build(ModelCatalog.Scroll).Root, new Vector3(0.85f, 0, 0.3f), "Scroll", spin: 0.5, labelHeight: 0.05f);
     }
 
+    private readonly List<(CatView View, Vector3 Player)> _cats = [];
+
+    /// <summary>A fire pit with the cat beside it, awake and watching (page "cat") or asleep (page "catsleep"), to check the art and the rig up close.</summary>
+    private void BuildCat(bool asleep)
+    {
+        _camera.Position = new Vector3(0.5f, 0.95f, 2.2f);
+        _camera.LookAt(new Vector3(0.45f, 0.3f, 0), Vector3.Up);
+        float px = -0.55f;
+        var pit = ModelFactory.Build(ModelCatalog.FirePit, castShadows: false);
+        Place(pit.Root, new Vector3(px, 0, 0), "", labelHeight: 0.05f);
+        AddChild(new OmniLight3D { Position = new Vector3(px, 0.6f, 0), LightColor = new Color(1f, 0.55f, 0.2f), OmniRange = 5, LightEnergy = 1.6f });
+        var spot = new Hollowfall.Core.Story.CatSpot(new Hollowfall.Core.Dungeon.FirePitSpot(0, 0, 0, 0, px, 0, 0), 1, 0, px + 1.05, 0, 0, Math.Atan2(1, 0));
+        var cat = new CatView { ForceSleep = asleep };
+        cat.Initialize(spot);
+        AddChild(cat);
+        _cats.Add((cat, new Vector3(px + 1.05f, 0, 3.4f)));
+    }
+
     public override void _Process(double delta)
     {
         _time += delta;
+        foreach (var (view, player) in _cats) view.Update(delta, player, new Vector3(0, 0, -1));
         foreach (var (node, speed) in _spin) node.RotationDegrees = new Vector3(0, (float)(_time * speed * 60 % 360), 0);
         foreach (var view in _posed) view.Animate(EnemyState.Chasing, delta);
     }

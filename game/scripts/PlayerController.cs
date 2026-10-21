@@ -203,12 +203,12 @@ public partial class PlayerController : Node3D
     }
 
     /// <summary>Puts the player somewhere new (respawns, debug moves) and resets their velocity.</summary>
-    public void PlaceAt(Vector3 feet, double yaw)
+    public void PlaceAt(Vector3 feet, double yaw, double pitch = 0)
     {
         Body.Teleport(feet.X, feet.Y, feet.Z, 0, 0, 0);
         _stepOffset = 0;
         _yaw = yaw;
-        _pitch = 0;
+        _pitch = InputMath.ClampPitch(pitch);
         UpdateCamera();
     }
 }

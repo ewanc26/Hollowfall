@@ -37,6 +37,17 @@ public partial class SmokeTest : Node
         Check("both fonts load as real fonts, not the fallback", () =>
             UiFonts.Display != ThemeDB.FallbackFont && UiFonts.Body != ThemeDB.FallbackFont && UiFonts.Display.HasChar('H') && UiFonts.Body.HasChar('9'));
 
+        Check("both fonts draw every Irish letter with an acute accent (the cat speaks Gaeilge)", () =>
+        {
+            const string irish = "\u00e1\u00e9\u00ed\u00f3\u00fa\u00c1\u00c9\u00cd\u00d3\u00da";
+            bool ok = true;
+            foreach (var font in new[] { UiFonts.Display, UiFonts.DisplayMedium, UiFonts.Body, UiFonts.BodyBold })
+                foreach (char c in irish)
+                    if (!font.HasChar(c)) { GD.PrintErr($"    a font is missing U+{(int)c:X4}"); ok = false; }
+            ok &= UiFonts.FaceWithGlyphs(CatDialogue.Name, UiFonts.Display).HasChar('\u00e1');
+            return ok;
+        });
+
         Check("every glyph and icon imports as a texture", () =>
         {
             var ids = BindingGlyphs.AllIds.Concat(GameIcons.All).Concat(GameIcons.RankIcons).Append("mouse").ToList();
@@ -159,6 +170,7 @@ public partial class SmokeTest : Node
             CheckWulverKeyRoute(main);
             await CheckWulverFramingAsync(main);
             await CheckWulverOwnNameSeedAsync(main.Settings);
+            CheckFirePitsAndCat(main);
             CheckVolumeSlidersPersist(main);
             await CheckMiniMapAsync(main);
             CheckChestOpens(main);
@@ -649,6 +661,118 @@ public partial class SmokeTest : Node
         {
             original.TrySave(Main.SettingsPath);
         }
+    }
+
+    /// <summary>
+    /// Fire pits and the cat in the real scene: pits are drawn and lit, the cat sleeps beside one and wakes as you come near, turns his head, the
+    /// conversation opens, sitting gives a little warmth once, what he remembers is saved to the temporary story file, and the third visit says the warm line.
+    /// </summary>
+    private void CheckFirePitsAndCat(Main main)
+    {
+        Check("fire pits are drawn with real light, and the cat wakes, talks, warms you once and remembers, saving only to the temporary story file", () =>
+        {
+            var cat = main.Cat ?? throw new InvalidOperationException("no cat in the world");
+            var view = main.CatView!;
+            var props = main.Props ?? throw new InvalidOperationException("no props");
+            var ui = main.StoryUi;
+            var vitals = main.Combat!.Sim.Vitals;
+            var spot = cat.Encounter.Spot;
+            var press = new PlayerActions(false, false, false, Interact: true);
+            var idle = new PlayerActions(false, false, false);
+            var near = new Vec3(spot.X + 1.5, spot.Y, spot.Z);
+            var gaze = new Vector3(0, 0, -1);
+
+            bool pits = props.PitCount > 0;
+            var pitPos = props.PitPositions.Any(p => Math.Abs(p.X - (float)spot.Pit.X) < 0.01f && Math.Abs(p.Z - (float)spot.Pit.Z) < 0.01f);
+            props.Update(0.1, new Vector3((float)spot.X + 3, (float)spot.Y, (float)spot.Z));
+            bool lit = props.LightsOn > 0;
+            double apart = Math.Sqrt(Math.Pow(spot.X - spot.Pit.X, 2) + Math.Pow(spot.Z - spot.Pit.Z, 2));
+            bool beside = apart > 0.95 && apart < 1.6;
+
+            // Far away he sleeps; near him he wakes and his head follows the player.
+            var far = new Vector3((float)spot.X + 30, (float)spot.Y, (float)spot.Z);
+            for (int i = 0; i < 30; i++) view.Update(0.05, far, gaze);
+            bool asleep = view.Awake < 0.05f && view.EyesOpen < 0.05f;
+            var side = new Vector3((float)spot.X + 4f, (float)spot.Y, (float)spot.Z + 4f);
+            int woke = 0;
+            view.Woke += () => woke++;
+            for (int i = 0; i < 80; i++) view.Update(0.05, side, (new Vector3((float)spot.X, (float)spot.Y, (float)spot.Z) - side).Normalized());
+            bool awake = view.Awake > 0.95f && view.EyesOpen > 0.05f && woke == 1;
+            float yawA = view.HeadYaw;
+            var other = new Vector3((float)spot.X - 4f, (float)spot.Y, (float)spot.Z - 4f);
+            for (int i = 0; i < 80; i++) view.Update(0.05, other, gaze);
+            bool follows = Math.Abs(view.HeadYaw - yawA) > 0.3f;
+            bool purrs = view.PurrLevel > 0;
+            for (int i = 0; i < 400; i++) view.Update(0.05, far, gaze);
+            bool sleepsAgain = view.Awake < 0.05f;
+
+            // The first sight is a single caption; a press far away does nothing.
+            vitals.Damage(50);
+            double hurt = vitals.Health;
+            bool hardDamage = vitals.HardDamage > 0;
+            var ignored = cat.Filter(press, new Vec3(spot.X + 30, spot.Y, spot.Z), alive: true);
+            bool ignoredFar = ignored.Interact && !ui.DialogueOpen;
+            cat.Filter(idle, new Vec3(spot.X + 6, spot.Y, spot.Z), alive: true);
+            bool caption = cat.Sighted == 1 && ui.CaptionText == CatDialogue.FirstSight;
+            cat.Filter(idle, new Vec3(spot.X + 5, spot.Y, spot.Z), alive: true);
+            caption &= cat.Sighted == 1;
+
+            // Walk up and speak: blink back, then sit by the fire.
+            var used = cat.Filter(press, near, alive: true);
+            bool opened = ui.DialogueOpen && !used.Interact && ui.DialogueText.Contains("Dia duit") && ui.DialogueChoices.Count >= 2 && GetTree().Paused;
+            ui.PressDialogueChoice(0); // blink back
+            bool offered = ui.DialogueChoices.Any(c => c.StartsWith("Sit down"));
+            ui.PressDialogueChoice(0); // sit down
+            bool warmed = vitals.HardDamage == 0 && vitals.Health > hurt && vitals.Health <= hurt + CatEncounter.WarmthHeal + 0.01 && vitals.Health < 100;
+            double afterSit = vitals.Health;
+            ui.PressDialogueChoice(2); // goodbye, which ends on a good night
+            bool nightLine = ui.DialogueText.Contains("Oíche mhaith agat");
+            ui.PressDialogueChoice(0); // go
+            bool closed = nightLine && !ui.DialogueOpen && !GetTree().Paused;
+            var saved = StoryProgress.Load(Main.StoryPath);
+            bool remembered = saved.CatVisits(main.SeedName) == 1 && saved.CatFlags(main.SeedName).Contains(CatDialogue.Sat) && saved.CatFlags(main.SeedName).Contains(CatDialogue.Blinked);
+
+            // A second visit: the warmth is not given again.
+            vitals.Damage(30);
+            double hurtAgain = vitals.Health;
+            cat.Filter(idle, new Vec3(spot.X + 30, spot.Y, spot.Z), alive: true);
+            cat.Filter(press, near, alive: true);
+            bool back = ui.DialogueOpen && ui.DialogueText.Contains("Friend") && !ui.DialogueChoices.Any(c => c.StartsWith("Sit down"));
+            ui.PressDialogueChoice(1); // stroke him
+            ui.Close();
+            bool once = Math.Abs(vitals.Health - hurtAgain) < 0.001 && afterSit > hurt;
+
+            // The third visit says the warm line, once.
+            cat.Filter(press, near, alive: true);
+            bool warm = ui.DialogueOpen && ui.DialogueText.Contains("Tine bheag") && ui.DialogueText.Contains("A little fire");
+            ui.Close();
+            cat.Filter(press, near, alive: true);
+            bool notAgain = ui.DialogueOpen && !ui.DialogueText.Contains("Tine bheag");
+            ui.Close();
+            var savedAgain = StoryProgress.Load(Main.StoryPath);
+            bool visits = savedAgain.CatVisits(main.SeedName) == 4 && savedAgain.CatFlags(main.SeedName).Contains(CatDialogue.HeardSmall);
+
+            ui.ClearCaption();
+            vitals.Reset();
+            bool font = UiFonts.FaceWithGlyphs(CatDialogue.Name, UiFonts.Display).HasChar('\u00e1');
+            GD.Print($"    cat: pits={pits} pitPos={pitPos} lit={lit} beside={beside} asleep={asleep} awake={awake} follows={follows} purrs={purrs} sleepsAgain={sleepsAgain} hurt={hardDamage} ignoredFar={ignoredFar} caption={caption} opened={opened} offered={offered} warmed={warmed} closed={closed} remembered={remembered} back={back} once={once} warm={warm} notAgain={notAgain} visits={visits} font={font}");
+            return pits && pitPos && lit && beside && asleep && awake && follows && purrs && sleepsAgain && hardDamage && ignoredFar && caption && opened && offered && warmed && closed && remembered && back && once && warm && notAgain && visits && font;
+        });
+
+        Check("the crackle and purr loops play at a level set by distance and stop at silence", () =>
+        {
+            var audio = new AudioDirector();
+            AddChild(audio);
+            audio.SetLoopLevel(Hollowfall.Core.Audio.SoundId.FireCrackle, 0.8);
+            audio.SetLoopLevel(Hollowfall.Core.Audio.SoundId.CatPurr, 0.5);
+            audio._Process(0.1);
+            bool on = audio.LoopPlaying(Hollowfall.Core.Audio.SoundId.FireCrackle) && audio.LoopPlaying(Hollowfall.Core.Audio.SoundId.CatPurr);
+            audio.SetLoopLevel(Hollowfall.Core.Audio.SoundId.FireCrackle, 0);
+            audio._Process(0.1);
+            bool off = !audio.LoopPlaying(Hollowfall.Core.Audio.SoundId.FireCrackle) && audio.LoopLevel(Hollowfall.Core.Audio.SoundId.CatPurr) == 0.5;
+            audio.QueueFree();
+            return on && off;
+        });
     }
 
     // ---- gameplay checks driven through the real scene -------------------------------------------
