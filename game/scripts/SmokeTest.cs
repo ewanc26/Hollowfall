@@ -155,6 +155,9 @@ public partial class SmokeTest : Node
             await CheckInputAndMenusAsync(main);
             await CheckStoryAsync(main);
             CheckWulver(main);
+            CheckWulverKeyRoute(main);
+            await CheckWulverFramingAsync(main);
+            await CheckWulverOwnNameSeedAsync(main.Settings);
             CheckVolumeSlidersPersist(main);
             await CheckMiniMapAsync(main);
             CheckChestOpens(main);
@@ -428,6 +431,160 @@ public partial class SmokeTest : Node
             GD.Print($"    wulver: hurt={hurt} ignoredFar={ignoredFar} greeted={greeted} opened={opened} offered={offered} gift={gift} closed={closed} remembered={remembered} back={back} kind={kind} quiet={quiet} font={font}");
             return hurt && ignoredFar && greeted && opened && offered && gift && closed && remembered && back && kind && quiet && font;
         });
+    }
+
+    /// <summary>The maker's name as the dialogue file spells it (the seeds list holds it lower case); built here so no authored string names him.</summary>
+    private static string MakerWord => char.ToUpperInvariant(WulverDialogue.MakerSeeds[0][0]) + WulverDialogue.MakerSeeds[0][1..];
+
+    /// <summary>Presses the first choice whose text starts with <paramref name="prefix"/>; false if there is none.</summary>
+    private static bool PressChoice(StoryUi ui, string prefix)
+    {
+        var choices = ui.DialogueChoices;
+        for (int i = 0; i < choices.Count; i++)
+            if (choices[i].StartsWith(prefix, StringComparison.Ordinal)) { ui.PressDialogueChoice(i); return true; }
+        return false;
+    }
+
+    /// <summary>
+    /// The key route in the real scene, on an ordinary seed: having claimed the hill earlier (the check above did, on a return visit), the player
+    /// stands on the last floor holding a key, speaks to him, shows it, and he now knows the maker. It is saved.
+    /// </summary>
+    private void CheckWulverKeyRoute(Main main)
+    {
+        Check("the Wulver, shown a key from the last floor by someone who claimed the hill, recognises the maker and saves it", () =>
+        {
+            var wulver = main.Wulver ?? throw new InvalidOperationException("no Wulver in the world");
+            var ui = main.StoryUi;
+            var spot = wulver.Encounter.Spot;
+            var near = new Hollowfall.Core.Combat.Vec3(spot.X + 1.5, spot.Y, spot.Z);
+            var press = new Hollowfall.Core.Combat.PlayerActions(false, false, false, Interact: true);
+            var realFacts = wulver.Facts;
+            // On the last floor, with a key in the pack.
+            wulver.Facts = () => realFacts() with { DeepestFloor = realFacts().FloorCount - 1, HasKey = true };
+            bool before = !Hollowfall.Core.Story.StoryProgress.Load(Main.StoryPath).WulverFlags(main.SeedName).Contains(WulverDialogue.MakerKnown);
+            wulver.Filter(new Hollowfall.Core.Combat.PlayerActions(false, false, false), new Hollowfall.Core.Combat.Vec3(spot.X + 30, spot.Y, spot.Z), alive: true);
+            wulver.Filter(press, near, alive: true);
+            bool offered = ui.DialogueOpen && ui.DialogueChoices.Any(c => c.StartsWith("Show him the key"));
+            string asked = ui.DialogueText;
+            bool shown = PressChoice(ui, "Show him the key");
+            bool maker = ui.DialogueText.Contains(MakerWord, StringComparison.Ordinal);
+            ui.Close();
+            wulver.Facts = realFacts;
+            var flags = Hollowfall.Core.Story.StoryProgress.Load(Main.StoryPath).WulverFlags(main.SeedName);
+            bool known = flags.Contains(WulverDialogue.MakerKnown) && flags.Contains(WulverDialogue.MakerKey);
+            bool askedQuiet = !asked.Contains(MakerWord, StringComparison.Ordinal);
+            GD.Print($"    wulver key route: before={before} offered={offered} shown={shown} maker={maker} known={known} askedQuiet={askedQuiet}");
+            return before && offered && shown && maker && known && askedQuiet && !ui.DialogueOpen && !GetTree().Paused;
+        });
+    }
+
+    /// <summary>While his panel is open the camera frames his whole figure in the screen above the panel, and the player's own view returns on close.</summary>
+    private async Task CheckWulverFramingAsync(Main main)
+    {
+        const string name = "while the Wulver talks the camera keeps his whole figure above the panel, and the player's view returns on close";
+        try
+        {
+            var wulver = main.Wulver ?? throw new InvalidOperationException("no Wulver in the world");
+            var framing = wulver.Framing ?? throw new InvalidOperationException("no conversation camera");
+            var ui = main.StoryUi;
+            var player = main.GetNode<PlayerController>("Player");
+            var spot = wulver.Encounter.Spot;
+            double fx = -Math.Sin(spot.Yaw), fz = -Math.Cos(spot.Yaw);
+            double px = spot.X + fx * 2.4, pz = spot.Z + fz * 2.4;
+            int ground = main.World.Generator.SampleColumn((int)Math.Floor(px), (int)Math.Floor(pz)).Height;
+            player.PlaceAt(new Vector3((float)px, ground + 1.2f, (float)pz), Math.Atan2(px - spot.X, pz - spot.Z));
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            // The headless window is tiny; give it a real size and a plain scale so the panel and the projection mean something.
+            var window = main.GetWindow();
+            var oldSize = window.Size;
+            bool oldAuto = main.Settings.AutoUiScale;
+            double oldScale = main.Settings.UiScale;
+            window.Size = new Vector2I(1280, 720);
+            main.Settings.AutoUiScale = false;
+            main.Settings.UiScale = 1.0;
+            main.ApplyUiScale();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            wulver.Talk();
+            var settle = Time.GetTicksMsec() + 4000;
+            while ((framing.Amount < 0.999 || Time.GetTicksMsec() < settle - 3500) && Time.GetTicksMsec() < settle) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var camera = player.Camera;
+            double viewH = ui.GetViewport().GetVisibleRect().Size.Y, viewW = ui.GetViewport().GetVisibleRect().Size.X;
+            double panelTop = ui.DialoguePanelTop * viewH;
+            var feet = new Vector3((float)spot.X, (float)spot.Y - 0.35f, (float)spot.Z);
+            var head = new Vector3((float)spot.X, (float)(spot.Y + 2.75), (float)spot.Z);
+            var f = camera.UnprojectPosition(feet);
+            var h = camera.UnprojectPosition(head);
+            bool inFront = !camera.IsPositionBehind(feet) && !camera.IsPositionBehind(head);
+            bool visible = inFront && h.Y >= 0 && h.X >= 0 && h.X <= viewW && f.X >= 0 && f.X <= viewW && f.Y <= panelTop;
+            bool framed = framing.Amount > 0.99 && framing.Active;
+            GD.Print($"    wulver framing: head=({h.X:F0},{h.Y:F0}) feet=({f.X:F0},{f.Y:F0}) panelTop={panelTop:F0} of {viewW:F0}x{viewH:F0} dolly={framing.Dolly:F1}");
+
+            ui.Close();
+            var until = Time.GetTicksMsec() + 4000;
+            while (framing.Active && Time.GetTicksMsec() < until) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            bool home = !framing.Active && camera.Position.IsEqualApprox(Vector3.Zero) && Math.Abs(camera.Rotation.Y) < 0.001f;
+            window.Size = oldSize;
+            main.Settings.AutoUiScale = oldAuto;
+            main.Settings.UiScale = oldScale;
+            main.ApplyUiScale();
+            Report(name, visible && framed && home, $"visible={visible} framed={framed} home={home}");
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+    }
+
+    /// <summary>The maker's own seed in a freshly built scene: claiming to have made the hill earns the maker's own lines, and what he knows is saved.</summary>
+    private async Task CheckWulverOwnNameSeedAsync(GameSettings original)
+    {
+        const string name = "on the maker's own seed the Wulver answers the claim to have made the hill with the maker's lines and saves that he knows";
+        try
+        {
+            if (!new GameSettings { Seed = WulverDialogue.MakerSeeds[0] }.TrySave(Main.SettingsPath)) throw new InvalidOperationException("could not save the settings file");
+            var scene = GD.Load<PackedScene>("res://scenes/Main.tscn").Instantiate<Main>();
+            AddChild(scene);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            var wulver = scene.Wulver ?? throw new InvalidOperationException("no Wulver on the maker's seed");
+            var ui = scene.StoryUi;
+            var spot = wulver.Encounter.Spot;
+            var near = new Hollowfall.Core.Combat.Vec3(spot.X + 1.5, spot.Y, spot.Z);
+            var press = new Hollowfall.Core.Combat.PlayerActions(false, false, false, Interact: true);
+            bool seed = scene.SeedName == WulverDialogue.MakerSeeds[0];
+            wulver.Filter(press, near, alive: true);
+            bool opened = ui.DialogueOpen;
+            string seen = ui.DialogueText;
+            PressChoice(ui, "Who are you");
+            seen += ui.DialogueText;
+            bool claimed = PressChoice(ui, "I built this hill");
+            bool maker = ui.DialogueText.Contains(MakerWord, StringComparison.Ordinal);
+            for (int i = 0; i < 6 && ui.DialogueOpen; i++) PressChoice(ui, "Go on");
+            ui.Close();
+            bool quietBefore = !seen.Contains(MakerWord, StringComparison.Ordinal);
+            bool known = Hollowfall.Core.Story.StoryProgress.Load(Main.StoryPath).WulverFlags(scene.SeedName).Contains(WulverDialogue.MakerKnown);
+
+            // Back again later, he greets the maker by name.
+            wulver.Filter(new Hollowfall.Core.Combat.PlayerActions(false, false, false), new Hollowfall.Core.Combat.Vec3(spot.X + 30, spot.Y, spot.Z), alive: true);
+            wulver.Filter(press, near, alive: true);
+            bool returns = ui.DialogueOpen && ui.DialogueText.Contains(MakerWord, StringComparison.Ordinal);
+            ui.Close();
+
+            scene.QueueFree();
+            Report(name, seed && opened && claimed && maker && quietBefore && known && returns, $"seed={seed} opened={opened} claimed={claimed} maker={maker} quietBefore={quietBefore} known={known} returns={returns}");
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+        finally
+        {
+            original.TrySave(Main.SettingsPath);
+        }
     }
 
     // ---- gameplay checks driven through the real scene -------------------------------------------
