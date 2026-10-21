@@ -31,6 +31,8 @@ public static class EnemyMotions
         EnemyKind.Kelpie => [Motion.Idle, Motion.Walk, Motion.Warn, Motion.Windup, Motion.Strike, Motion.Stunned],
         EnemyKind.BeanNighe => [Motion.Idle, Motion.Flee, Motion.Stunned],
         EnemyKind.Hare => [Motion.Idle, Motion.Walk, Motion.Stunned],
+        EnemyKind.CuSith => [Motion.Idle, Motion.Walk, Motion.Windup, Motion.Strike, Motion.Stunned],
+        EnemyKind.Villager => [Motion.Idle, Motion.Walk, Motion.Flee, Motion.Warn, Motion.Windup, Motion.Strike, Motion.Stunned],
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -59,6 +61,8 @@ public static class EnemyMotions
         EnemyKind.Kelpie => Kelpie(b),
         EnemyKind.BeanNighe => Nighe(b),
         EnemyKind.Hare => Hare(b),
+        EnemyKind.CuSith => Hound(b),
+        EnemyKind.Villager => Biped(b, swingDegrees: 26, armFactor: 0.8, bob: 0.03),
         _ => Warden(b),
     };
 
@@ -184,6 +188,22 @@ public static class EnemyMotions
         bool alert = b.Flee || b.Gait > 0.3;
         pose.Rotate("ear_l", alert ? -30 : 8 + Wave(2, b.Time) * 8, 0, 10);
         pose.Rotate("ear_r", alert ? -30 : 8 + Wave(1, b.Time, 1) * 8, 0, -10);
+        return pose;
+    }
+
+    private static Pose Hound(Beat b)
+    {
+        // A gallop: diagonal pairs swing together and the body rocks; it crouches low for the lunge and snaps forward on the blow.
+        var pose = new Pose();
+        double swing = Math.Sin(b.Phase) * 40 * b.Gait;
+        pose.Rotate("leg_fl", swing);
+        pose.Rotate("leg_br", swing);
+        pose.Rotate("leg_fr", -swing);
+        pose.Rotate("leg_bl", -swing);
+        pose.Move("body", 0, Math.Abs(Math.Sin(b.Phase)) * 0.08 * b.Gait - 0.08 * b.Raise, 0);
+        pose.Rotate("body", (b.Stunned ? 20 : 10 * b.Raise - 14 * b.Strike + Math.Sin(b.Phase) * 4 * b.Gait), 0, b.Stunned ? Wave(8, b.Time) * 6 : 0);
+        pose.Rotate("head", b.Stunned ? 30 : -8 * b.Raise + 10 * b.Strike + Wave(1, b.Time) * 3);
+        pose.Rotate("tail", Wave(2, b.Time) * 12 + 14 * b.Gait, 0, Wave(1, b.Time, Math.PI / 2) * 8);
         return pose;
     }
 

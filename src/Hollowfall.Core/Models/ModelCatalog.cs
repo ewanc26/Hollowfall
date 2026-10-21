@@ -58,6 +58,7 @@ public static class ModelCatalog
     private static readonly Lazy<LowPolyModel> HuskModel = new(BuildHusk);
     private static readonly Lazy<LowPolyModel> SpitterModel = new(BuildSpitter);
     private static readonly Lazy<LowPolyModel> WardenModel = new(BuildWarden);
+    private static readonly Lazy<LowPolyModel> CuSithModel = new(BuildCuSith);
     private static readonly Lazy<LowPolyModel> OrbModel = new(() => BuildOrb("orb", Palette.Ember, Palette.Hot));
     private static readonly Lazy<LowPolyModel> ReflectedOrbModel = new(() => BuildOrb("orb_reflected", Palette.Teal, Palette.White));
     private static readonly Lazy<LowPolyModel> RevolverModel = new(BuildRevolver);
@@ -75,6 +76,7 @@ public static class ModelCatalog
     public static LowPolyModel Husk => HuskModel.Value;
     public static LowPolyModel Spitter => SpitterModel.Value;
     public static LowPolyModel Warden => WardenModel.Value;
+    public static LowPolyModel CuSith => CuSithModel.Value;
     public static LowPolyModel Orb => OrbModel.Value;
     public static LowPolyModel ReflectedOrb => ReflectedOrbModel.Value;
     public static LowPolyModel Revolver => RevolverModel.Value;
@@ -91,12 +93,12 @@ public static class ModelCatalog
 
     public static IReadOnlyList<LowPolyModel> All =>
     [
-        Husk, Spitter, Warden, Orb, ReflectedOrb, Revolver, Shotgun, Chest, Key, SpikeTrap, Torch,
+        Husk, Spitter, Warden, CuSith, Orb, ReflectedOrb, Revolver, Shotgun, Chest, Key, SpikeTrap, Torch,
         LootHealth, LootCleanse, LootStyle, LootBloodlust, LootParry,
         // ---- story: models added for the lore notes (append further models above this line, not below) ----
         Scroll,
         // ---- the Folk, a wanderer and vermin (relationship system; append further models above this line) ----
-        Brownie, Selkie, Kelpie, BeanNighe, Hare, CisternPool,
+        Brownie, Selkie, Kelpie, BeanNighe, Hare, Villager, CisternPool,
         // ---- the Wulver: a hidden figure on a hill (append further models above this line, not below) ----
         Wulver,
         // ---- fire pits and something warm beside one (append further models above this line, not below) ----
@@ -113,6 +115,8 @@ public static class ModelCatalog
         EnemyKind.Kelpie => Kelpie,
         EnemyKind.BeanNighe => BeanNighe,
         EnemyKind.Hare => Hare,
+        EnemyKind.CuSith => CuSith,
+        EnemyKind.Villager => Villager,
         _ => Warden,
     };
 
@@ -171,6 +175,37 @@ public static class ModelCatalog
     }
 
     // ---- Spitter: a floating bulb with a cannon mouth and hanging tentacles -------------------
+
+    private static LowPolyModel BuildCuSith()
+    {
+        var m = new ModelBuilder("cu_sith");
+
+        m.Part("body", V(0, 0.55, 0))
+            .Box(V(0, 0, 0), V(0.4, 0.28, 0.4), Palette.SteelLight)
+            .Box(V(0, -0.14, 0), V(0.34, 0.06, 0.36), Palette.Steel);
+
+        m.Part("head", V(0, 0.72, -0.18), "body")
+            .Box(V(0, 0.04, -0.04), V(0.24, 0.24, 0.24), Palette.SteelLight)
+            .Box(V(0, -0.02, -0.16), V(0.12, 0.12, 0.12), Palette.Steel)
+            .Wedge(V(-0.07, 0.16, -0.02), V(0.05, 0.12, 0.05), Palette.Steel)
+            .Wedge(V(0.07, 0.16, -0.02), V(0.05, 0.12, 0.05), Palette.Steel)
+            .Box(V(-0.065, 0.06, -0.17), V(0.04, 0.04, 0.02), Palette.Hot, glow: true)
+            .Box(V(0.065, 0.06, -0.17), V(0.04, 0.04, 0.02), Palette.Hot, glow: true);
+
+        m.Part("tail", V(0, 0.6, 0.2), "body")
+            .Box(V(0, 0.04, 0.12), V(0.08, 0.08, 0.24), Palette.Steel);
+
+        string[] legs = ["fl", "fr", "bl", "br"];
+        for (int i = 0; i < 4; i++)
+        {
+            double x = (i % 2 == 0 ? -1 : 1) * 0.14, z = i < 2 ? -0.14 : 0.14;
+            m.Part($"leg_{legs[i]}", V(x, 0.5, z), "body")
+                .Box(V(0, -0.25, 0), V(0.1, 0.4, 0.1), Palette.Steel)
+                .Box(V(0, -0.43, -0.01), V(0.12, 0.05, 0.14), Palette.PlateDark);
+        }
+
+        return m.Anchor("eye", V(0, 0.8, -0.42)).Build();
+    }
 
     private static LowPolyModel BuildSpitter()
     {
@@ -450,6 +485,7 @@ public static class ModelCatalog
     private static readonly Lazy<LowPolyModel> KelpieModel = new(BuildKelpie);
     private static readonly Lazy<LowPolyModel> BeanNigheModel = new(BuildBeanNighe);
     private static readonly Lazy<LowPolyModel> HareModel = new(BuildHare);
+    private static readonly Lazy<LowPolyModel> VillagerModel = new(BuildVillager);
     private static readonly Lazy<LowPolyModel> CisternPoolModel = new(BuildCisternPool);
 
     public static LowPolyModel Brownie => BrownieModel.Value;
@@ -457,6 +493,7 @@ public static class ModelCatalog
     public static LowPolyModel Kelpie => KelpieModel.Value;
     public static LowPolyModel BeanNighe => BeanNigheModel.Value;
     public static LowPolyModel Hare => HareModel.Value;
+    public static LowPolyModel Villager => VillagerModel.Value;
 
     /// <summary>The shallow pool laid on the floor of a round cistern room, centred on the model origin.</summary>
     public static LowPolyModel CisternPool => CisternPoolModel.Value;
@@ -492,6 +529,35 @@ public static class ModelCatalog
         }
 
         return m.Anchor("eye", V(0, 0.8, -0.15)).Build();
+    }
+
+    // Villager: a crofter in homespun wool and a pale apron, bare-headed under dark hair; the Folk's only human face.
+    private static LowPolyModel BuildVillager()
+    {
+        var m = new ModelBuilder("villager");
+
+        m.Part("torso", V(0, 0.84, 0))
+            .Box(V(0, 0.28, 0), V(0.4, 0.5, 0.24), Palette.Homespun)
+            .Box(V(0, 0.12, -0.125), V(0.3, 0.3, 0.02), Palette.Bone);
+
+        m.Part("head", V(0, 1.4, 0), "torso")
+            .Box(V(0, 0.1, 0), V(0.24, 0.26, 0.24), Palette.Skin)
+            .Box(V(0, 0.2, 0.02), V(0.26, 0.1, 0.26), Palette.Hair)
+            .Box(V(0, 0.16, -0.125), V(0.22, 0.03, 0.02), Palette.Hair);
+
+        foreach (double side in new[] { -1.0, 1.0 })
+        {
+            string tag = side < 0 ? "l" : "r";
+            var arm = m.Part($"arm_{tag}", V(0.25 * side, 1.28, 0), "torso")
+                .Box(V(0, -0.2, 0), V(0.12, 0.4, 0.12), Palette.Homespun)
+                .Box(V(0, -0.44, 0), V(0.12, 0.1, 0.12), Palette.Skin);
+            if (side > 0) arm.Box(V(0, -0.6, 0), V(0.1, 0.14, 0.1), Palette.EyeAmber, glow: true);
+            m.Part($"leg_{tag}", V(0.1 * side, 0.84, 0))
+                .Box(V(0, -0.4, 0), V(0.15, 0.8, 0.16), Palette.HomespunDark)
+                .Box(V(0, -0.8, -0.02), V(0.16, 0.08, 0.22), Palette.Wood);
+        }
+
+        return m.Anchor("eye", V(0, 1.62, -0.13)).Build();
     }
 
     // Selkie: a seal-woman in a dark sealskin cloak, flippered feet and long hair; her eyes glow the colour of the sea.

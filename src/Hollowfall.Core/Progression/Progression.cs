@@ -67,6 +67,8 @@ public sealed class Progression
     {
         EnemyKind.Husk => 10,
         EnemyKind.Spitter => 12,
+        EnemyKind.CuSith => 14,
+        EnemyKind.Villager => 8,
         EnemyKind.Warden => 60,
         _ => 0,
     };

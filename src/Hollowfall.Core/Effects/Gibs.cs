@@ -20,6 +20,8 @@ public static class Gibs
         EnemyKind.Kelpie => 16,
         EnemyKind.BeanNighe => 10,
         EnemyKind.Hare => 6,
+        EnemyKind.CuSith => 9,
+        EnemyKind.Villager => 12,
         _ => 22,
     };
 
@@ -37,6 +39,8 @@ public static class Gibs
         EnemyKind.Kelpie => [0x0f2f40, 0x0f2f40, 0x1e5a6e, 0x4f6a4a, 0x19d3c5],
         EnemyKind.BeanNighe => [0x4f6a4a, 0x4f6a4a, 0x2c3d2b, 0xd8c7a4, 0x19d3c5],
         EnemyKind.Hare => [0x9a7a52, 0x9a7a52, 0xd8c7a4, 0xd8c7a4, 0xffb830],
+        EnemyKind.CuSith => [0x8189a0, 0x8189a0, 0x434d58, 0xd9cfb0, 0xff3a2a],
+        EnemyKind.Villager => [0x5a6b8a, 0x5a6b8a, 0x3a2a20, 0xd9b08c, 0xb0201e],
         _ => [0x4a4f5a, 0x34303c, 0x8189a0, 0x9a1626, 0xc9a227],
     };
 
