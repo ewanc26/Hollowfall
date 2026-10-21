@@ -467,8 +467,8 @@ public partial class Menus : CanvasLayer
     private Control BuildStanding()
     {
         var (screen, col) = Panel(820, 640);
-        col.AddChild(Heading("STANDING"));
-        var sub = new Label { Text = "How the dungeon's peoples regard you. Hurt a creature in front of its kin and they will remember.", HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(740, 0) };
+        col.AddChild(Heading(_loc.Tr("standing.title")));
+        var sub = new Label { Text = _loc.Tr("standing.subtitle"), HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(740, 0) };
         sub.AddThemeColorOverride("font_color", new Color(0.7f, 0.7f, 0.75f));
         sub.AddThemeFontSizeOverride("font_size", 18);
         col.AddChild(sub);
@@ -480,7 +480,7 @@ public partial class Menus : CanvasLayer
         scroll.AddChild(_standingList);
 
         var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
         col.AddChild(footer);
         return screen;
     }
@@ -616,7 +616,7 @@ public partial class Menus : CanvasLayer
         var rep = StandingProvider();
         if (rep == null)
         {
-            _standingList.AddChild(new Label { Text = "Nobody here has an opinion of you yet." });
+            _standingList.AddChild(new Label { Text = _loc.Tr("standing.nobody") });
             return;
         }
 
@@ -659,11 +659,11 @@ public partial class Menus : CanvasLayer
         }
 
         var recent = Hollowfall.Core.Relations.StandingBoard.RecentLines(rep);
-        var recentHead = new Label { Text = "RECENT" };
+        var recentHead = new Label { Text = _loc.Tr("standing.recent") };
         recentHead.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 1f));
         recentHead.AddThemeFontSizeOverride("font_size", 17);
         _standingList.AddChild(recentHead);
-        if (recent.Count == 0) _standingList.AddChild(new Label { Text = "Nothing yet." });
+        if (recent.Count == 0) _standingList.AddChild(new Label { Text = _loc.Tr("standing.nothingYet") });
         foreach (var line in recent)
         {
             var l = new Label { Text = line };
