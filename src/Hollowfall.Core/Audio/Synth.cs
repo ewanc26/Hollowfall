@@ -67,7 +67,7 @@ public static class Synth
     /// <summary>Length of the looping ambience, in seconds. Every tone in it has a whole number of cycles in this time.</summary>
     public const double AmbienceSeconds = 4.0;
 
-    /// <summary>Lengths of the looping fire crackle and cat purr, in seconds. Both fit whole cycles into the loop, so they join without a click.</summary>
+    /// <summary>Lengths of the looping fire crackle and cat purr, in seconds. The purr's tones fit whole cycles into the loop, and the crackle's pops wrap round the end of it, so neither joins with a click (a test checks the step across each join).</summary>
     public const double CrackleSeconds = 3.0;
 
     public const double PurrSeconds = 1.6;

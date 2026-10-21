@@ -6,7 +6,7 @@ A cat called **Aodhán** lives beside one fire pit in each world. He is named fo
 
 ## Rules the game follows
 
-- Irish text is written with the **fada** (acute accent): á é í ó ú, and capitals Á É Í Ó Ú. The two game fonts (Chakra Petch and Rajdhani) draw all ten; a smoke check and a unit test verify it.
+- Irish text is written with the **fada** (acute accent): á é í ó ú, and capitals Á É Í Ó Ú. The game's fonts (Chakra Petch and Rajdhani) draw all ten; the smoke test checks every one with `HasChar` in all four faces the game loads, and the renders were looked at. The dialogue validator also accepts the capitals.
 - **Mutations** (séimhiú, lenition, and urú, eclipsis) are only used where a dictionary shows them: *tine bheag* (feminine noun, so the adjective is lenited), *oíche mhaith*, *a chara* (vocative), *maith thú*. No urú form appears, because none could be checked in context.
 - Every Irish line is followed by its **English** in brackets.
 - The name is written **Aodhán** exactly (not Aodhan, not Aidan) and is spoken by nobody else. A unit test fails if it appears anywhere in code except the cat's own dialogue file, or in any doc except this one and `docs/story.md`.

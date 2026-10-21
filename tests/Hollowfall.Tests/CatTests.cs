@@ -261,6 +261,33 @@ public class CatDialogueTests
     }
 
     [Fact]
+    public void WarmthIsOncePerRunNotOncePerSeedSoAFreshLaunchCanSitAgain()
+    {
+        // The file remembers that you sat before (a flag and three visits), but this run has not had the warmth yet.
+        var cat = NewEncounter([CatDialogue.Sat, CatDialogue.Petted], 1);
+        var vitals = Vitals();
+        vitals.Damage(60);
+        double before = vitals.Health;
+
+        var runner = cat.Begin(vitals);
+        Assert.Equal("back", runner.NodeId);
+        int sit = runner.Choices.ToList().FindIndex(c => c.Text.StartsWith("Sit down"));
+        Assert.True(sit >= 0, "Sit is offered on a new run even though a flag says you sat last time");
+        Assert.True(cat.Choose(sit, vitals));
+        Assert.True(cat.GiftTaken);
+        Assert.Equal(0, vitals.HardDamage);
+        Assert.Equal(before + CatEncounter.WarmthHeal, vitals.Health, 6);
+
+        // Within the same run it is not offered again, and nothing more is given.
+        vitals.Damage(20);
+        double hurt = vitals.Health;
+        cat.End();
+        var again = cat.Begin(vitals);
+        Assert.DoesNotContain(again.Choices, c => c.Text.StartsWith("Sit down"));
+        Assert.Equal(hurt, vitals.Health);
+    }
+
+    [Fact]
     public void ReturnVisitsRememberWhatYouDid()
     {
         var cat = NewEncounter();

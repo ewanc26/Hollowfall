@@ -23,6 +23,7 @@ public static class CatDialogue
     // ---- flags he remembers (short ids, saved with the story progress) ----
     public const string Blinked = "blinked";
     public const string Petted = "petted";
+    /// <summary>Remembered for flavour only (he says more warmly that you sat with him); whether warmth can be had again is the run's, not the file's.</summary>
     public const string Sat = "sat";
     public const string Thanked = "thanked";
     public const string HeardSmall = "heardSmall";
@@ -43,7 +44,7 @@ public static class CatDialogue
         DialogueEffect visit = DialogueEffect.CountVisit();
         var hubChoices = new[]
         {
-            C("Sit down by the fire.", "sit", Not(Flag(Sat))),
+            C("Sit down by the fire.", "sit", Not(GiftGiven)),
             C("Stroke him.", "pet"),
             C("Thank him.", "thanks", Not(Flag(Thanked))),
             C("Say goodbye.", "bye"),
@@ -87,7 +88,7 @@ public static class CatDialogue
                     L("Maith thú.\n(Good for you.)"),
                 ],
                 [
-                    C("Sit beside him.", "sit", Not(Flag(Sat))),
+                    C("Sit beside him.", "sit", Not(GiftGiven)),
                     C("Look at the fire.", "fire"),
                     C("Say goodbye.", "bye"),
                 ],
@@ -110,7 +111,7 @@ public static class CatDialogue
                     L("Tá fáilte romhat.\n(You are welcome.)"),
                 ],
                 [
-                    C("Sit down by the fire.", "sit", Not(Flag(Sat))),
+                    C("Sit down by the fire.", "sit", Not(GiftGiven)),
                     C("Stroke him.", "pet"),
                     C("Say goodbye.", "bye"),
                 ],
@@ -121,10 +122,10 @@ public static class CatDialogue
                     L("A chara!\n(Friend!)"),
                     L("(He remembers your hand, and puts his head under it without being asked.)", Flag(Petted)),
                     L("Suigh láimh liom.\n(Sit beside me.)", Flag(Sat)),
-                    L("Fáilte romhat.\n(Welcome.)", Not(Flag(Sat))),
+                    L("Fáilte romhat.\n(Welcome.)", Not(GiftGiven)),
                 ],
                 [
-                    C("Sit down by the fire.", "sit", Not(Flag(Sat))),
+                    C("Sit down by the fire.", "sit", Not(GiftGiven)),
                     C("Stroke him.", "pet"),
                     C("Look at the fire.", "fire"),
                     C("Say goodbye.", "bye"),
@@ -136,7 +137,7 @@ public static class CatDialogue
                     L("Tine bheag. Teas na tine. Suigh láimh liom, a chara.\n(A little fire. The warmth of the fire. Sit beside me, friend.)"),
                 ],
                 [
-                    C("Sit beside him.", "sit", Not(Flag(Sat))),
+                    C("Sit beside him.", "sit", Not(GiftGiven)),
                     C("Stroke him.", "pet"),
                     C("Say goodbye.", "bye_night"),
                 ],

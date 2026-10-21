@@ -48,6 +48,20 @@ public class SynthTests
         Assert.True(join <= biggest * 1.05, $"the loop join steps {join:F4} against a normal maximum of {biggest:F4}");
     }
 
+    [Theory]
+    [InlineData(SoundId.FireCrackle)]
+    [InlineData(SoundId.CatPurr)]
+    public void TheOtherLoopsJoinWithoutAClickToo(SoundId id)
+    {
+        Assert.True(Synth.Loops(id));
+        var s = Synth.Render(id);
+        double join = Math.Abs(s[0] - s[^1]);
+        double biggest = 0;
+        for (int i = 1; i < s.Length; i++) biggest = Math.Max(biggest, Math.Abs(s[i] - s[i - 1]));
+        Assert.True(join <= biggest * 1.05, $"{id}: the loop join steps {join:F4} against a normal maximum of {biggest:F4}");
+        Assert.True(Math.Abs(s[0]) < 0.05f && Math.Abs(s[^1]) < 0.05f, $"{id} starts and ends near silence");
+    }
+
     [Fact]
     public void OnlyTheAmbienceLoops() =>
         Assert.Equal([SoundId.Ambience, SoundId.FireCrackle, SoundId.CatPurr], Enum.GetValues<SoundId>().Where(Synth.Loops));
