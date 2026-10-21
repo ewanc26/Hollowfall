@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Ui;
 
@@ -25,7 +26,11 @@ public partial class Menus : CanvasLayer
 {
     private const double ListenSeconds = 6;
 
+    // Gàidhlig labels run longer than English ones, so the action column is wide enough for "Gluais air adhart (Move forward)".
+    private const float ActionColumn = 310, BindingColumn = 210;
+
     private readonly GameSettings _settings;
+    private readonly Loc _loc;
     private readonly string _savePath;
     private readonly Dictionary<MenuScreen, Control> _screens = [];
     private readonly Dictionary<(GameAction, Slot), Button> _bindingButtons = [];
@@ -37,10 +42,11 @@ public partial class Menus : CanvasLayer
     private VBoxContainer _journalList = null!;
     private Label _journalTitle = null!;
 
-    public Menus(GameSettings settings, string savePath)
+    public Menus(GameSettings settings, string savePath, Loc? loc = null)
     {
         _settings = settings;
         _savePath = savePath;
+        _loc = loc ?? new Loc(settings.Language);
     }
 
     /// <summary>Supplies the controller style to show on binding buttons; set by the game from the connected pad.</summary>
@@ -77,6 +83,15 @@ public partial class Menus : CanvasLayer
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
+        _root = root;
+        BuildScreens();
+    }
+
+    private Control _root = null!;
+
+    private void BuildScreens()
+    {
+        _bindingButtons.Clear();
         _screens[MenuScreen.Title] = BuildTitle();
         _screens[MenuScreen.Pause] = BuildPause();
         _screens[MenuScreen.Controls] = BuildControls();
@@ -85,7 +100,26 @@ public partial class Menus : CanvasLayer
         foreach (var s in _screens.Values)
         {
             s.Visible = false;
-            root.AddChild(s);
+            _root.AddChild(s);
+        }
+    }
+
+    /// <summary>Builds every screen again in the current language and shows the one that was open, so a language change is seen at once.</summary>
+    public void RebuildScreens()
+    {
+        var showing = _current;
+        CancelListening();
+        foreach (var old in _screens.Values.ToList())
+        {
+            old.Visible = false;
+            old.QueueFree();
+        }
+        BuildScreens();
+        if (showing != MenuScreen.None)
+        {
+            foreach (var (s, c) in _screens) c.Visible = s == showing;
+            if (showing == MenuScreen.Journal) RefreshJournal();
+            FocusFirst(_screens[showing]);
         }
     }
 
@@ -250,7 +284,7 @@ public partial class Menus : CanvasLayer
             col.AddChild(new TextureRect { Texture = logo, CustomMinimumSize = new Vector2(400, 90), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
         else
             col.AddChild(Heading("HOLLOWFALL", 48));
-        col.AddChild(new Label { Text = "A procedural dungeon crawler.\nMove fast. Heal by hurting things.", HorizontalAlignment = HorizontalAlignment.Center });
+        col.AddChild(new Label { Text = _loc.Tr("title.tagline"), HorizontalAlignment = HorizontalAlignment.Center });
 
         // Every seed names its dungeon, the way the old maps do.
         var dungeonName = new Label { HorizontalAlignment = HorizontalAlignment.Center };
@@ -259,20 +293,33 @@ public partial class Menus : CanvasLayer
         dungeonName.AddThemeColorOverride("font_color", new Color(0.85f, 0.6f, 0.35f));
         col.AddChild(dungeonName);
 
+        // In Gàidhlig and Bilingual the dungeon also has a Gàidhlig name under its English one.
+        var gaelicName = new Label { HorizontalAlignment = HorizontalAlignment.Center, Visible = false };
+        gaelicName.AddThemeFontSizeOverride("font_size", 22);
+        gaelicName.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 1f));
+        col.AddChild(gaelicName);
+
         // The world is named by its seed: type one to share or revisit a dungeon, or roll a random one.
         var seedRow = new HBoxContainer();
         seedRow.AddThemeConstantOverride("separation", 8);
-        seedRow.AddChild(new Label { Text = "Seed" });
-        var seedEdit = new LineEdit { Text = _settings.Seed, MaxLength = SeedWords.MaxLength, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(240, 0), PlaceholderText = "any text or number" };
+        seedRow.AddChild(new Label { Text = _loc.Tr("title.seed") });
+        var seedEdit = new LineEdit { Text = _settings.Seed, MaxLength = SeedWords.MaxLength, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(240, 0), PlaceholderText = _loc.Tr("title.seedHint") };
         seedRow.AddChild(seedEdit);
-        void ShowName() => dungeonName.Text = StoryPlan.TitleFor(TerrainGenerator.SeedFromString(SeedWords.Clean(seedEdit.Text)));
+        void ShowName()
+        {
+            long seed = TerrainGenerator.SeedFromString(SeedWords.Clean(seedEdit.Text));
+            dungeonName.Text = StoryPlan.TitleFor(seed);
+            string? gaelic = _loc.DungeonName(seed);
+            gaelicName.Text = gaelic ?? "";
+            gaelicName.Visible = gaelic != null;
+        }
         seedEdit.TextChanged += _ => ShowName();
         ShowName();
-        var dice = MakeButton("Random", () => seedEdit.Text = SeedWords.From((ulong)System.Random.Shared.NextInt64()));
+        var dice = MakeButton(_loc.Tr("title.random"), () => seedEdit.Text = SeedWords.From((ulong)System.Random.Shared.NextInt64()));
         seedRow.AddChild(dice);
         col.AddChild(seedRow);
 
-        col.AddChild(MakeButton("Play", () =>
+        col.AddChild(MakeButton(_loc.Tr("menu.play"), () =>
         {
             string seed = SeedWords.Clean(seedEdit.Text);
             seedEdit.Text = seed;
@@ -286,30 +333,30 @@ public partial class Menus : CanvasLayer
             Close();
             ResumeRequested?.Invoke();
         }));
-        col.AddChild(MakeButton("Controls", () => OpenFrom(MenuScreen.Title, MenuScreen.Controls)));
-        col.AddChild(MakeButton("Settings", () => OpenFrom(MenuScreen.Title, MenuScreen.Settings)));
-        col.AddChild(MakeButton("Quit", () => QuitRequested?.Invoke()));
+        col.AddChild(MakeButton(_loc.Tr("menu.controls"), () => OpenFrom(MenuScreen.Title, MenuScreen.Controls)));
+        col.AddChild(MakeButton(_loc.Tr("menu.settings"), () => OpenFrom(MenuScreen.Title, MenuScreen.Settings)));
+        col.AddChild(MakeButton(_loc.Tr("menu.quit"), () => QuitRequested?.Invoke()));
         return screen;
     }
 
     private Control BuildPause()
     {
         var (screen, col) = Panel(420, 470);
-        col.AddChild(Heading("PAUSED"));
-        col.AddChild(MakeButton("Resume", () => { Close(); ResumeRequested?.Invoke(); }));
-        col.AddChild(MakeButton("Respawn", () => { Close(); RespawnRequested?.Invoke(); }));
-        col.AddChild(MakeButton("Journal", () => OpenFrom(MenuScreen.Pause, MenuScreen.Journal)));
-        col.AddChild(MakeButton("Main menu", () => MainMenuRequested?.Invoke()));
-        col.AddChild(MakeButton("Controls", () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
-        col.AddChild(MakeButton("Settings", () => OpenFrom(MenuScreen.Pause, MenuScreen.Settings)));
-        col.AddChild(MakeButton("Quit", () => QuitRequested?.Invoke()));
+        col.AddChild(Heading(_loc.Tr("pause.title")));
+        col.AddChild(MakeButton(_loc.Tr("pause.resume"), () => { Close(); ResumeRequested?.Invoke(); }));
+        col.AddChild(MakeButton(_loc.Tr("pause.respawn"), () => { Close(); RespawnRequested?.Invoke(); }));
+        col.AddChild(MakeButton(_loc.Tr("pause.journal"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Journal)));
+        col.AddChild(MakeButton(_loc.Tr("pause.mainMenu"), () => MainMenuRequested?.Invoke()));
+        col.AddChild(MakeButton(_loc.Tr("menu.controls"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
+        col.AddChild(MakeButton(_loc.Tr("menu.settings"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Settings)));
+        col.AddChild(MakeButton(_loc.Tr("menu.quit"), () => QuitRequested?.Invoke()));
         return screen;
     }
 
     private Control BuildJournal()
     {
         var (screen, col) = Panel(820, 600);
-        col.AddChild(Heading("JOURNAL"));
+        col.AddChild(Heading(_loc.Tr("journal.title")));
         _journalTitle = new Label { HorizontalAlignment = HorizontalAlignment.Center };
         _journalTitle.AddThemeColorOverride("font_color", new Color(0.85f, 0.6f, 0.35f));
         col.AddChild(_journalTitle);
@@ -321,7 +368,7 @@ public partial class Menus : CanvasLayer
         scroll.AddChild(_journalList);
 
         var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
         col.AddChild(footer);
         return screen;
     }
@@ -330,12 +377,12 @@ public partial class Menus : CanvasLayer
     private void RefreshJournal()
     {
         var (title, notes) = JournalProvider();
-        _journalTitle.Text = notes.Count == 0 ? title : $"{title}   -   {notes.Count} {(notes.Count == 1 ? "note" : "notes")} read";
+        _journalTitle.Text = notes.Count == 0 ? title : _loc.Tr("journal.notesRead", title, notes.Count);
         foreach (var child in _journalList.GetChildren()) child.QueueFree();
 
         if (notes.Count == 0)
         {
-            var empty = new Label { Text = "Nothing read yet. Notes lie against the walls of the dungeon: walk up to a scroll and use it.", AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(720, 0) };
+            var empty = new Label { Text = _loc.Tr("journal.empty"), AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(720, 0) };
             empty.AddThemeColorOverride("font_color", new Color(0.7f, 0.7f, 0.75f));
             _journalList.AddChild(empty);
             return;
@@ -361,9 +408,9 @@ public partial class Menus : CanvasLayer
 
     private Control BuildControls()
     {
-        var (screen, col) = Panel(760, 620);
-        col.AddChild(Heading("CONTROLS"));
-        col.AddChild(new Label { Text = "Click a binding, then press the new key, button or stick direction. Esc cancels.", HorizontalAlignment = HorizontalAlignment.Center });
+        var (screen, col) = Panel(900, 620);
+        col.AddChild(Heading(_loc.Tr("controls.title")));
+        col.AddChild(new Label { Text = _loc.Tr("controls.help"), HorizontalAlignment = HorizontalAlignment.Center });
 
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 400), SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         col.AddChild(scroll);
@@ -372,14 +419,14 @@ public partial class Menus : CanvasLayer
         scroll.AddChild(list);
 
         var header = new HBoxContainer();
-        header.AddChild(new Label { Text = "Action", CustomMinimumSize = new Vector2(220, 0) });
-        header.AddChild(new Label { Text = "Keyboard / mouse", CustomMinimumSize = new Vector2(230, 0) });
-        header.AddChild(new Label { Text = "Gamepad" });
+        header.AddChild(new Label { Text = _loc.Tr("controls.colAction"), CustomMinimumSize = new Vector2(ActionColumn, 0) });
+        header.AddChild(new Label { Text = _loc.Tr("controls.colKeys"), CustomMinimumSize = new Vector2(BindingColumn + 8, 0) });
+        header.AddChild(new Label { Text = _loc.Tr("controls.colPad") });
         list.AddChild(header);
 
         foreach (var group in Enum.GetValues<ActionGroup>())
         {
-            var title = new Label { Text = group.ToString().ToUpperInvariant() };
+            var title = new Label { Text = _loc.Tr(InterfaceStrings.GroupKey(group)) };
             title.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 1f));
             list.AddChild(title);
 
@@ -387,11 +434,11 @@ public partial class Menus : CanvasLayer
             {
                 var row = new HBoxContainer();
                 row.AddThemeConstantOverride("separation", 8);
-                row.AddChild(new Label { Text = ActionInfo.Label(action), CustomMinimumSize = new Vector2(220, 0) });
+                row.AddChild(new Label { Text = ActionLabel(action), CustomMinimumSize = new Vector2(ActionColumn, 0) });
 
                 foreach (var slot in new[] { Slot.KeyboardMouse, Slot.Gamepad })
                 {
-                    var button = MakeButton("", () => BeginListening(action, slot), 220);
+                    var button = MakeButton("", () => BeginListening(action, slot), BindingColumn);
                     if (slot == Slot.KeyboardMouse && ActionInfo.AnalogOnlyOnGamepad(action)) button.Disabled = true;
                     _bindingButtons[(action, slot)] = button;
                     row.AddChild(button);
@@ -405,12 +452,12 @@ public partial class Menus : CanvasLayer
 
         var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         footer.AddThemeConstantOverride("separation", 12);
-        footer.AddChild(MakeButton("Reset to defaults", () =>
+        footer.AddChild(MakeButton(_loc.Tr("controls.resetAll"), () =>
         {
             _settings.Bindings.ResetToDefaults();
-            Changed("Bindings reset to defaults.");
+            Changed(_loc.Tr("controls.resetDone"));
         }));
-        footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
         col.AddChild(footer);
 
         RefreshBindingButtons();
@@ -430,36 +477,44 @@ public partial class Menus : CanvasLayer
 
     private Control BuildSettings()
     {
-        var (screen, col) = Panel(620, 520);
-        col.AddChild(Heading("SETTINGS"));
+        var (screen, col) = Panel(640, 580);
+        col.AddChild(Heading(_loc.Tr("settings.title")));
 
-        Slider(col, "Mouse sensitivity", GameSettings.MouseSensitivityRange.Min, GameSettings.MouseSensitivityRange.Max, 0.0001,
+        AddLanguageChooser(col);
+
+        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 380), SizeFlagsVertical = Control.SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled, FollowFocus = true };
+        col.AddChild(scroll);
+        var list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        list.AddThemeConstantOverride("separation", 10);
+        scroll.AddChild(list);
+
+        Slider(list, _loc.Tr("settings.mouseSensitivity"), GameSettings.MouseSensitivityRange.Min, GameSettings.MouseSensitivityRange.Max, 0.0001,
             () => _settings.MouseSensitivity, v => _settings.MouseSensitivity = v, v => $"{v / GameSettings.MouseSensitivityRange.Default:P0}");
-        Slider(col, "Gamepad look speed", GameSettings.PadLookSpeedRange.Min, GameSettings.PadLookSpeedRange.Max, 0.1,
+        Slider(list, _loc.Tr("settings.padLookSpeed"), GameSettings.PadLookSpeedRange.Min, GameSettings.PadLookSpeedRange.Max, 0.1,
             () => _settings.PadLookSpeed, v => _settings.PadLookSpeed = v, v => $"{v:F1} rad/s");
-        Slider(col, "Stick dead zone", GameSettings.DeadzoneRange.Min, GameSettings.DeadzoneRange.Max, 0.01,
+        Slider(list, _loc.Tr("settings.deadzone"), GameSettings.DeadzoneRange.Min, GameSettings.DeadzoneRange.Max, 0.01,
             () => _settings.Deadzone, v => _settings.Deadzone = v, v => $"{v:P0}");
-        Slider(col, "Field of view", GameSettings.FovRange.Min, GameSettings.FovRange.Max, 1,
+        Slider(list, _loc.Tr("settings.fov"), GameSettings.FovRange.Min, GameSettings.FovRange.Max, 1,
             () => _settings.FieldOfView, v => _settings.FieldOfView = v, v => $"{v:F0}°");
-        Slider(col, "Interface size", UiScaling.UserRange.Min, UiScaling.UserRange.Max, 0.05,
+        Slider(list, _loc.Tr("settings.uiSize"), UiScaling.UserRange.Min, UiScaling.UserRange.Max, 0.05,
             () => _settings.UiScale, v => _settings.UiScale = v, v => $"{v * 100:F0}%");
-        CheckBox(col, "Scale the interface with the window", () => _settings.AutoUiScale, v => _settings.AutoUiScale = v);
-        Slider(col, "Master volume", GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
+        CheckBox(list, _loc.Tr("settings.autoScale"), () => _settings.AutoUiScale, v => _settings.AutoUiScale = v);
+        Slider(list, _loc.Tr("settings.master"), GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
             () => _settings.MasterVolume, v => _settings.MasterVolume = v, v => $"{v * 100:F0}%");
-        Slider(col, "Effects volume", GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
+        Slider(list, _loc.Tr("settings.effects"), GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
             () => _settings.EffectsVolume, v => _settings.EffectsVolume = v, v => $"{v * 100:F0}%");
-        Slider(col, "Ambience volume", GameSettings.AmbienceRange.Min, GameSettings.AmbienceRange.Max, 0.05,
+        Slider(list, _loc.Tr("settings.ambience"), GameSettings.AmbienceRange.Min, GameSettings.AmbienceRange.Max, 0.05,
             () => _settings.AmbienceVolume, v => _settings.AmbienceVolume = v, v => $"{v * 100:F0}%");
-        Slider(col, "Music volume", GameSettings.MusicRange.Min, GameSettings.MusicRange.Max, 0.05,
+        Slider(list, _loc.Tr("settings.music"), GameSettings.MusicRange.Min, GameSettings.MusicRange.Max, 0.05,
             () => _settings.MusicVolume, v => _settings.MusicVolume = v, v => $"{v * 100:F0}%");
-        Slider(col, "Render distance", GameSettings.ViewRadiusRange.Min, GameSettings.ViewRadiusRange.Max, 1,
-            () => _settings.ViewRadius, v => _settings.ViewRadius = (int)v, v => $"{v:F0} chunks");
+        Slider(list, _loc.Tr("settings.viewDistance"), GameSettings.ViewRadiusRange.Min, GameSettings.ViewRadiusRange.Max, 1,
+            () => _settings.ViewRadius, v => _settings.ViewRadius = (int)v, v => _loc.Tr("settings.chunks", $"{v:F0}"));
 
         var prompts = new HBoxContainer();
         prompts.AddThemeConstantOverride("separation", 10);
-        prompts.AddChild(new Label { Text = "Controller prompts", CustomMinimumSize = new Vector2(220, 0) });
+        prompts.AddChild(new Label { Text = _loc.Tr("settings.prompts"), CustomMinimumSize = new Vector2(220, 0) });
         var promptBox = new OptionButton { CustomMinimumSize = new Vector2(220, 0) };
-        foreach (var style in Enum.GetValues<PromptStyle>()) promptBox.AddItem(style == PromptStyle.Auto ? "Auto (follow controller)" : style.ToString(), (int)style);
+        foreach (var style in Enum.GetValues<PromptStyle>()) promptBox.AddItem(style == PromptStyle.Auto ? _loc.Tr("settings.promptsAuto") : style.ToString(), (int)style);
         promptBox.Selected = (int)_settings.ControllerPrompts;
         promptBox.ItemSelected += index =>
         {
@@ -468,20 +523,22 @@ public partial class Menus : CanvasLayer
             RefreshBindingButtons();
         };
         prompts.AddChild(promptBox);
-        col.AddChild(prompts);
+        list.AddChild(prompts);
         _promptBox = promptBox;
 
-        CheckBox(col, "Invert mouse Y", () => _settings.InvertMouseY, v => _settings.InvertMouseY = v);
-        CheckBox(col, "Invert gamepad Y", () => _settings.InvertPadY, v => _settings.InvertPadY = v);
+        CheckBox(list, _loc.Tr("settings.invertMouse"), () => _settings.InvertMouseY, v => _settings.InvertMouseY = v);
+        CheckBox(list, _loc.Tr("settings.invertPad"), () => _settings.InvertPadY, v => _settings.InvertPadY = v);
 
         var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         footer.AddThemeConstantOverride("separation", 12);
-        footer.AddChild(MakeButton("Reset", () =>
+        footer.AddChild(MakeButton(_loc.Tr("menu.reset"), () =>
         {
             var keep = _settings.Bindings.Clone();
             string seed = _settings.Seed; // Reset is for options; the chosen world stays
+            var language = _settings.Language; // and so does the language you chose
             _settings.ResetToDefaults();
             _settings.Seed = seed;
+            _settings.Language = language;
             _settings.Bindings.ResetToDefaults();
             foreach (var a in Enum.GetValues<GameAction>())
                 foreach (var slot in new[] { Slot.KeyboardMouse, Slot.Gamepad })
@@ -498,10 +555,41 @@ public partial class Menus : CanvasLayer
             old.QueueFree();
             Open(MenuScreen.Settings);
         }));
-        footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
         col.AddChild(footer);
         return screen;
     }
+
+    private string ActionLabel(GameAction action) => _loc.Tr(InterfaceStrings.ActionKey(action));
+
+    /// <summary>The first row of Settings: the language, each named in itself. Choosing one rebuilds every screen at once.</summary>
+    private void AddLanguageChooser(VBoxContainer parent)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 10);
+        row.AddChild(new Label { Text = _loc.Tr("settings.language"), CustomMinimumSize = new Vector2(220, 0) });
+        var box = new OptionButton { CustomMinimumSize = new Vector2(280, 0) };
+        foreach (var language in Enum.GetValues<Language>()) box.AddItem(Languages.NativeName(language), (int)language);
+        box.Selected = (int)_settings.Language;
+        box.ItemSelected += index =>
+        {
+            var chosen = (Language)box.GetItemId((int)index);
+            if (chosen == _settings.Language) return;
+            _settings.Language = chosen;
+            _loc.Language = chosen;
+            SettingsChanged?.Invoke();
+            // This box belongs to the screen being rebuilt, so wait until the event has finished.
+            Callable.From(RebuildScreens).CallDeferred();
+        };
+        row.AddChild(box);
+        parent.AddChild(row);
+        _languageBox = box;
+    }
+
+    private OptionButton? _languageBox;
+
+    /// <summary>The Language chooser on the Settings screen (for tests).</summary>
+    public OptionButton? LanguageBox => _languageBox;
 
     private void Slider(VBoxContainer parent, string label, double min, double max, double step, Func<double> get, Action<double> set, Func<double, string> show)
     {
@@ -539,8 +627,8 @@ public partial class Menus : CanvasLayer
         CancelListening();
         _listening = (action, slot);
         _listenLeft = ListenSeconds;
-        _bindingButtons[(action, slot)].Text = slot == Slot.Gamepad ? "press a button or move a stick…" : "press a key or click…";
-        _message.Text = $"Binding \"{ActionInfo.Label(action)}\". Esc cancels.";
+        _bindingButtons[(action, slot)].Text = slot == Slot.Gamepad ? _loc.Tr("controls.listenPad") : _loc.Tr("controls.listenKey");
+        _message.Text = _loc.Tr("controls.binding", ActionLabel(action));
     }
 
     private void CancelListening()
@@ -558,14 +646,14 @@ public partial class Menus : CanvasLayer
         _listening = null;
         string message = outcome switch
         {
-            RebindOutcome.Ok => $"{ActionInfo.Label(action)} is now {BindingNames.Display(binding)}.",
+            RebindOutcome.Ok => _loc.Tr("controls.now", ActionLabel(action), BindingNames.Display(binding)),
             RebindOutcome.Swapped when conflict is { } other && _settings.Bindings.Get(other, Hollowfall.Core.Input.BindingMap.SlotOf(binding)) == null =>
-                $"{BindingNames.Display(binding)} was used by {ActionInfo.Label(other)}, which is now unbound.",
-            RebindOutcome.Swapped => $"{BindingNames.Display(binding)} was used by {ActionInfo.Label(conflict ?? action)}; the two swapped.",
-            RebindOutcome.InUse => $"{BindingNames.Display(binding)} is used by {ActionInfo.Label(conflict ?? action)}, which cannot take another input. Nothing changed.",
-            RebindOutcome.Reserved => $"{BindingNames.Display(binding)} cannot be used for {ActionInfo.Label(action)}.",
-            RebindOutcome.WrongKind => $"{ActionInfo.Label(action)} cannot use {BindingNames.Display(binding)}.",
-            _ => "That binding is already set.",
+                _loc.Tr("controls.swapUnbound", BindingNames.Display(binding), ActionLabel(other)),
+            RebindOutcome.Swapped => _loc.Tr("controls.swapped", BindingNames.Display(binding), ActionLabel(conflict ?? action)),
+            RebindOutcome.InUse => _loc.Tr("controls.inUse", BindingNames.Display(binding), ActionLabel(conflict ?? action)),
+            RebindOutcome.Reserved => _loc.Tr("controls.reserved", BindingNames.Display(binding), ActionLabel(action)),
+            RebindOutcome.WrongKind => _loc.Tr("controls.wrongKind", ActionLabel(action), BindingNames.Display(binding)),
+            _ => _loc.Tr("controls.same"),
         };
         Changed(message);
     }
@@ -584,7 +672,7 @@ public partial class Menus : CanvasLayer
         {
             if (slot == Slot.KeyboardMouse && ActionInfo.AnalogOnlyOnGamepad(action))
             {
-                button.Text = "mouse";
+                button.Text = _loc.Tr("controls.mouse");
                 button.Icon = Glyphs.Get("mouse");
                 continue;
             }

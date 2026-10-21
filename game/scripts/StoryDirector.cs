@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Story;
 
 namespace Hollowfall.Game;
@@ -54,13 +55,16 @@ public sealed class StoryDirector
     /// <summary>The label of the menu button, for the hint on a page.</summary>
     public Func<string> MenuLabel { get; set; } = () => "Menu";
 
+    /// <summary>The words shown, in the player's language (set by the host).</summary>
+    public Loc Loc { get; set; } = new();
+
     public IReadOnlyList<NoteSpot> Spots => _spots;
 
     public bool IsRead(string noteId) => _progress.IsRead(_seedName, noteId);
 
     public int NotesRead => _progress.ReadIds(_seedName).Count;
 
-    private string CloseHint => $"{InteractLabel()} or {MenuLabel()} to close";
+    private string CloseHint => Loc.Tr("prompt.closeHint", InteractLabel(), MenuLabel());
 
     // ---- notes --------------------------------------------------------------------------------
 
@@ -79,7 +83,7 @@ public sealed class StoryDirector
         }
 
         var near = NotePlacer.Nearest(_spots, feet.X, feet.Y, feet.Z);
-        _ui.SetPrompt(near is { } n ? $"{InteractLabel()}  read: {n.Note.Title}" : null);
+        _ui.SetPrompt(near is { } n ? Loc.Tr("prompt.read", InteractLabel(), n.Note.Title) : null);
         if (near is { } spot && actions.Interact)
         {
             Read(spot);
@@ -97,7 +101,10 @@ public sealed class StoryDirector
         _ui.ShowNote(spot.Note, FloorLabel(spot.Note.Floor), CloseHint);
     }
 
-    private string FloorLabel(int floor) => _plan.CardFor(floor) is { } card ? card.Title : $"Floor {floor + 1}";
+    private string FloorLabel(int floor) => _plan.CardFor(floor) is { } card ? Localised(card).Title : Loc.Tr("hud.floor", floor + 1, _plan.FloorCount);
+
+    /// <summary>A floor card with its name in the player's language where there is one (the epigraph stays English).</summary>
+    private FloorCard Localised(FloorCard card) => card with { Name = Loc.CardName(card.Name) };
 
     /// <summary>What the journal lists: every note read on this seed, with the floor it was found on.</summary>
     public IReadOnlyList<(string Floor, StoryNote Note)> Journal() =>
@@ -123,7 +130,7 @@ public sealed class StoryDirector
     {
         if (floor < 0 || !_cardsShown.Add(floor) || _plan.CardFor(floor) is not { } card) return;
         // After a floor is finished its result is up for a moment; let it have the screen first.
-        _ui.ShowCard(card, _cardsShown.Count > 1 ? 1.5 : 0.4);
+        _ui.ShowCard(Localised(card), _cardsShown.Count > 1 ? 1.5 : 0.4);
         _play(SoundId.TitleCard);
     }
 
@@ -143,12 +150,15 @@ public sealed class StoryDirector
                 _ui.ShowCaption(_plan.FloorCompleteLine(f.Result.Overall), 5);
                 break;
             case PlayerDied:
-                _ui.ShowCaption(_plan.DeathLine(Math.Max(_lastFloor, 0), _deaths++), 3600);
+                _ui.ShowCaption(DeathCaption(_plan.DeathLine(Math.Max(_lastFloor, 0), _deaths++)), 3600);
                 break;
         }
     }
 
     private int _lastFloor;
+
+    /// <summary>In Gàidhlig and Bilingual a short Gàidhlig line goes above the death line, which stays in English.</summary>
+    private string DeathCaption(string line) => Loc.GaelicOf("story.deathHead") is { } head ? Loc.Tr("story.deathHead") + "\n" + line : line;
 
     /// <summary>Called by the host when the player respawns, to clear the death line.</summary>
     public void OnRespawn() => _ui.ClearCaption();

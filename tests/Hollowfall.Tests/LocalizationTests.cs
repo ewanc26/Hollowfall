@@ -132,6 +132,7 @@ public class LocTableTests(ITestOutputHelper output)
             foreach (Match m in call.Matches(File.ReadAllText(file)))
                 used.Add(m.Groups[1].Value);
 
+        Assert.NotEmpty(used);
         foreach (var key in used) Assert.True(LocTable.Has(key), $"the code asks for '{key}', which has no table entry");
     }
 

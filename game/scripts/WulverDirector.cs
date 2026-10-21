@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Story.Dialogue;
 
@@ -31,6 +32,9 @@ public sealed class WulverDirector
     /// <summary>The label of the menu button (set by the host).</summary>
     public Func<string> MenuLabel { get; set; } = () => "Menu";
 
+    /// <summary>The words shown, in the player's language (set by the host). His short Gàidhlig lines follow it.</summary>
+    public Loc Loc { get; set; } = new();
+
     /// <summary>How the player is doing, for his answers (set by the host).</summary>
     public Func<WulverFacts> Facts { get; set; } = () => default;
 
@@ -60,6 +64,7 @@ public sealed class WulverDirector
     public PlayerActions Filter(PlayerActions actions, Vec3 feet, bool alive)
     {
         if (!alive || _ui.Modal) return actions;
+        _encounter.Language = Loc.Language;
 
         // He notices you as you come up the hill and greets you once, without a key press.
         if (_encounter.Approach(feet.X, feet.Y, feet.Z) is { } greeting)
@@ -70,7 +75,7 @@ public sealed class WulverDirector
         if (!_encounter.IsNear(feet.X, feet.Y, feet.Z)) return actions;
 
         // While his greeting is up the words are the thing to read; the prompt would sit on top of them.
-        _ui.SetPrompt(_ui.Speaking ? null : $"{InteractLabel()}  speak");
+        _ui.SetPrompt(_ui.Speaking ? null : Loc.Tr("prompt.speak", InteractLabel()));
         if (actions.Interact)
         {
             Talk();
@@ -82,13 +87,14 @@ public sealed class WulverDirector
     /// <summary>Opens the conversation at the entry that fits the player.</summary>
     public void Talk()
     {
+        _encounter.Language = Loc.Language;
         var runner = _encounter.Begin(Facts() with { EndingReached = _progress.EndingSeen(_seedName) }, _vitals, _perks);
         _play(SoundId.WulverGreeting);
         _ui.ClearCaption();
         Save();
         ShowGiftEffects();
         if (runner.Finished) return;
-        _ui.ShowDialogue(WulverDialogue.Name, runner.Text, Labels(runner), Choose, $"{InteractLabel()} or {MenuLabel()} to leave");
+        _ui.ShowDialogue(WulverDialogue.Name, runner.Text, Labels(runner), Choose, Loc.Tr("prompt.leaveHint", InteractLabel(), MenuLabel()));
         var s = _encounter.Spot;
         Framing?.Begin(new Vector3((float)s.X, (float)(s.Y + 1.45), (float)s.Z));
     }
