@@ -5,6 +5,7 @@ using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Localization;
+using Hollowfall.Core.Relations;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Textures;
@@ -72,6 +73,18 @@ public partial class Main : Node3D
     public static string StoryPath => Data.StoryPath;
 
     public MusicDirector Music => _music;
+    public static string RelationsPath => Data.RelationsPath;
+
+    private RelationsStore _relations = new();
+
+    /// <summary>Records where this seed's standings stand now, in relations.json (atomic, bounded). Cheap: it only runs when a tier changes or a floor ends.</summary>
+    private void SaveRelations()
+    {
+        if (Combat?.Sim.Relations is not { } relations) return;
+        _relations.Record(_seedName, relations.Reputation);
+        _relations.TrySave(RelationsPath);
+    }
+
     public StoryDirector Story => _story;
     public WulverDirector? Wulver => _wulver;
     public WulverView? WulverView => _wulverView;
@@ -90,6 +103,7 @@ public partial class Main : Node3D
         _uiSound = null;
         // The window outlives a scene reload too.
         if (GetWindow() is { } window) window.SizeChanged -= ApplyUiScale;
+        if (Combat?.Sim.Relations?.Reputation.RecentChanges.Count > 0) SaveRelations();
     }
 
     public override void _Ready()
@@ -145,8 +159,12 @@ public partial class Main : Node3D
         if (site != null)
         {
             Combat = new CombatView { Name = "Combat" };
-            Combat.Initialize(new CombatSim(World, site), site, _view);
+            var sim = new CombatSim(World, site);
+            sim.EnableRelations(); // the Folk, wanderers and vermin; standing with each is kept per seed in relations.json
+            _relations = RelationsStore.Load(RelationsPath);
+            Combat.Initialize(sim, site, _view);
             Combat.EventRaised += OnCombatEvent;
+            Combat.EventRaised += e => { if (e is ReputationChanged or FloorCompleted) SaveRelations(); };
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => { if (MusicEvents.For(e, site.FloorCount - 1, site.Floors[^1].BossRoom?.Id ?? -1) is { } stinger) _music.Trigger(stinger); };
             Combat.EventRaised += e => _hud?.OnEvent(e);
@@ -236,6 +254,7 @@ public partial class Main : Node3D
         _menus.NewGameRequested += () => Restart(skipTitle: true);
         _menus.MainMenuRequested += () => Restart(skipTitle: false);
         _menus.JournalProvider = () => (plan.Title, _story.Journal());
+        _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
         AddChild(_menus);
         if (_wulver != null)
         {
@@ -268,6 +287,7 @@ public partial class Main : Node3D
                 "controls" => MenuScreen.Controls,
                 "settings" => MenuScreen.Settings,
                 "journal" => MenuScreen.Journal,
+                "standing" => MenuScreen.Standing,
                 _ => MenuScreen.Pause,
             }));
 
@@ -405,6 +425,7 @@ public partial class Main : Node3D
             if (_demo == "captions") RunCaptionDemo();
             if (_demo == "floor") RunFloorDemo();
             if (_demo is { } d && d.StartsWith("wulver")) RunWulverDemo(d);
+            if (_demo == "folk") RunFolkDemo();
             actions = _story.Filter(actions, view.Feet, !dead);
             if (_wulver != null) actions = _wulver.Filter(actions, view.Feet, !dead);
             if (_demo is { } cd && cd.StartsWith("cat")) RunCatDemo(cd);
@@ -499,6 +520,35 @@ public partial class Main : Node3D
         }
         if (_demoFrame == 36) return (view, actions with { ClosePortals = true });
         return (view, actions);
+    }
+
+    /// <summary>
+    /// HOLLOWFALL_DEMO=folk: line the Folk, a Bean Nighe and a hare up in front of the player on the first floor, with the Brownies
+    /// warm toward you, so the models, the pools and the disposition pips can be seen. Toward the end a witnessed kill changes standing.
+    /// </summary>
+    private void RunFolkDemo()
+    {
+        _demoFrame++;
+        var sim = Combat!.Sim;
+        if (_demoFrame == 5)
+        {
+            sim.Relations!.Reputation.Set(Hollowfall.Core.Relations.Faction.Brownies, 40);
+            MovePlayerToFloor(0);
+        }
+        if (_demoFrame == 12)
+        {
+            // Stand at the near edge of the entrance room, looking across it, with the creatures in an arc beyond.
+            var room = Combat.Site.Floors[0].EntranceRoom;
+            var (cx, cy, cz) = Combat.Site.ToWorld(0, room.CenterX, room.CenterZ);
+            _player.PlaceAt(new Vector3(cx + 0.5f, cy, cz + 0.5f + 7.5f), 0);
+            (EnemyKind Kind, double X, double Z)[] line = [(EnemyKind.Brownie, -2.6, 0.6), (EnemyKind.Selkie, -1.3, -1.6), (EnemyKind.BeanNighe, 0.9, 0.2), (EnemyKind.Kelpie, 2.4, -1.4), (EnemyKind.Hare, 0.2, 2.6)];
+            foreach (var (kind, x, z) in line) sim.SpawnEnemy(kind, new Vec3(cx + 0.5 + x, cy, cz + 0.5 + z));
+        }
+        if (_demoFrame == 150)
+        {
+            var brownie = sim.Enemies.FirstOrDefault(e => e.Kind == EnemyKind.Brownie && !e.Dead);
+            if (brownie != null) sim.Relations!.PlayerHurt(brownie, brownie.Spec.Health, true, sim.Enemies, sim.Time);
+        }
     }
 
     /// <summary>

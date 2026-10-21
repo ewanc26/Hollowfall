@@ -34,7 +34,21 @@ public partial class Hud : CanvasLayer
     private bool _debug;
     private PanelContainer _result = null!;
     private Label _resultText = null!;
-    private double _bannerTime, _flashTime, _flashTotal, _hitTime, _resultTime;
+    private double _bannerTime, _flashTime, _flashTotal, _hitTime, _resultTime, _toastTime;
+    private Label _toast = null!;
+
+    /// <summary>The toast text currently showing (empty when none). For tests.</summary>
+    public string ToastText => _toast.Text;
+
+    /// <summary>Shows a short message about standing under the banner; good news is green, bad news red.</summary>
+    public void ShowToast(string text, bool good, double seconds = 3.5)
+    {
+        // News that arrives together (a kill moves several factions at once) stacks, newest last, instead of replacing.
+        bool fresh = _toastTime > 3.0 && _toast.Text.Count(c => c == '\n') < 2 && _toast.Text != text;
+        _toast.Text = fresh ? _toast.Text + "\n" + text : text;
+        _toast.AddThemeColorOverride("font_color", good ? new Color(0.55f, 0.95f, 0.6f) : new Color(1f, 0.5f, 0.42f));
+        _toastTime = seconds;
+    }
     private Color _flashColour;
 
     public override void _Ready()
@@ -169,6 +183,16 @@ public partial class Hud : CanvasLayer
         _avoid.Add(_banner);
         _avoid.Add(_awards);
 
+        // A toast just above the banner for changes in how the Folk regard you.
+        var toastTop = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        toastTop.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopWide, Control.LayoutPresetMode.Minsize, 0);
+        toastTop.OffsetTop = 200;
+        root.AddChild(toastTop);
+        _toast = Text(toastTop, Vector2.Zero, 24);
+        _toast.HorizontalAlignment = HorizontalAlignment.Center;
+        _toast.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+        _avoid.Add(_toast);
+
         var resultCentre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         resultCentre.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         root.AddChild(resultCentre);
@@ -300,6 +324,15 @@ public partial class Hud : CanvasLayer
             case Parried:
                 Flash(new Color(0.5f, 0.85f, 1f, 0.45f), 0.25);
                 break;
+            case Hollowfall.Core.Combat.ReputationChanged rep:
+                ShowToast(Hollowfall.Core.Relations.StandingBoard.Toast(rep), rep.New > rep.Old);
+                break;
+            case Hollowfall.Core.Combat.OmenSensed:
+                ShowToast("A washerwoman wrings out her cloth nearby. Something is coming.", false, 4.5);
+                break;
+            case Hollowfall.Core.Combat.BoonGiven boon:
+                ShowToast($"The brownie warms the hearth for you (+{boon.Amount:0} health)", true);
+                break;
             case MeteorImpact meteor:
                 Flash(new Color(1f, 0.55f, 0.15f, 0.4f), 0.3);
                 ShowBanner(Loc.Tr(meteor.LongFall ? "banner.meteor2" : "banner.meteor"), 0.9);
@@ -358,6 +391,11 @@ public partial class Hud : CanvasLayer
         {
             _bannerTime -= delta;
             if (_bannerTime <= 0) _banner.Text = "";
+        }
+        if (_toastTime > 0)
+        {
+            _toastTime -= delta;
+            if (_toastTime <= 0) _toast.Text = "";
         }
         if (_resultTime > 0)
         {

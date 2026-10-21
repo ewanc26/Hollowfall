@@ -4,6 +4,8 @@ using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Meshing;
+using Hollowfall.Core.Models;
+using Hollowfall.Core.Relations;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Story.Dialogue;
 using Hollowfall.Core.Replay;
@@ -32,6 +34,8 @@ public partial class SmokeTest : Node
         string storyPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-story-{System.Environment.ProcessId}.json");
         System.Environment.SetEnvironmentVariable("HOLLOWFALL_STORY", storyPath);
         System.Environment.SetEnvironmentVariable("HOLLOWFALL_RECORDS", recordsPath);
+        string relationsPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"hollowfall-smoke-relations-{System.Environment.ProcessId}.json");
+        System.Environment.SetEnvironmentVariable("HOLLOWFALL_RELATIONS", relationsPath);
         System.Environment.SetEnvironmentVariable("HOLLOWFALL_SEED", null);
 
         Check("both fonts load as real fonts, not the fallback", () =>
@@ -119,6 +123,8 @@ public partial class SmokeTest : Node
 
         Check("every enemy model is rigged: poses move the joints and children follow their parents", CheckEnemyRigs);
 
+        Check("the Folk, the Bean Nighe and the hare are rigged and animated", CheckCreatureRigs);
+
         Check("every sound becomes an engine stream and plays", () =>
         {
             var audio = new AudioDirector();
@@ -136,7 +142,7 @@ public partial class SmokeTest : Node
 
         await CheckMainSceneAsync();
 
-        foreach (var file in new[] { settingsPath, settingsPath + ".tmp", recordsPath, recordsPath + ".tmp" })
+        foreach (var file in new[] { settingsPath, settingsPath + ".tmp", recordsPath, recordsPath + ".tmp", relationsPath, relationsPath + ".tmp" })
             try { System.IO.File.Delete(file); } catch (System.IO.IOException) { }
 
         GD.Print($"==== {_passed} passed, {_failed} failed ====");
@@ -181,6 +187,7 @@ public partial class SmokeTest : Node
             CheckUiScaling(main);
             await CheckAGapIsCrossedAsync(main);
             await CheckABotCanPlayTheWholeDungeonAsync(main);
+            await CheckCreaturesAsync(main);
             await CheckSeedChangesTheWorldAsync(main);
             main.QueueFree();
         }
@@ -1270,6 +1277,161 @@ public partial class SmokeTest : Node
         s0.QueueFree();
         s1.QueueFree();
         return ok;
+    }
+
+    private bool CheckCreatureRigs()
+    {
+        bool ok = true;
+        void Expect(bool condition, string what)
+        {
+            if (condition) return;
+            ok = false;
+            GD.PrintErr($"    creature rig: {what}");
+        }
+        EnemyView Make(EnemyKind kind, string pose)
+        {
+            var view = new EnemyView(kind);
+            AddChild(view);
+            view.ForcePose(pose);
+            for (int i = 0; i < 40; i++) view.Animate(EnemyState.Chasing, 1.0 / 30);
+            return view;
+        }
+
+        foreach (var kind in new[] { EnemyKind.Brownie, EnemyKind.Selkie })
+        {
+            var windup = Make(kind, "windup");
+            var walk = Make(kind, "walk");
+            var stunned = Make(kind, "stunned");
+            Expect(windup.Rig.Part("arm_l")!.RotationDegrees.X < -60, $"{kind} raises its arms on a windup");
+            Expect(walk.Rig.Part("leg_l")!.RotationDegrees.X * walk.Rig.Part("leg_r")!.RotationDegrees.X < 0, $"{kind}'s legs swing in opposite directions");
+            Expect(stunned.Rig.Part("head")!.RotationDegrees.X > 20, $"{kind} slumps its head when stunned");
+            Expect(walk.Rig.Part("head")!.GetParent() == walk.Rig.Part("torso"), $"{kind}'s head hangs from the torso");
+            foreach (var v in new[] { windup, walk, stunned }) v.QueueFree();
+        }
+
+        var kelpieWalk = Make(EnemyKind.Kelpie, "walk");
+        var kelpieWindup = Make(EnemyKind.Kelpie, "windup");
+        Expect(kelpieWalk.Rig.Part("leg_fl")!.RotationDegrees.X * kelpieWalk.Rig.Part("leg_fr")!.RotationDegrees.X < 0, "the Kelpie gallops with diagonal pairs of legs");
+        Expect(kelpieWindup.Rig.Part("body")!.RotationDegrees.X < -10, "the Kelpie rears for its blow");
+        Expect(kelpieWalk.Rig.Part("head")!.GetParent() == kelpieWalk.Rig.Part("neck"), "the Kelpie's head hangs from its neck");
+
+        var nighe = Make(EnemyKind.BeanNighe, "idle");
+        Expect(Math.Abs(nighe.Rig.Part("arm_l")!.RotationDegrees.X - nighe.Rig.Part("arm_r")!.RotationDegrees.X) > 5, "the Bean Nighe wrings her cloth with both arms");
+        Expect(nighe.Rig.Part("cloth")!.RotationDegrees.Y != 0, "her cloth twists");
+        var nigheStunned = Make(EnemyKind.BeanNighe, "stunned");
+        Expect(nigheStunned.Rig.Part("head")!.RotationDegrees.X > 20, "the Bean Nighe slumps when stunned");
+
+        var hare = new EnemyView(EnemyKind.Hare);
+        AddChild(hare);
+        hare.ForcePose("walk");
+        float rest = 0.25f, maxY = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            hare.Animate(EnemyState.Chasing, 1.0 / 30);
+            maxY = Math.Max(maxY, hare.Rig.Part("body")!.Position.Y);
+        }
+        Expect(maxY > rest + 0.05f, $"the hare hops (peak {maxY:F2})");
+        Expect(hare.Rig.Part("ear_l")!.RotationDegrees.X < -10, "the hare lays its ears back when it runs");
+
+        foreach (var v in new[] { kelpieWalk, kelpieWindup, nighe, nigheStunned, hare }) v.QueueFree();
+        return ok;
+    }
+
+    /// <summary>
+    /// The relationship system in the real scene: creatures are drawn with their own models and pools, a Friendly brownie is not
+    /// hostile, and killing one in front of another changes the standing screen, raises a toast and is written to relations.json.
+    /// </summary>
+    private async Task CheckCreaturesAsync(Main main)
+    {
+        const string name = "creatures spawn and draw, a Friendly brownie is not hostile, and a witnessed kill changes the standing screen";
+        try
+        {
+            var combat = main.Combat ?? throw new InvalidOperationException("no dungeon, so no combat view");
+            var sim = combat.Sim;
+            var rep = sim.Relations?.Reputation ?? throw new InvalidOperationException("the relationship system is off in the real scene");
+            var hud = main.GetNode<Hud>("Hud");
+            sim.Respawn();
+            foreach (var f in FactionGraphStandable()) rep.Set(f, FactionStart(f));
+            main.MovePlayerToFloor(0);
+            for (int i = 0; i < 5; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+
+            // 1. The dungeon holds creatures, and the view draws each with its own model.
+            var natural = new List<(EnemyKind Kind, int Id)>();
+            for (int floor = 0; floor < combat.Site.FloorCount; floor++)
+            {
+                // Reach each floor in the sim itself (the scene may be paused by an earlier check).
+                combat.Step(1.0 / 60, Stand(new Vec3(combat.Site.OriginX + 1.5, DungeonSite.FloorY(floor) + 1, combat.Site.OriginZ + 1.5)), default);
+            }
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            main.MovePlayerToFloor(0);
+            for (int i = 0; i < 5; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            foreach (var e in sim.Enemies.Where(e => e.Mind is { Species.AlwaysHostile: false })) natural.Add((e.Kind, e.Id));
+            int expected = combat.Site.Spawns.Count(s => s.Kind == SpawnKind.Creature);
+            bool spawned = expected > 0 && natural.Count == expected;
+            if (!spawned) GD.PrintErr($"    creatures by floor: planned {string.Join(",", combat.Site.Spawns.Where(s => s.Kind == SpawnKind.Creature).GroupBy(s => s.Floor).Select(g => $"{g.Key}:{g.Count()}"))} present {string.Join(",", sim.Enemies.Where(e => e.Mind is { Species.AlwaysHostile: false }).GroupBy(e => e.Floor).Select(g => $"{g.Key}:{g.Count()}"))} current floor {sim.CurrentFloor} paused={GetTree().Paused} dead={sim.Dead} playerY={main.Player.Body.Y:F1}");
+            bool drawn = natural.All(n => combat.GetNodeOrNull<EnemyView>($"Enemy_{n.Id}") is { } v && v.Rig.Model.Id == ModelCatalog.ForEnemy(n.Kind).Id);
+            bool pools = natural.All(n => n.Kind is not (EnemyKind.Kelpie or EnemyKind.Selkie)) || combat.GetNodeOrNull<Node3D>("Pool") != null;
+
+            // 2. A Friendly brownie standing near you does nothing to you.
+            sim.Respawn();
+            main.MovePlayerToFloor(0);
+            for (int i = 0; i < 5; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            rep.Set(Faction.Brownies, 40);
+            var view = main.Player.View;
+            var friend = sim.SpawnEnemy(EnemyKind.Brownie, new Vec3(view.Feet.X + 2.5, view.Feet.Y, view.Feet.Z));
+            double hp = sim.Vitals.Health;
+            for (int i = 0; i < 180; i++) combat.Step(1.0 / 60, view, default);
+            bool friendly = friend.Mind!.Intent != Intent.Attack && friend.Mind.Disposition != Disposition.Aggressive && sim.Vitals.Health >= hp && !friend.Dead;
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var friendView = combat.GetNodeOrNull<EnemyView>($"Enemy_{friend.Id}");
+            bool pip = friendView?.PipColor is { } c && c.G > c.R; // green: friendly
+
+            // 3. Kill a brownie with another watching: the Brownies fall to Wary, a toast shows, the screen and the file say so.
+            rep.Set(Faction.Brownies, 0);
+            sim.Relations!.Reputation.Reset();
+            string before = TierOf(rep, Faction.Brownies);
+            sim.Respawn();
+            main.MovePlayerToFloor(0);
+            for (int i = 0; i < 5; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            view = main.Player.View;
+            var victim = sim.SpawnEnemy(EnemyKind.Brownie, new Vec3(view.Feet.X + 3, view.Feet.Y, view.Feet.Z));
+            var witness = sim.SpawnEnemy(EnemyKind.Brownie, new Vec3(view.Feet.X + 3, view.Feet.Y, view.Feet.Z + 1.5));
+            for (int i = 0; i < 20; i++) combat.Step(1.0 / 60, view, default);
+            for (int shot = 0; shot < 8 && !victim.Dead; shot++)
+            {
+                var at = new Vec3(victim.Feet.X, victim.Feet.Y + victim.Spec.Height * 0.85, victim.Feet.Z);
+                combat.Step(1.0 / 60, view with { Forward = (at - view.Eye).Normalized() }, new PlayerActions(true, false, false));
+                for (int i = 0; i < 20; i++) combat.Step(1.0 / 60, view, default);
+            }
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            string after = TierOf(rep, Faction.Brownies);
+            main.Menus.Open(MenuScreen.Standing);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            string line = main.Menus.StandingLines.FirstOrDefault(l => l.StartsWith("the Brownies")) ?? "(missing)";
+            main.Menus.Close();
+            bool changed = victim.Dead && before == "Neutral" && after == "Wary" && line.Contains("Wary");
+            bool toast = hud.ToastText.Contains("The Brownies now regard you as Wary");
+            bool hollowUnmoved = rep.Tier(Faction.Husks) == ReputationTier.Hated && rep.Value(Faction.Husks) <= -90;
+            bool angry = witness.Mind!.Memory.Anger > 0 || witness.Mind.Memory.Fear > 0;
+            var saved = RelationsStore.Load(Main.RelationsPath).Standings(main.SeedName);
+            bool persisted = saved != null && saved.TryGetValue(Faction.Brownies, out var v2) && v2 < 0;
+
+            // Leave the world as the later checks expect it.
+            sim.Respawn();
+            rep.Reset();
+            bool ok = spawned && drawn && pools && friendly && pip && changed && toast && hollowUnmoved && angry && persisted;
+            if (ok) { _passed++; GD.Print($"  ok   {name} ({natural.Count} creatures; screen: {line})"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: spawned={spawned} ({natural.Count}/{expected}) drawn={drawn} pools={pools} friendly={friendly} pip={pip} changed={changed} ({before}->{after}, '{line}') toast={toast} ('{hud.ToastText}') hollow={hollowUnmoved} witnessMoved={angry} persisted={persisted}"); }
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+
+        static IEnumerable<Faction> FactionGraphStandable() => FactionGraph.Standable;
+        static double FactionStart(Faction f) => FactionGraph.Info(f).StartStanding;
+        static string TierOf(Reputation r, Faction f) => ReputationTiers.Label(r.Tier(f));
     }
 
     private void Check(string name, Func<bool> test)
