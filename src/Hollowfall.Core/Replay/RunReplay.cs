@@ -1,5 +1,6 @@
 using System.Text;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Progression;
 
 namespace Hollowfall.Core.Replay;
 
@@ -11,7 +12,10 @@ namespace Hollowfall.Core.Replay;
 public sealed class RunReplay
 {
     /// <summary>The file format. Bump when the byte layout changes.</summary>
-    public const int FormatVersion = 2;
+    public const int FormatVersion = 3;
+
+    /// <summary>The format before the run's stats were recorded. Those files still load, as a character with nothing spent.</summary>
+    public const int FormatVersionWithoutStats = 2;
 
     /// <summary>
     /// The simulation rules the run was recorded under. Bump this whenever <c>CombatSim</c> behaviour changes in a way that alters a
@@ -57,6 +61,9 @@ public sealed class RunReplay
     public IReadOnlyList<ReplayFrame> Frames { get; }
     public int SimVersionRecorded { get; }
 
+    /// <summary>The character's stats the run was played with. A replay re-simulates with these, so a run with Vigour verifies with Vigour.</summary>
+    public Progression.RunStats Stats { get; init; }
+
     public int TickCount => Frames.Count;
 
     /// <summary>False if the file was made by a different version of the combat rules, so a replay would not reproduce it.</summary>
@@ -84,6 +91,8 @@ public static class ReplayCodec
         o.AddRange(Magic);
         o.Add(RunReplay.FormatVersion);
         o.Add((byte)replay.SimVersionRecorded);
+        PutVar(o, (uint)replay.Stats.ClampedVigour);
+        PutVar(o, (uint)replay.Stats.ClampedMight);
         var seed = Encoding.UTF8.GetBytes(replay.Seed.Length > RunReplay.MaxSeedLength ? replay.Seed[..RunReplay.MaxSeedLength] : replay.Seed);
         PutVar(o, (uint)seed.Length);
         o.AddRange(seed);
@@ -227,8 +236,17 @@ public static class ReplayCodec
         if (h != stored) return null;
 
         var r = new Reader(data[..^4]);
-        if (!r.Take(4).SequenceEqual(Magic) || r.Byte() != RunReplay.FormatVersion) return null;
+        if (!r.Take(4).SequenceEqual(Magic)) return null;
+        int format = r.Byte();
+        if (format is not (RunReplay.FormatVersion or RunReplay.FormatVersionWithoutStats)) return null;
         int sim = r.Byte();
+        var stats = new RunStats();
+        if (format == RunReplay.FormatVersion)
+        {
+            uint vigour = r.Var(), might = r.Var();
+            if (r.Failed || vigour > RunStats.MaxPoints || might > RunStats.MaxPoints) return null;
+            stats = new RunStats((int)vigour, (int)might);
+        }
         uint seedLen = r.Var();
         if (r.Failed || seedLen is 0 or > RunReplay.MaxSeedLength * 4) return null;
         string seed = Encoding.UTF8.GetString(r.Take((int)seedLen));
@@ -272,6 +290,6 @@ public static class ReplayCodec
         }
         if (n != ticks || r.Left != 0) return null;
 
-        return new RunReplay(seed, regionX, regionZ, (int)floor, (int)end, new FloorRecord((OverallGrade)grade, points, millis / 1000.0), frames, sim);
+        return new RunReplay(seed, regionX, regionZ, (int)floor, (int)end, new FloorRecord((OverallGrade)grade, points, millis / 1000.0), frames, sim) { Stats = stats };
     }
 }

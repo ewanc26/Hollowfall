@@ -101,7 +101,7 @@ public sealed class WulverEncounter
             Seed = _seed,
             SeedText = _seedText,
             VisitCount = Visits,
-            HealthFraction = Math.Clamp(vitals.Health / PlayerVitals.MaxHealth, 0, 1),
+            HealthFraction = Math.Clamp(vitals.Health / vitals.Max, 0, 1),
             Deaths = facts.Deaths,
             Kills = facts.Kills,
             DeepestFloor = facts.DeepestFloor,
@@ -141,7 +141,7 @@ public sealed class WulverEncounter
             GiftTaken = true;
             if (vitals.Dead) continue;
             vitals.Cleanse();
-            vitals.Heal(PlayerVitals.MaxHealth);
+            vitals.Heal(vitals.Max);
             perks.Grant(gift == GiftKind.Hurt ? HurtGift : Gift);
         }
         _flags = [.. runner.Context.Flags.Where(ValidFlag).Take(MaxFlags)];

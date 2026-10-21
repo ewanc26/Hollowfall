@@ -36,9 +36,9 @@ public sealed class ReplayRecorder
     /// The run so far as a finished replay of <paramref name="floor"/>, which must have been completed on the step just captured.
     /// Null if the run was truncated or nothing was recorded.
     /// </summary>
-    public RunReplay? Finish(string seed, int regionX, int regionZ, int floor, FloorRecord result)
+    public RunReplay? Finish(string seed, int regionX, int regionZ, int floor, FloorRecord result, Progression.RunStats stats = default)
     {
         if (Truncated || _frames.Count == 0 || string.IsNullOrEmpty(seed) || floor is < 0 or >= RunReplay.MaxFloors) return null;
-        return new RunReplay(seed.Length > RunReplay.MaxSeedLength ? seed[..RunReplay.MaxSeedLength] : seed, regionX, regionZ, floor, _frames.Count - 1, result, [.. _frames]);
+        return new RunReplay(seed.Length > RunReplay.MaxSeedLength ? seed[..RunReplay.MaxSeedLength] : seed, regionX, regionZ, floor, _frames.Count - 1, result, [.. _frames]) { Stats = stats };
     }
 }

@@ -83,7 +83,7 @@ public sealed class CatEncounter
             Seed = _seed,
             SeedText = _seedText,
             VisitCount = Visits,
-            HealthFraction = Math.Clamp(vitals.Health / PlayerVitals.MaxHealth, 0, 1),
+            HealthFraction = Math.Clamp(vitals.Health / vitals.Max, 0, 1),
             GiftGiven = GiftTaken,
             Flags = new HashSet<string>(_flags),
         };

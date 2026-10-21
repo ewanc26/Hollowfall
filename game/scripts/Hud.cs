@@ -358,8 +358,8 @@ public partial class Hud : CanvasLayer
         _hint.Set(hints, prompts);
 
         var v = sim.Vitals;
-        _healthFill.Size = new Vector2((float)(BarWidth * v.Health / PlayerVitals.MaxHealth), 18);
-        float ceiling = (float)(BarWidth * v.Ceiling / PlayerVitals.MaxHealth);
+        _healthFill.Size = new Vector2((float)(BarWidth * v.Health / v.Max), 18);
+        float ceiling = (float)(BarWidth * v.Ceiling / v.Max);
         _hardFill.Position = new Vector2(ceiling, 0);
         _hardFill.Size = new Vector2(BarWidth - ceiling, 18);
         _health.Text = $"{Math.Ceiling(v.Health):F0}";
