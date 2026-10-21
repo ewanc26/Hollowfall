@@ -15,6 +15,11 @@ public static class Gibs
     {
         EnemyKind.Husk => 12,
         EnemyKind.Spitter => 10,
+        EnemyKind.Brownie => 8,
+        EnemyKind.Selkie => 12,
+        EnemyKind.Kelpie => 16,
+        EnemyKind.BeanNighe => 10,
+        EnemyKind.Hare => 6,
         _ => 22,
     };
 
@@ -27,6 +32,11 @@ public static class Gibs
     {
         EnemyKind.Husk => [0x8a3b2a, 0x8a3b2a, 0x4a1f18, 0xd9cfb0, 0xffb830],
         EnemyKind.Spitter => [0x6a3a9a, 0x6a3a9a, 0x35205a, 0xd9cfb0, 0xa24bff],
+        EnemyKind.Brownie => [0x7a5a3a, 0x7a5a3a, 0x4d3824, 0xe0b894, 0xffb830],
+        EnemyKind.Selkie => [0x7d8a96, 0x7d8a96, 0x434d58, 0xe0b894, 0x19d3c5],
+        EnemyKind.Kelpie => [0x0f2f40, 0x0f2f40, 0x1e5a6e, 0x4f6a4a, 0x19d3c5],
+        EnemyKind.BeanNighe => [0x4f6a4a, 0x4f6a4a, 0x2c3d2b, 0xd8c7a4, 0x19d3c5],
+        EnemyKind.Hare => [0x9a7a52, 0x9a7a52, 0xd8c7a4, 0xd8c7a4, 0xffb830],
         _ => [0x4a4f5a, 0x34303c, 0x8189a0, 0x9a1626, 0xc9a227],
     };
 

@@ -53,6 +53,17 @@ public enum SoundId
     FireCrackle,
     CatMeow,
     CatPurr,
+    // ---- the Folk and the relationship system (appended; new sounds go below this line) ----
+    BrownieHiss,
+    SelkieCry,
+    KelpieWhinny,
+    NigheWail,
+    HareScream,
+    OmenToll,
+    StandingUp,
+    StandingDown,
+    BoonChime,
+    AllyJoin,
 }
 
 /// <summary>
@@ -122,6 +133,16 @@ public static class Synth
             SoundId.FireCrackle => Crackle(),
             SoundId.CatMeow => Meow(0.62),
             SoundId.CatPurr => Purr(),
+            SoundId.BrownieHiss => Mix(0.32, (t, i) => Noise(i, 60) * Math.Sin(Math.PI * Math.Min(1, t / 0.32)) * 0.35 + Sine(t, Lerp(520, 380, t / 0.32)) * Decay(t, 9) * 0.3),
+            SoundId.SelkieCry => Mix(0.7, (t, _) => (Sine(t, Lerp(520, 780, t / 0.7) * (1 + 0.03 * Math.Sin(Tau * 7 * t))) + 0.4 * Sine(t, 1040)) * Math.Sin(Math.PI * Math.Min(1, t / 0.7)) * 0.4),
+            SoundId.KelpieWhinny => Mix(0.8, (t, i) => (Saw(t, Lerp(300, 620, Math.Min(1, t / 0.25)) * Lerp(1, 0.55, Math.Max(0, (t - 0.25) / 0.55)) * (1 + 0.04 * Math.Sin(Tau * 24 * t))) * 0.35 + Noise(i, 61) * 0.12) * Math.Sin(Math.PI * Math.Min(1, t / 0.8))),
+            SoundId.NigheWail => Mix(1.1, (t, _) => (Sine(t, Lerp(330, 247, t / 1.1) * (1 + 0.02 * Math.Sin(Tau * 5 * t))) + 0.5 * Sine(t, Lerp(660, 494, t / 1.1))) * Math.Sin(Math.PI * Math.Min(1, t / 1.1)) * 0.4),
+            SoundId.HareScream => Mix(0.35, (t, _) => (Square(t, Lerp(1500, 900, t / 0.35)) * 0.25 + Sine(t, Lerp(2200, 1300, t / 0.35)) * 0.25) * Math.Sin(Math.PI * Math.Min(1, t / 0.35))),
+            SoundId.OmenToll => Mix(2.0, (t, _) => (Sine(t, 98) * 0.55 + Sine(t, 147) * 0.3 + Sine(t, 311) * 0.12) * Decay(t, 2.4) * Math.Min(1, t / 0.01)),
+            SoundId.StandingUp => Arpeggio(0.7, [392, 523.25, 659.25], 0.1),
+            SoundId.StandingDown => Mix(0.8, (t, i) => (Sine(t, 196) + 0.5 * Sine(t, 185)) * Decay(t, 4) * 0.5 + (t > 0.14 ? (Sine(t - 0.14, 147) + 0.5 * Sine(t - 0.14, 139)) * Decay(t - 0.14, 4) * 0.5 : 0)),
+            SoundId.BoonChime => Mix(0.9, (t, _) => (Sine(t, 880) * Decay(t, 5) + (t > 0.1 ? Sine(t - 0.1, 1175) * Decay(t - 0.1, 5) : 0) + (t > 0.2 ? Sine(t - 0.2, 1568) * Decay(t - 0.2, 5) : 0)) * 0.3),
+            SoundId.AllyJoin => Mix(0.6, (t, _) => (Sine(t, Lerp(330, 660, Math.Min(1, t / 0.2))) * Decay(t, 5) + Sine(t, 990) * Decay(t, 9) * 0.4) * 0.45),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
