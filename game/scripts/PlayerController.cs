@@ -177,6 +177,11 @@ public partial class PlayerController : Node3D
         }
 
         bool jump = InputMapper.Pressed(GameAction.Jump);
+        if (_world.Glue is { } glue)
+        {
+            if (glue.Step(Body, delta, mx, mz, jump)) _yaw = glue.YawAfterCrossing(_yaw);
+            return;
+        }
         if (portals != null && PortalWalker.Step(Body, portals, delta, mx, mz, jump, _world.GetBlock, Forward) is { } crossing)
         {
             // Turn to face where the portal sends us, keeping the view upright.

@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4210;
-    private const uint ExpectedGoldenChecksum = 3367250316; // changed on purpose: FormatVersion 3 records the run's two stats, and SimVersion 5 is in the header
+    private const uint ExpectedGoldenChecksum = 1301924721; // changed on purpose: the header carries SimVersion 6 (the glued room changed the simulation)
 
     [Fact]
     public void FileSizesStaySane()
