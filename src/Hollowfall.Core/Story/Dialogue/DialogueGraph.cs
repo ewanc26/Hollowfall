@@ -8,6 +8,9 @@ public enum GiftKind
 
     /// <summary>The same for someone badly hurt, but gentler and longer-lasting.</summary>
     Hurt,
+
+    /// <summary>A little warmth by the fire: hard damage washed away and a small heal, no perk. Never a big boost.</summary>
+    Warmth,
 }
 
 /// <summary>Something that changes when a node is entered or a choice is taken.</summary>
