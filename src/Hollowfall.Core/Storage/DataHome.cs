@@ -14,6 +14,7 @@ public sealed class DataHome
     public const string Records = "records.json";
     public const string Story = "story.json";
     public const string Relations = "relations.json";
+    public const string Progression = "progression.json";
     public const string ReplayFolder = "replays";
 
     private readonly Func<string, string?> _environment;
@@ -48,6 +49,7 @@ public sealed class DataHome
     public string RecordsPath => PathOf(Records, "HOLLOWFALL_RECORDS");
     public string StoryPath => PathOf(Story, "HOLLOWFALL_STORY");
     public string RelationsPath => PathOf(Relations, "HOLLOWFALL_RELATIONS");
+    public string ProgressionPath => PathOf(Progression, "HOLLOWFALL_PROGRESSION");
 
     /// <summary>
     /// Copies the files an earlier version kept in another folder (the engine's user folder) into this one, once: a file is

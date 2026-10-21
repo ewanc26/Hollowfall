@@ -76,6 +76,7 @@ Everything the game saves lives in one folder, `~/.ewanc26/hollowfall`:
 | `records.json` | Your best grade and time on each floor of each seed |
 | `story.json` | Notes you have read, and what you have said to those you have met |
 | `relations.json` | Your standing with each group, per seed |
+| `progression.json` | Your experience, level and stat points, across runs |
 | `replays/` | The best run of each floor, for the ghost |
 
 `HOLLOWFALL_HOME` moves the folder. A first run copies anything an earlier version saved in Godot's own user folder and leaves the old files where they were.
