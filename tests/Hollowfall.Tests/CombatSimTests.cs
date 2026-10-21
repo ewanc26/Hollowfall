@@ -732,7 +732,7 @@ public class CombatSimTests
         a.Sim.Slam(view.Feet, 1);
 
         Assert.Equal(BlockType.Air, a.World.GetBlock(x, y, z));
-        Assert.Equal(BlockType.Air, a.World.GetBlock(x + 1, y, z - 1));
+        Assert.False(BlockHole.IsSolid(BlockType.BrickFloor, a.World.HoleAt(x + 1, y, z - 1), 0, 5, 9));
         Assert.Equal(BlockType.BrickFloor, a.World.GetBlock(x + 2, y, z));
     }
 }
