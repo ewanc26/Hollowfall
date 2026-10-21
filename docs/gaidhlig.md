@@ -108,6 +108,8 @@ Add a value to `Language`, a native name in `Languages.NativeName`, a column (or
 
 If you read Gàidhlig, please look over the tables below and tell us what is wrong, odd, stiff or unnatural: spelling, accents, mutation, word order, a better word, a regional preference, anything. You do not need to be a programmer: a list of the keys and what each should say is enough, in an issue or an email to the author. Corrections are welcome and will be credited if you wish. Thank you; the game takes Gaelic seriously and wants to get it right.
 
+If you would rather correct the strings in a translation tool, run `dotnet run --project src/Hollowfall.Cli -- --po gd.po` and open `gd.po` in Poedit or any gettext editor. Each entry's comment gives its key, status and sources, and an entry marked fuzzy needs a decision before it is shown.
+
 ## Independent re-check (21 October 2026)
 
 A second pass, made after the first build, read the primary pages directly instead of relying on summaries. It confirmed these and found nothing wrong, but it is still not a speaker's review.
@@ -138,7 +140,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 127.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 137.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -158,6 +160,15 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 127.
 | `pause.respawn` | Respawn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.standing` | Standing | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.character` | Character | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pause.bag` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.title` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.slots` | Slots used: {0} of {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.none` | Nothing is carried yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.creamHint` | Eat it in a run to heal {0}. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.wear` | Wear | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.takeOff` | Take off | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.worn` | worn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.wearHint` | Worn charms take effect from your next run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.title` | CHARACTER | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.none` | No character yet. Defeat something to begin. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.level` | Level {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -220,6 +231,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 127.
 | `action.pause` | Pause menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.slam` | Slam | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.fireMortar` | Fire block mortar | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.useCream` | Use Brownie's cream | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.title` | SETTINGS | ROGHAINNEAN | Verified | FF | capitals of Firefox gd's 'Roghainnean' |
 | `settings.language` | Language | Cànan | Verified | FF WK | Firefox gd's 'Language' header is Cànan; cànan, a language |
 | `settings.mouseSensitivity` | Mouse sensitivity | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |

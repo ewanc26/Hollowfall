@@ -164,6 +164,20 @@ public static class GlyphSet
             <circle cx="32" cy="32" r="3" fill="{Red}"/>
             """));
         yield return ("icon_stairs", Svg(64, 64, $"""<path d="M6 56 V44 H18 V32 H30 V20 H42 V8 H58 V56 Z" fill="{Dim}"/>"""));
+        yield return ("icon_cream", Svg(64, 64, $"""
+            <rect x="10" y="10" width="44" height="12" rx="3" fill="#8a5a2b"/>
+            <path d="M12 22 H52 V50 Q52 58 44 58 H20 Q12 58 12 50 Z" fill="#fff3d6" stroke="#8a5a2b" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M12 26 Q19 20 26 26 T40 26 T52 26 V32 H12 Z" fill="#fffaf0"/>
+            <rect x="12" y="40" width="40" height="9" fill="{Red}"/>
+            """));
+        yield return ("icon_charm", Svg(64, 64, $"""
+            <path d="M32 22 C22 22 19 10 32 5 C45 10 42 22 32 22" fill="none" stroke="{Red}" stroke-width="3"/>
+            <circle cx="32" cy="40" r="16" fill="#6b4a2f" stroke="#3d2817" stroke-width="2"/>
+            <circle cx="25" cy="36" r="3.5" fill="{Red}"/>
+            <circle cx="38" cy="35" r="3.5" fill="{Red}"/>
+            <circle cx="32" cy="46" r="3.5" fill="{Red}"/>
+            <path d="M46 30 L56 24 L48 36 Z" fill="{Ink}"/>
+            """));
         yield return ("icon_key", Svg(64, 64, $"""
             <circle cx="20" cy="22" r="13" fill="none" stroke="{Amber}" stroke-width="6"/>
             {Stroke("M30 31 L56 57 M46 47 L40 53 M52 53 L46 59", Amber, 6)}

@@ -23,6 +23,9 @@ public enum MenuScreen
     /// <summary>The character: experience, level and the stat points to spend (progression). Appended after Standing.</summary>
     Character,
 
+    /// <summary>The bag: items carried between runs, and the charm worn. Appended after Character.</summary>
+    Bag,
+
     /// <summary>Developer tools (debug builds only): test levels, the model showcase and the debug overlay. Appended last.</summary>
     Developer,
 }
@@ -53,6 +56,7 @@ public partial class Menus : CanvasLayer
     private Label _journalTitle = null!;
     private VBoxContainer _standingList = null!;
     private VBoxContainer _characterList = null!;
+    private VBoxContainer _bagList = null!;
 
     /// <summary>Supplies the player's reputation for the Standing screen; null when the relationship system is off. Set by the game.</summary>
     public Func<Hollowfall.Core.Relations.Reputation?> StandingProvider { get; set; } = () => null;
@@ -64,6 +68,13 @@ public partial class Menus : CanvasLayer
 
     /// <summary>Supplies the character for the Character screen; null when there is none. Set by the game.</summary>
     public Func<Progression?> CharacterProvider { get; set; } = () => null;
+
+    /// <summary>Supplies the bag for the Bag screen; null when there is none. Set by the game.</summary>
+    public Func<Inventory?> BagProvider { get; set; } = () => null;
+
+    /// <summary>The player wears a charm from the bag, or takes the worn one off.</summary>
+    public event Action<ItemKind>? WearRequested;
+    public event Action? TakeOffRequested;
 
     /// <summary>Raised when the player spends a point on a stat. The host spends it and saves the character.</summary>
     public event Action<Stat>? SpendRequested;
@@ -137,6 +148,7 @@ public partial class Menus : CanvasLayer
         _screens[MenuScreen.Journal] = BuildJournal();
         _screens[MenuScreen.Standing] = BuildStanding();
         _screens[MenuScreen.Character] = BuildCharacter();
+        _screens[MenuScreen.Bag] = BuildBag();
         _screens[MenuScreen.Developer] = BuildDeveloper();
         foreach (var s in _screens.Values)
         {
@@ -178,6 +190,7 @@ public partial class Menus : CanvasLayer
         if (screen == MenuScreen.Journal) RefreshJournal();
         if (screen == MenuScreen.Standing) RefreshStanding();
         if (screen == MenuScreen.Character) RefreshCharacter();
+        if (screen == MenuScreen.Bag) RefreshBag();
         if (screen == MenuScreen.Developer && _debugBox != null) _debugBox.SetPressedNoSignal(DebugOverlayOn());
         if (screen != MenuScreen.None) FocusFirst(_screens[screen]);
     }
@@ -227,7 +240,7 @@ public partial class Menus : CanvasLayer
         {
             if (_current == MenuScreen.None) Open(MenuScreen.Pause);
             else if (_current == MenuScreen.Pause) { Close(); ResumeRequested?.Invoke(); }
-            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing or MenuScreen.Character or MenuScreen.Developer) Open(ReturnScreen());
+            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing or MenuScreen.Character or MenuScreen.Bag or MenuScreen.Developer) Open(ReturnScreen());
             GetViewport().SetInputAsHandled();
         }
     }
@@ -423,6 +436,7 @@ public partial class Menus : CanvasLayer
         col.AddChild(MakeButton(_loc.Tr("pause.journal"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Journal)));
         col.AddChild(MakeButton(_loc.Tr("pause.standing"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Standing)));
         col.AddChild(MakeButton(_loc.Tr("pause.character"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Character)));
+        col.AddChild(MakeButton(_loc.Tr("pause.bag"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Bag)));
         col.AddChild(MakeButton(_loc.Tr("pause.mainMenu"), () => MainMenuRequested?.Invoke()));
         col.AddChild(MakeButton(_loc.Tr("menu.controls"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
         col.AddChild(MakeButton(_loc.Tr("menu.settings"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Settings)));
@@ -483,6 +497,64 @@ public partial class Menus : CanvasLayer
         footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
         col.AddChild(footer);
         return screen;
+    }
+
+    private Control BuildBag()
+    {
+        var (screen, col) = Panel(640, 520);
+        col.AddChild(Heading(_loc.Tr("bag.title")));
+        _bagList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(560, 0) };
+        _bagList.AddThemeConstantOverride("separation", 12);
+        col.AddChild(_bagList);
+
+        var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
+        col.AddChild(footer);
+        return screen;
+    }
+
+    /// <summary>Rebuilds the bag screen from the live bag. Called each time the screen opens and after a charm is worn or taken off.</summary>
+    private void RefreshBag()
+    {
+        foreach (var child in _bagList.GetChildren()) child.QueueFree();
+        if (BagProvider() is not { } bag)
+        {
+            _bagList.AddChild(new Label { Text = _loc.Tr("bag.none") });
+            return;
+        }
+
+        _bagList.AddChild(new Label { Text = _loc.Tr("bag.slots", bag.SlotsUsed, Inventory.Slots) });
+        _bagList.AddChild(BagRow(bag, ItemKind.BrownieCream));
+        _bagList.AddChild(BagRow(bag, ItemKind.ThornCharm));
+        var note = new Label { Text = _loc.Tr("bag.wearHint"), AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
+        note.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
+        note.AddThemeFontSizeOverride("font_size", 16);
+        _bagList.AddChild(note);
+    }
+
+    private HBoxContainer BagRow(Inventory bag, ItemKind kind)
+    {
+        var (name, use, blurb) = Inventory.Info(kind);
+        var row = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        row.AddThemeConstantOverride("separation", 12);
+        row.AddChild(Glyphs.Icon(kind == ItemKind.BrownieCream ? GameIcons.Cream : GameIcons.Charm, 32));
+        bool worn = bag.Charm == kind;
+        row.AddChild(new Label { Text = $"{name} x{bag.Count(kind)}" + (worn ? $" ({_loc.Tr("bag.worn")})" : ""), CustomMinimumSize = new Vector2(230, 0) });
+        var hint = new Label { Text = kind == ItemKind.BrownieCream ? _loc.Tr("bag.creamHint", Inventory.CreamHeal) : blurb, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        hint.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
+        hint.AddThemeFontSizeOverride("font_size", 16);
+        row.AddChild(hint);
+        if (use == ItemUse.Charm)
+        {
+            if (worn) row.AddChild(MakeButton(_loc.Tr("bag.takeOff"), () => { TakeOffRequested?.Invoke(); RefreshBag(); }));
+            else
+            {
+                var wear = MakeButton(_loc.Tr("bag.wear"), () => { WearRequested?.Invoke(kind); UiSound?.Invoke(Hollowfall.Core.Audio.SoundId.CharmWear); RefreshBag(); });
+                wear.Disabled = bag.Count(kind) == 0;
+                row.AddChild(wear);
+            }
+        }
+        return row;
     }
 
     /// <summary>Rebuilds the character screen from the live progression. Called each time the screen opens and after a point is spent.</summary>
