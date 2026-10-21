@@ -5,24 +5,24 @@ using Hollowfall.Core.Models;
 
 namespace Hollowfall.Game;
 
-/// <summary>A built model: its root, one node per named part (rotate these to pose it), and its glowing materials.</summary>
+/// <summary>A built model: its root, one node per named part (rotate these to pose it), its glowing materials, and its clips.</summary>
 public sealed class ModelRig
 {
     public Node3D Root { get; }
     public LowPolyModel Model { get; }
     public IReadOnlyDictionary<string, Node3D> Parts { get; }
 
-    /// <summary>Whether the geometry came from the committed model file rather than being built in code.</summary>
-    public bool FromFile { get; }
+    /// <summary>Plays the clips baked into the model; null for a model with none.</summary>
+    public AnimationPlayer? Animator { get; }
     private readonly Dictionary<string, StandardMaterial3D> _glow;
 
-    internal ModelRig(Node3D root, LowPolyModel model, Dictionary<string, Node3D> parts, Dictionary<string, StandardMaterial3D> glow, bool fromFile)
+    internal ModelRig(Node3D root, LowPolyModel model, Dictionary<string, Node3D> parts, Dictionary<string, StandardMaterial3D> glow, AnimationPlayer? animator)
     {
         Root = root;
         Model = model;
         Parts = parts;
         _glow = glow;
-        FromFile = fromFile;
+        Animator = animator;
     }
 
     public Node3D? Part(string name) => Parts.GetValueOrDefault(name);
@@ -59,29 +59,17 @@ public static class ModelFactory
         AlbedoColor = Colors.White,
     };
 
-    /// <summary>Loads the model's committed file, or builds it in code when the file is missing or does not match the model.</summary>
-    public static ModelRig Build(LowPolyModel model, bool castShadows = true) =>
-        FromFile(model, castShadows) ?? FromCode(model, castShadows);
-
-    private static ModelRig? FromFile(LowPolyModel model, bool castShadows)
+    public static ModelRig Build(LowPolyModel model, bool castShadows = true)
     {
-        if (GD.Load<PackedScene>("res://" + StaticAssets.ModelPath(model.Id)) is not { } scene) return null;
-        if (scene.Instantiate() is not Node3D root) return null;
-
+        var root = Instantiate(model);
+        root.Name = model.Id;
         var parts = new Dictionary<string, Node3D>();
         var glow = new Dictionary<string, StandardMaterial3D>();
         foreach (var part in model.Parts)
         {
-            var node = root.FindChild("part_" + part.Name, true, false) as Node3D;
-            var mesh = node?.GetNodeOrNull<MeshInstance3D>("mesh_" + part.Name);
-            int surfaces = (part.Solid.IsEmpty ? 0 : 1) + (part.Glow.IsEmpty ? 0 : 1);
-            if (node == null || (surfaces > 0 && (mesh?.Mesh?.GetSurfaceCount() ?? -1) != surfaces))
-            {
-                root.Free();
-                return null;
-            }
+            var node = (Node3D)root.FindChild("part_" + part.Name, true, false)!;
             parts[part.Name] = node;
-            if (mesh == null) continue;
+            if (node.GetNodeOrNull<MeshInstance3D>("mesh_" + part.Name) is not { } mesh) continue;
 
             mesh.CastShadow = castShadows ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
             int surface = 0;
@@ -93,40 +81,27 @@ public static class ModelFactory
                 mesh.SetSurfaceOverrideMaterial(surface, material);
             }
         }
-        root.Name = model.Id;
-        return new ModelRig(root, model, parts, glow, fromFile: true);
+
+        var animator = root.FindChild("AnimationPlayer", true, false) as AnimationPlayer;
+        if (animator != null)
+            foreach (var name in animator.GetAnimationList())
+                animator.GetAnimation(name).LoopMode = Motions.Loops(Enum.Parse<Motion>(name, ignoreCase: true))
+                    ? Animation.LoopModeEnum.Linear
+                    : Animation.LoopModeEnum.None;
+        return new ModelRig(root, model, parts, glow, animator);
     }
 
-    private static ModelRig FromCode(LowPolyModel model, bool castShadows)
+    /// <summary>The committed scene when the file exists; otherwise the same bytes Core writes for it, imported the same way.</summary>
+    private static Node3D Instantiate(LowPolyModel model)
     {
-        var root = new Node3D { Name = model.Id };
-        var parts = new Dictionary<string, Node3D>();
-        var glow = new Dictionary<string, StandardMaterial3D>();
+        string path = "res://" + StaticAssets.ModelPath(model.Id);
+        if (ResourceLoader.Exists(path) && GD.Load<PackedScene>(path).Instantiate() is Node3D imported) return imported;
 
-        foreach (var part in model.Parts)
-        {
-            // A child sits relative to its parent's joint, so it follows when the parent moves or leans.
-            var origin = part.Parent == null ? new Vec3(0, 0, 0) : model.Part(part.Parent).Pivot;
-            var node = new Node3D { Name = "part_" + part.Name, Position = new Vector3((float)(part.Pivot.X - origin.X), (float)(part.Pivot.Y - origin.Y), (float)(part.Pivot.Z - origin.Z)) };
-            var mesh = new ArrayMesh();
-            if (!part.Solid.IsEmpty) ChunkMeshBuilder.AddSurface(mesh, part.Solid, Solid);
-            if (!part.Glow.IsEmpty)
-            {
-                var material = NewGlow();
-                glow[part.Name] = material;
-                ChunkMeshBuilder.AddSurface(mesh, part.Glow, material);
-            }
-
-            node.AddChild(new MeshInstance3D
-            {
-                Name = "mesh_" + part.Name,
-                Mesh = mesh,
-                CastShadow = castShadows ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off,
-            });
-            (part.Parent == null ? root : parts[part.Parent]).AddChild(node);
-            parts[part.Name] = node;
-        }
-        return new ModelRig(root, model, parts, glow, fromFile: false);
+        var document = new GltfDocument();
+        var state = new GltfState();
+        if (document.AppendFromBuffer(StaticAssets.ModelBytes(model), "", state) != Error.Ok)
+            throw new InvalidOperationException($"Could not import the {model.Id} model");
+        return (Node3D)document.GenerateScene(state);
     }
 
     public static Vector3 ToVector(Hollowfall.Core.Combat.Vec3 v) => new((float)v.X, (float)v.Y, (float)v.Z);

@@ -82,7 +82,7 @@ public partial class ModelShowcase : Node3D
         foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Spitter, EnemyKind.Warden })
         {
             var view = new EnemyView(kind);
-            view.ForcePose("idle");
+            view.ForcePose(Motion.Idle);
             _posed.Add(view);
             Place(view, new Vector3(-3.4f + i * 3.4f, 0, 0), kind.ToString(), spin: 0.5);
             i++;
@@ -93,7 +93,7 @@ public partial class ModelShowcase : Node3D
     {
         _camera.Position = new Vector3(0, 6.5f, 15f);
         _camera.LookAt(new Vector3(0, 0.8f, 0), Vector3.Up);
-        string[] poses = ["walk", "windup", "stunned"];
+        Motion[] poses = [Motion.Walk, Motion.Windup, Motion.Stunned];
         int row = 0;
         foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Spitter, EnemyKind.Warden })
         {
@@ -102,7 +102,7 @@ public partial class ModelShowcase : Node3D
                 var view = new EnemyView(kind);
                 view.ForcePose(poses[col]);
                 _posed.Add(view);
-                Place(view, new Vector3(-4.2f + col * 4.2f, 0, -4.5f + row * 4.5f), $"{kind} {poses[col]}", spin: 0.35, labelHeight: 0.05f);
+                Place(view, new Vector3(-4.2f + col * 4.2f, 0, -4.5f + row * 4.5f), $"{kind} {Motions.Name(poses[col])}", spin: 0.35, labelHeight: 0.05f);
             }
             row++;
         }
