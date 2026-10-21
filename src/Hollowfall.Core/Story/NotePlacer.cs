@@ -43,7 +43,7 @@ public static class NotePlacer
 
             var rng = new SeededRandom(seed, floor.Floor, 0, 820);
             int wanted = Math.Min(rng.Range(1, StoryPlan.MaxNotesPerFloor), run.Count);
-            var reachable = ReachableRooms(floor);
+            var reachable = HopsToRooms(floor).Keys.ToHashSet();
             var spawns = site.Spawns.Where(s => s.Floor == floor.Floor).ToList();
 
             var candidates = new List<(Room Room, int X, int Z, int Dx, int Dz)>();
@@ -116,22 +116,37 @@ public static class NotePlacer
         return best;
     }
 
-    /// <summary>Rooms joined to the entrance by ordinary links, with no secret door in the way.</summary>
-    private static HashSet<int> ReachableRooms(FloorLayout floor)
+    /// <summary>
+    /// The rooms joined to the entrance by ordinary links, with no secret door in the way, and how many portal hops (gaps) the way
+    /// there crosses at least. Every gap can be crossed (the tests prove it with the real portals), so a room behind gaps is reachable.
+    /// </summary>
+    public static Dictionary<int, int> HopsToRooms(FloorLayout floor)
     {
-        var seen = new HashSet<int> { floor.EntranceRoom.Id };
-        var queue = new Queue<int>([floor.EntranceRoom.Id]);
-        while (queue.Count > 0)
+        var hops = new Dictionary<int, int> { [floor.EntranceRoom.Id] = 0 };
+        var current = new Queue<int>([floor.EntranceRoom.Id]);
+        var next = new Queue<int>();
+        int level = 0;
+        while (current.Count > 0 || next.Count > 0)
         {
-            int room = queue.Dequeue();
+            if (current.Count == 0)
+            {
+                (current, next) = (next, current);
+                level++;
+            }
+            int room = current.Dequeue();
+            if (hops[room] != level) continue;
             foreach (var link in floor.Links)
             {
                 if (link.Secret) continue;
                 int other = link.A == room ? link.B : link.B == room ? link.A : -1;
-                if (other >= 0 && seen.Add(other)) queue.Enqueue(other);
+                if (other < 0) continue;
+                int cost = level + (link.Kind is LinkKind.PortalGap or LinkKind.ShaftGap ? 1 : 0);
+                if (hops.TryGetValue(other, out int known) && known <= cost) continue;
+                hops[other] = cost;
+                (cost == level ? current : next).Enqueue(other);
             }
         }
-        return seen;
+        return hops;
     }
 
     private static bool NearStairs(FloorLayout floor, int x, int z)

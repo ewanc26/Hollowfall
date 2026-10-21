@@ -17,6 +17,8 @@ public partial class MiniMap : Control
     private static readonly Color DoorColour = new(0.95f, 0.72f, 0.25f);
     private static readonly Color PillarColour = new(0.38f, 0.43f, 0.56f);
     private static readonly Color StairsColour = new(0.3f, 0.95f, 0.8f);
+    private static readonly Color HallColour = new(0.28f, 0.62f, 0.66f);
+    private static readonly Color PitColour = new(0.06f, 0.05f, 0.08f);
 
     private readonly Image _image = Image.CreateEmpty(FloorLayout.Size + 2 * Window, FloorLayout.Size + 2 * Window, false, Image.Format.Rgba8);
     private ImageTexture? _texture;
@@ -59,6 +61,8 @@ public partial class MiniMap : Control
                     MapCell.Door => DoorColour,
                     MapCell.Pillar => PillarColour,
                     MapCell.Stairs => StairsColour,
+                    MapCell.Hall => HallColour,
+                    MapCell.Pit => PitColour,
                     _ => FloorColour,
                 });
             }

@@ -2,6 +2,7 @@ using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Physics;
 using Hollowfall.Core.Portals;
+using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
@@ -375,5 +376,63 @@ public class MixedLinkTests
                 Assert.True(cells >= original * 0.6, $"room {room.Id} ({room.Shape}) has only {cells} of {original} cells left");
                 Assert.True(l.CellAt(room.CenterX, room.CenterZ) is CellKind.Floor, "a room's centre stays open floor");
             }
+    }
+
+    // ---- props, map and notes -----------------------------------------------------------------
+
+    [Fact]
+    public void EveryPitEdgeIsLitAndTorchesStayOnTheWalls()
+    {
+        foreach (var (site, k, l) in AllFloors().Take(80))
+        {
+            var torches = site.Torches.Where(t => t.Floor == k).ToList();
+            foreach (var gap in l.Gaps)
+                foreach (bool first in new[] { true, false })
+                {
+                    var edge = gap.Edge(first);
+                    Assert.Contains(torches, t => t.RoomId == -1 && Math.Abs(t.CellX - edge.X) + Math.Abs(t.CellZ - edge.Z) <= 1);
+                }
+            foreach (var t in torches.Where(t => t.RoomId == -1))
+            {
+                Assert.Equal(CellKind.Floor, l.CellAt(t.CellX, t.CellZ));
+                Assert.Equal(CellKind.Rock, l.CellAt(t.CellX - t.FaceX, t.CellZ - t.FaceZ));
+                Assert.NotNull(l.GapAt(t.CellX, t.CellZ));
+                // The flame sits above the hallway's own floor, which is up on the platform.
+                Assert.Equal(DungeonSite.FloorY(k) + 1 + l.HeightAt(t.CellX, t.CellZ) + PropPlacer.Height, t.Y, 3);
+            }
+        }
+    }
+
+    [Fact]
+    public void TheMinimapShowsHallwaysAndPitsAndSeesAcrossTheGap()
+    {
+        foreach (var (site, k, l) in AllFloors().Take(40))
+            foreach (var gap in l.Gaps.Where(g => g.Kind == LinkKind.PortalGap))
+            {
+                var map = new FloorMap(site);
+                var edge = gap.EdgeFrom;
+                map.Reveal(k, site.OriginX + edge.X + 0.5, site.OriginZ + edge.Z + 0.5);
+                Assert.Equal(MapCell.Hall, map.At(k, edge.X, edge.Z));
+                Assert.Equal(MapCell.Pit, map.At(k, gap.Span[0].X, gap.Span[0].Z));
+                // The far hallway is in line of sight across the pit, however long it is.
+                Assert.True(map.IsSeen(k, gap.EdgeTo.X, gap.EdgeTo.Z), $"floor {k}: span {gap.SpanLength}: the far edge was not revealed");
+            }
+    }
+
+    [Fact]
+    public void NotesCountThePortalHopsAndStayReachable()
+    {
+        int behindGaps = 0;
+        foreach (var (seed, site) in Sites.Value.Take(30))
+        {
+            var spots = NotePlacer.Place(site, seed);
+            foreach (var spot in spots)
+            {
+                var hops = NotePlacer.HopsToRooms(site.Floors[spot.Floor]);
+                Assert.True(hops.TryGetValue(spot.RoomId, out int n), "a note is in a room that cannot be reached");
+                if (n > 0) behindGaps++;
+            }
+        }
+        Assert.True(behindGaps > 5, $"only {behindGaps} notes lie behind a gap");
     }
 }

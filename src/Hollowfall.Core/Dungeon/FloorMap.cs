@@ -8,6 +8,12 @@ public enum MapCell : byte
     Door,
     Pillar,
     Stairs,
+
+    /// <summary>A gap hallway or a shaft gap's tunnel: a way that needs a portal at its far end.</summary>
+    Hall,
+
+    /// <summary>The pit of a portal gap.</summary>
+    Pit,
 }
 
 /// <summary>
@@ -49,6 +55,8 @@ public sealed class FloorMap
         if (layout.ExitStairs is { } s && Math.Abs(s.X - x) <= 1 && Math.Abs(s.Z - z) <= 1 && layout.CellAt(x, z) != CellKind.Rock) return MapCell.Stairs;
         return layout.CellAt(x, z) switch
         {
+            CellKind.Pit or CellKind.PitSpikes or CellKind.PitWater => MapCell.Pit,
+            CellKind.Floor when layout.GapAt(x, z) != null => MapCell.Hall,
             CellKind.Floor => MapCell.Floor,
             CellKind.Door => MapCell.Door,
             CellKind.Pillar => MapCell.Pillar,
@@ -76,7 +84,27 @@ public sealed class FloorMap
                 if (!InRange(x, z) || _seen[floor][z * FloorLayout.Size + x]) continue;
                 if (CanSee(layout, cx, cz, x, z)) changed |= Mark(floor, x, z);
             }
+        changed |= RevealAcrossGap(floor, layout, cx, cz);
         if (changed) Version++;
+    }
+
+    /// <summary>How far along a gap the player sees from its hallway, in cells: far enough to take in the far hallway of the longest pit.</summary>
+    public const int GapSightRange = 36;
+
+    /// <summary>Standing in a gap's hallway you can see straight across the pit, so the far hallway shows on the map beyond the usual radius.</summary>
+    private bool RevealAcrossGap(int floor, FloorLayout layout, int cx, int cz)
+    {
+        if (layout.GapAt(cx, cz) is not { } gap) return false;
+        bool changed = false;
+        foreach (int sign in new[] { 1, -1 })
+            for (int along = 1; along <= GapSightRange; along++)
+                for (int lat = -1; lat <= 1; lat++)
+                {
+                    int x = cx + gap.DirX * along * sign - gap.DirZ * lat, z = cz + gap.DirZ * along * sign + gap.DirX * lat;
+                    if (!InRange(x, z) || _seen[floor][z * FloorLayout.Size + x]) continue;
+                    if (CanSee(layout, cx, cz, x, z)) changed |= Mark(floor, x, z);
+                }
+        return changed;
     }
 
     private bool Mark(int floor, int x, int z)
