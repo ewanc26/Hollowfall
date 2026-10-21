@@ -40,6 +40,24 @@ public sealed class Progression
     /// </summary>
     public bool ReceiveBoon() => Items.Add(ItemKind.BrownieCream) == 1;
 
+    /// <summary>The quests you have taken, and how far along they are.</summary>
+    public QuestLog Quests { get; } = new();
+
+    /// <summary>
+    /// Counts a defeated enemy against your quests and pays out each quest it finishes: experience and any item, into the bag.
+    /// Returns the quests finished by this kill.
+    /// </summary>
+    public IReadOnlyList<QuestDef> RecordKill(EnemyKilled killed)
+    {
+        var finished = Quests.Record(killed);
+        foreach (var def in finished)
+        {
+            Gain(def.Experience);
+            if (def.Item is { } item) Items.Add(item, def.ItemCount);
+        }
+        return finished;
+    }
+
     public int Experience { get; private set; }
 
     public int Level => LevelFor(Experience);

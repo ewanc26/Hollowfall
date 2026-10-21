@@ -44,6 +44,52 @@ public class QuestsAndMerchantTests
     }
 
     [Fact]
+    public void FinishingAQuestPaysItsRewardOnce()
+    {
+        var character = new Progression();
+        character.Quests.Take(QuestId.ClearTheHusks);
+
+        for (int i = 1; i <= 5; i++) character.RecordKill(new EnemyKilled(i, EnemyKind.Husk));
+        Assert.Equal(40, character.Experience);
+        Assert.Equal(1, character.Items.Count(ItemKind.BrownieCream));
+
+        character.RecordKill(new EnemyKilled(6, EnemyKind.Husk));
+        Assert.Equal(40, character.Experience);
+        Assert.Equal(1, character.Items.Count(ItemKind.BrownieCream));
+    }
+
+    [Fact]
+    public void AQuestInProgressSurvivesASave()
+    {
+        var character = new Progression();
+        character.Quests.Take(QuestId.ClearTheSpitters);
+        character.RecordKill(new EnemyKilled(1, EnemyKind.Spitter));
+        character.RecordKill(new EnemyKilled(2, EnemyKind.Spitter));
+
+        var loaded = ProgressionStore.FromJson(ProgressionStore.ToJson(character));
+        Assert.Equal(2, loaded.Quests.Progress(QuestId.ClearTheSpitters));
+        Assert.Contains(QuestId.ClearTheSpitters, loaded.Quests.Active);
+
+        loaded.RecordKill(new EnemyKilled(3, EnemyKind.Spitter));
+        Assert.True(loaded.Quests.IsDone(QuestId.ClearTheSpitters));
+        Assert.Equal(60, loaded.Experience);
+        Assert.Equal(1, loaded.Items.Count(ItemKind.ThornCharm));
+    }
+
+    [Fact]
+    public void AFinishedQuestStaysFinishedAndUnknownQuestsAreDropped()
+    {
+        const string json = """
+            {"quests": {"ClearTheHusks": {"progress": 99, "done": true}, "NoSuchQuest": {"progress": 1, "done": false}}}
+            """;
+        var loaded = ProgressionStore.FromJson(json);
+        Assert.True(loaded.Quests.IsDone(QuestId.ClearTheHusks));
+        Assert.Equal(5, loaded.Quests.Progress(QuestId.ClearTheHusks));
+        Assert.Empty(loaded.Quests.Active);
+        Assert.False(loaded.Quests.Take(QuestId.ClearTheHusks));
+    }
+
+    [Fact]
     public void EveryQuestInTheCatalogueIsWhatItSaysItIs()
     {
         foreach (var id in Enum.GetValues<QuestId>())
