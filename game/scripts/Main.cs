@@ -132,7 +132,7 @@ public partial class Main : Node3D
         GetWindow().SizeChanged += ApplyUiScale;
 
         string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : Settings.Seed;
-        bool gluedLevel = System.Environment.GetEnvironmentVariable("HOLLOWFALL_LEVEL") == "glued";
+        bool gluedLevel = System.Environment.GetEnvironmentVariable("HOLLOWFALL_LEVEL") == "glued" || DevRequests.TakeGluedRoom();
         World = new VoxelWorld(TerrainGenerator.SeedFromString(seedText));
         if (gluedLevel) World.Glue = GluedTestLevel.Create();
         _seedName = seedText;
@@ -275,6 +275,19 @@ public partial class Main : Node3D
         _menus.QuitRequested += () => GetTree().Quit();
         _menus.NewGameRequested += () => Restart(skipTitle: true);
         _menus.MainMenuRequested += () => Restart(skipTitle: false);
+        _menus.GluedRoomRequested += () =>
+        {
+            DevRequests.GluedRoom = true;
+            Restart(skipTitle: true);
+        };
+        _menus.ShowcaseRequested += page =>
+        {
+            DevRequests.ShowcasePage = page;
+            GetTree().Paused = false;
+            GetTree().ChangeSceneToFile("res://scenes/Showcase.tscn");
+        };
+        _menus.DebugOverlayOn = () => _hud.DebugOn;
+        _menus.DebugOverlayChanged += on => _hud.SetDebug(on);
         _menus.JournalProvider = () => (plan.Title, _story.Journal());
         _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
         _menus.CharacterProvider = () => _character;
