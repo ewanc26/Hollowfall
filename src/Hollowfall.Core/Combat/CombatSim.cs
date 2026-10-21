@@ -68,6 +68,12 @@ public sealed class CombatSim
     private readonly MeteorTracker _meteor = new();
     private int _nextId = 1;
 
+    // Pits: the last safe place the player stood, the fall being recovered from, and the hints already given this run.
+    private Vec3? _safeSpot;
+    private int _safeFloor = -1;
+    private double _recoverIn = -1, _pitGrace;
+    private bool _fellBefore, _edgeSeen;
+
     /// <summary>The player's portal pair. The host moves the player through it with <see cref="PortalWalker"/>.</summary>
     public PortalSystem Portals { get; } = new();
 
@@ -179,6 +185,7 @@ public sealed class CombatSim
         if (Vitals.Dead) return;
 
         TrackFloor(view);
+        TrackPits(dt, view);
         if (CurrentFloor >= 0) Map.Reveal(CurrentFloor, view.Feet.X, view.Feet.Z);
         _items.Tick(dt, view, actions.Interact);
         Vitals.HitHealScale = _items.Perks.HealScale;
@@ -246,6 +253,100 @@ public sealed class CombatSim
         p.FinishTime = Time;
         var result = FloorRanking.Score(p.Targets, Time - p.StartTime, p.Kills, Style.TotalScore - p.StartStyle, p.Restarts);
         _events.Add(new FloorCompleted(floor, result, Time - p.StartTime));
+    }
+
+    // ---- pits ---------------------------------------------------------------------------------
+
+    /// <summary>Health a fall costs: a little on bare stone, more on spikes, none in water (where the cost is the long climb out).</summary>
+    public static double FallDamage(GapHazard hazard) => hazard switch { GapHazard.Spikes => 20, GapHazard.Bare => 8, _ => 0 };
+
+    /// <summary>Seconds before the player is put back on the ledge: a stumble on stone or spikes, a long swim in water.</summary>
+    public static double RecoverySeconds(GapHazard hazard) => hazard == GapHazard.Water ? 1.6 : 0.4;
+
+    private const double RecoveryGraceSeconds = 0.5;
+
+    private static bool IsPit(CellKind k) => k is CellKind.Pit or CellKind.PitSpikes or CellKind.PitWater;
+
+    private static GapHazard HazardOf(CellKind k) => k == CellKind.PitSpikes ? GapHazard.Spikes : k == CellKind.PitWater ? GapHazard.Water : GapHazard.Bare;
+
+    /// <summary>
+    /// Keeps the player from being stuck in a pit. Falling in costs a little health (never the last of it), then after a moment the
+    /// player is put back at the last safe place they stood, on their own side of the gap. Also notes the first time the player
+    /// stands at the lip of a gap, and where it is safe to put them back.
+    /// </summary>
+    private void TrackPits(double dt, PlayerView view)
+    {
+        int floor = _site.FloorIndexAt(view.Feet.X, view.Feet.Y + 0.1, view.Feet.Z);
+        if (floor < 0) return;
+        var layout = _site.Floors[floor];
+        int cx = (int)Math.Floor(view.Feet.X) - _site.OriginX, cz = (int)Math.Floor(view.Feet.Z) - _site.OriginZ;
+        var kind = layout.CellAt(cx, cz);
+        double lip = DungeonSite.FloorY(floor) + 1 + LinkMix.Rise;
+        bool inPit = IsPit(kind) && view.Feet.Y < lip - 0.6;
+        _pitGrace = Math.Max(0, _pitGrace - dt);
+
+        if (_recoverIn >= 0)
+        {
+            // Climbed out some other way (a portal on the pit wall, say): nothing to recover from.
+            if (!inPit) { _recoverIn = -1; return; }
+            _recoverIn -= dt;
+            if (_recoverIn <= 0)
+            {
+                _recoverIn = -1;
+                _pitGrace = RecoveryGraceSeconds;
+                _events.Add(new PlayerRecovered(SafeSpotFor(floor, cx, cz)));
+            }
+            return;
+        }
+
+        // The host moves the body on the next frame: do not count the same fall twice while it catches up.
+        if (inPit && _pitGrace > 0) return;
+
+        if (inPit)
+        {
+            var hazard = HazardOf(kind);
+            double damage = Math.Min(FallDamage(hazard), Vitals.Health - 1); // a fall never kills
+            if (damage > 0) HurtPlayer(damage);
+            _events.Add(new PlayerFell(hazard, Math.Max(0, damage), !_fellBefore));
+            _fellBefore = true;
+            _recoverIn = RecoverySeconds(hazard);
+            return;
+        }
+
+        if (view.Airborne) return;
+        double surface = DungeonSite.FloorY(floor) + 1 + layout.HeightAt(cx, cz);
+        if (kind is CellKind.Floor or CellKind.Door && Math.Abs(view.Feet.Y - surface) < 0.3)
+        {
+            // Not at the very lip, so a recovery never leaves the player a step from falling again.
+            bool nearPit = false;
+            for (int dz = -1; dz <= 1 && !nearPit; dz++)
+                for (int dx = -1; dx <= 1 && !nearPit; dx++)
+                    nearPit = IsPit(layout.CellAt(cx + dx, cz + dz));
+            if (!nearPit)
+            {
+                _safeSpot = new Vec3(_site.OriginX + cx + 0.5, surface, _site.OriginZ + cz + 0.5);
+                _safeFloor = floor;
+            }
+
+            if (!_edgeSeen && layout.GapAt(cx, cz) is { } gap && ((cx, cz) == gap.EdgeFrom || (cx, cz) == gap.EdgeTo))
+            {
+                _edgeSeen = true;
+                _events.Add(new PitEdgeReached(gap.Kind));
+            }
+        }
+    }
+
+    /// <summary>Where to put a player who fell in at a cell: the last safe place they stood, or failing that the hallway the pit belongs to.</summary>
+    private Vec3 SafeSpotFor(int floor, int cx, int cz)
+    {
+        if (_safeSpot is { } spot && _safeFloor == floor) return spot;
+        var layout = _site.Floors[floor];
+        var gap = layout.GapAt(cx, cz) ?? layout.Gaps.OrderBy(g => Math.Abs(g.Span[0].X - cx) + Math.Abs(g.Span[0].Z - cz)).First();
+        // The hallway end nearer the player, two cells back from the lip.
+        bool fromSide = Math.Abs(gap.EdgeFrom.X - cx) + Math.Abs(gap.EdgeFrom.Z - cz) <= Math.Abs(gap.EdgeTo.X - cx) + Math.Abs(gap.EdgeTo.Z - cz);
+        var hall = gap.Hall(fromSide);
+        var cell = hall[Math.Max(0, hall.Count - 3)];
+        return new Vec3(_site.OriginX + cell.X + 0.5, DungeonSite.FloorY(floor) + 1 + layout.HeightAt(cell.X, cell.Z), _site.OriginZ + cell.Z + 0.5);
     }
 
     private void TriggerEncounters(PlayerView view)
@@ -332,6 +433,9 @@ public sealed class CombatSim
             if (!_floors[f].Completed)
                 _floors[f].Kills = _encounters.Where(e => e.Floor == f && e.Cleared).Sum(e => e.Enemies.Count(en => en.Dead));
         Portals.Clear();
+        _safeSpot = null;
+        _recoverIn = -1;
+        _pitGrace = 0;
         _parryWindow = _parryCooldown = 0;
         _meteor.Reset();
     }
@@ -606,8 +710,23 @@ public sealed class CombatSim
     /// <summary>Moves an enemy, letting it walk through portal openings and come out of the other one.</summary>
     private void Walk(Enemy e, double dt, double dx, double dz)
     {
+        (dx, dz) = KeepOffPits(e, dx, dz);
         var crossing = PortalWalker.Step(e.Body, Portals, dt, dx, dz, false, Blocks, new Vec3(dx, 0, dz), e.Spec.Speed);
         if (crossing is { } c) _events.Add(new PortalTraversed("enemy", c.Entered.Color));
+    }
+
+    /// <summary>Enemies stop at the edge of a pit instead of walking into it: the part of a step that would take them over is dropped.</summary>
+    private (double Dx, double Dz) KeepOffPits(Enemy e, double dx, double dz)
+    {
+        var layout = _site.Floors[e.Floor];
+        double reach = e.Spec.HalfWidth + 0.4;
+        CellKind At(double x, double z) => layout.CellAt((int)Math.Floor(x) - _site.OriginX, (int)Math.Floor(z) - _site.OriginZ);
+        double x0 = e.Feet.X, z0 = e.Feet.Z;
+        if (IsPit(At(x0, z0))) return (dx, dz); // already in one: nothing to protect
+        if (dx != 0 && IsPit(At(x0 + Math.Sign(dx) * reach, z0))) dx = 0;
+        if (dz != 0 && IsPit(At(x0, z0 + Math.Sign(dz) * reach))) dz = 0;
+        if (dx != 0 && dz != 0 && IsPit(At(x0 + Math.Sign(dx) * reach, z0 + Math.Sign(dz) * reach))) dx = dz = 0;
+        return (dx, dz);
     }
 
     private void BeginWindup(Enemy e)
