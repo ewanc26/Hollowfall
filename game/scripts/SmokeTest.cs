@@ -125,6 +125,23 @@ public partial class SmokeTest : Node
 
         Check("the Folk, the Bean Nighe and the hare are rigged and animated", CheckCreatureRigs);
 
+        Check("every model loads from its committed file, with the same parts as the code build", () =>
+        {
+            foreach (var model in ModelCatalog.All)
+            {
+                var rig = ModelFactory.Build(model);
+                bool same = model.Parts.All(p => rig.Part(p.Name) != null) && rig.Parts.Count == model.Parts.Count;
+                if (!rig.FromFile || !same)
+                {
+                    GD.PrintErr($"    {model.Id}: fromFile={rig.FromFile} parts={same}");
+                    rig.Root.Free();
+                    return false;
+                }
+                rig.Root.Free();
+            }
+            return true;
+        });
+
         Check("every sound becomes an engine stream and plays", () =>
         {
             var audio = new AudioDirector();
