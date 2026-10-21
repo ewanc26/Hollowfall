@@ -21,6 +21,7 @@ public partial class CombatView : Node3D
 
     private readonly Dictionary<int, EnemyView> _enemies = [];
     private readonly Dictionary<int, ProjectileView> _projectiles = [];
+    private readonly HashSet<(int, int, int)> _pools = [];
     private Vector3 _playerPosition;
     private readonly Dictionary<PortalColor, PortalView> _portals = [];
     private readonly List<Tracer> _tracers = [];
@@ -158,6 +159,7 @@ public partial class CombatView : Node3D
                 view = new EnemyView(e) { Name = $"Enemy_{e.Id}" };
                 AddChild(view);
                 _enemies[e.Id] = view;
+                if (e.Kind is EnemyKind.Kelpie or EnemyKind.Selkie && e.Mind is { } mind) AddPool(mind.Home);
             }
             view.Follow(e, _playerPosition, delta);
         }
@@ -167,6 +169,16 @@ public partial class CombatView : Node3D
             _enemies[id].QueueFree();
             _enemies.Remove(id);
         }
+    }
+
+    /// <summary>The shallow pool a water-folk creature keeps: one per spot, left behind when its owner is gone.</summary>
+    private void AddPool(Vec3 home)
+    {
+        if (!_pools.Add(((int)Math.Floor(home.X / 2), (int)Math.Floor(home.Y), (int)Math.Floor(home.Z / 2)))) return;
+        var rig = ModelFactory.Build(ModelCatalog.CisternPool, castShadows: false);
+        rig.Root.Name = "Pool";
+        rig.Root.Position = new Vector3((float)home.X, (float)home.Y + 0.01f, (float)home.Z);
+        AddChild(rig.Root);
     }
 
     private void SyncProjectiles(double delta)

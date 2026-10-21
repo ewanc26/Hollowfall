@@ -15,6 +15,9 @@ public enum MenuScreen
     Controls,
     Settings,
     Journal,
+
+    /// <summary>How each faction regards the player (relationship system). Appended last so earlier values never shift.</summary>
+    Standing,
 }
 
 /// <summary>
@@ -41,6 +44,15 @@ public partial class Menus : CanvasLayer
     private OptionButton? _promptBox;
     private VBoxContainer _journalList = null!;
     private Label _journalTitle = null!;
+    private VBoxContainer _standingList = null!;
+
+    /// <summary>Supplies the player's reputation for the Standing screen; null when the relationship system is off. Set by the game.</summary>
+    public Func<Hollowfall.Core.Relations.Reputation?> StandingProvider { get; set; } = () => null;
+
+    /// <summary>The labels on the Standing screen's rows, for tests.</summary>
+    public IReadOnlyList<string> StandingLines => _standingLines;
+
+    private readonly List<string> _standingLines = [];
 
     public Menus(GameSettings settings, string savePath, Loc? loc = null)
     {
@@ -97,6 +109,7 @@ public partial class Menus : CanvasLayer
         _screens[MenuScreen.Controls] = BuildControls();
         _screens[MenuScreen.Settings] = BuildSettings();
         _screens[MenuScreen.Journal] = BuildJournal();
+        _screens[MenuScreen.Standing] = BuildStanding();
         foreach (var s in _screens.Values)
         {
             s.Visible = false;
@@ -135,6 +148,7 @@ public partial class Menus : CanvasLayer
         MenuOpenChanged?.Invoke(screen != MenuScreen.None);
         Input.MouseMode = screen == MenuScreen.None ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
         if (screen == MenuScreen.Journal) RefreshJournal();
+        if (screen == MenuScreen.Standing) RefreshStanding();
         if (screen != MenuScreen.None) FocusFirst(_screens[screen]);
     }
 
@@ -183,7 +197,7 @@ public partial class Menus : CanvasLayer
         {
             if (_current == MenuScreen.None) Open(MenuScreen.Pause);
             else if (_current == MenuScreen.Pause) { Close(); ResumeRequested?.Invoke(); }
-            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal) Open(ReturnScreen());
+            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing) Open(ReturnScreen());
             GetViewport().SetInputAsHandled();
         }
     }
@@ -341,11 +355,12 @@ public partial class Menus : CanvasLayer
 
     private Control BuildPause()
     {
-        var (screen, col) = Panel(420, 470);
+        var (screen, col) = Panel(420, 520);
         col.AddChild(Heading(_loc.Tr("pause.title")));
         col.AddChild(MakeButton(_loc.Tr("pause.resume"), () => { Close(); ResumeRequested?.Invoke(); }));
         col.AddChild(MakeButton(_loc.Tr("pause.respawn"), () => { Close(); RespawnRequested?.Invoke(); }));
         col.AddChild(MakeButton(_loc.Tr("pause.journal"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Journal)));
+        col.AddChild(MakeButton(_loc.Tr("pause.standing"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Standing)));
         col.AddChild(MakeButton(_loc.Tr("pause.mainMenu"), () => MainMenuRequested?.Invoke()));
         col.AddChild(MakeButton(_loc.Tr("menu.controls"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
         col.AddChild(MakeButton(_loc.Tr("menu.settings"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Settings)));
@@ -371,6 +386,102 @@ public partial class Menus : CanvasLayer
         footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
         col.AddChild(footer);
         return screen;
+    }
+
+    private Control BuildStanding()
+    {
+        var (screen, col) = Panel(820, 640);
+        col.AddChild(Heading("STANDING"));
+        var sub = new Label { Text = "How the dungeon's peoples regard you. Hurt a creature in front of its kin and they will remember.", HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(740, 0) };
+        sub.AddThemeColorOverride("font_color", new Color(0.7f, 0.7f, 0.75f));
+        sub.AddThemeFontSizeOverride("font_size", 18);
+        col.AddChild(sub);
+
+        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 410), SizeFlagsVertical = Control.SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        col.AddChild(scroll);
+        _standingList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(740, 0) };
+        _standingList.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(_standingList);
+
+        var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        footer.AddChild(MakeButton("Back", () => Open(ReturnScreen())));
+        col.AddChild(footer);
+        return screen;
+    }
+
+    private static Color TierColour(Hollowfall.Core.Relations.ReputationTier tier) => tier switch
+    {
+        Hollowfall.Core.Relations.ReputationTier.Hated => new Color(0.85f, 0.15f, 0.15f),
+        Hollowfall.Core.Relations.ReputationTier.Hostile => new Color(0.95f, 0.4f, 0.25f),
+        Hollowfall.Core.Relations.ReputationTier.Wary => new Color(0.95f, 0.75f, 0.25f),
+        Hollowfall.Core.Relations.ReputationTier.Neutral => new Color(0.75f, 0.75f, 0.8f),
+        Hollowfall.Core.Relations.ReputationTier.Friendly => new Color(0.55f, 0.85f, 0.45f),
+        Hollowfall.Core.Relations.ReputationTier.Trusted => new Color(0.35f, 0.85f, 0.65f),
+        _ => new Color(0.4f, 0.7f, 1f),
+    };
+
+    /// <summary>Rebuilds the Standing screen from the live reputation. Called each time the screen opens.</summary>
+    private void RefreshStanding()
+    {
+        foreach (var child in _standingList.GetChildren()) child.QueueFree();
+        _standingLines.Clear();
+        var rep = StandingProvider();
+        if (rep == null)
+        {
+            _standingList.AddChild(new Label { Text = "Nobody here has an opinion of you yet." });
+            return;
+        }
+
+        string? group = null;
+        foreach (var row in Hollowfall.Core.Relations.StandingBoard.Rows(rep))
+        {
+            if (row.Group != group)
+            {
+                group = row.Group;
+                var header = new Label { Text = group.ToUpperInvariant() };
+                header.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 1f));
+                header.AddThemeFontSizeOverride("font_size", 17);
+                _standingList.AddChild(header);
+            }
+
+            var colour = TierColour(row.Tier);
+            string tier = Hollowfall.Core.Relations.ReputationTiers.Label(row.Tier);
+            string line = $"{row.Name}: {tier} ({row.Value:0})";
+            _standingLines.Add(line);
+
+            var name = new Label { Text = row.Name, CustomMinimumSize = new Vector2(190, 0) };
+            var label = new Label { Text = tier, CustomMinimumSize = new Vector2(110, 0) };
+            label.AddThemeColorOverride("font_color", colour);
+            var bar = new Control { CustomMinimumSize = new Vector2(300, 18), SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+            bar.AddChild(new ColorRect { Size = new Vector2(300, 18), Color = new Color(0.12f, 0.12f, 0.16f) });
+            bar.AddChild(new ColorRect { Position = new Vector2(149, 0), Size = new Vector2(2, 18), Color = new Color(1, 1, 1, 0.35f) }); // the neutral mark
+            float x = (float)(row.Fraction * 300);
+            bar.AddChild(new ColorRect { Position = new Vector2(Math.Min(x, 150), 3), Size = new Vector2(Math.Abs(x - 150), 12), Color = colour });
+            var entry = new HBoxContainer();
+            entry.AddThemeConstantOverride("separation", 12);
+            entry.AddChild(name);
+            entry.AddChild(label);
+            entry.AddChild(bar);
+            _standingList.AddChild(entry);
+
+            var blurb = new Label { Text = row.Blurb, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(700, 0) };
+            blurb.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
+            blurb.AddThemeFontSizeOverride("font_size", 15);
+            _standingList.AddChild(blurb);
+        }
+
+        var recent = Hollowfall.Core.Relations.StandingBoard.RecentLines(rep);
+        var recentHead = new Label { Text = "RECENT" };
+        recentHead.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 1f));
+        recentHead.AddThemeFontSizeOverride("font_size", 17);
+        _standingList.AddChild(recentHead);
+        if (recent.Count == 0) _standingList.AddChild(new Label { Text = "Nothing yet." });
+        foreach (var line in recent)
+        {
+            var l = new Label { Text = line };
+            l.AddThemeFontSizeOverride("font_size", 17);
+            _standingList.AddChild(l);
+        }
     }
 
     /// <summary>Rebuilds the journal from the notes read so far. Called each time the screen opens.</summary>

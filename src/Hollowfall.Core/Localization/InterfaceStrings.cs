@@ -49,6 +49,7 @@ public static class InterfaceStrings
             G("pause.title", "PAUSED", "AIR STAD", ReviewStatus.NeedsReview, "WK FF", "held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state"),
             G("pause.resume", "Resume", "Lean air", ReviewStatus.Verified, "FF WK", "Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue"),
             T("pause.respawn", "Respawn"),
+            T("pause.standing", "Standing"),
             G("pause.journal", "Journal", "Leabhar-latha", ReviewStatus.Verified, "WK", "leabhar-latha, diary or journal"),
             T("pause.mainMenu", "Main menu"),
 
