@@ -36,12 +36,18 @@ public sealed class GluedBox
     }
 
     /// <summary>
+    /// The yaw a walker should face after crossing a seam: a mirrored seam turns the facing across the X axis, so yaw θ
+    /// becomes π − θ. Unchanged for a plain torus gluing.
+    /// </summary>
+    public double YawAfterCrossing(double yaw) => Mirrored ? Math.PI - yaw : yaw;
+
+    /// <summary>
     /// Steps the body through the space and, if its centre has passed a glued face, moves it to the matching point on the
     /// far side with its velocity carried over. Returns true when it crossed a seam.
     /// </summary>
-    public bool Step(PlayerBody body, double dt, double moveX, double moveZ, double speed = PlayerBody.WalkSpeed)
+    public bool Step(PlayerBody body, double dt, double moveX, double moveZ, bool jump = false, double speed = PlayerBody.WalkSpeed)
     {
-        body.Step(dt, moveX, moveZ, false, BlockAt, speed);
+        body.Step(dt, moveX, moveZ, jump, BlockAt, speed);
         if (body.X >= 0 && body.X < Width) return false;
 
         double x = body.X - Math.Floor(body.X / Width) * Width;
