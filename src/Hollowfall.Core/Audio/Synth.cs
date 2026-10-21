@@ -48,6 +48,11 @@ public enum SoundId
     // ---- the Wulver (appended; new sounds go below this line) ----
     WulverGreeting,
     WulverGift,
+
+    // ---- fire pits and the cat (appended; new sounds go below this line) ----
+    FireCrackle,
+    CatMeow,
+    CatPurr,
 }
 
 /// <summary>
@@ -61,6 +66,11 @@ public static class Synth
 
     /// <summary>Length of the looping ambience, in seconds. Every tone in it has a whole number of cycles in this time.</summary>
     public const double AmbienceSeconds = 4.0;
+
+    /// <summary>Lengths of the looping fire crackle and cat purr, in seconds. Both fit whole cycles into the loop, so they join without a click.</summary>
+    public const double CrackleSeconds = 3.0;
+
+    public const double PurrSeconds = 1.6;
 
     private const double Tau = Math.PI * 2;
 
@@ -109,15 +119,18 @@ public static class Synth
             SoundId.TitleCard => Mix(2.2, (t, _) => (Sine(t, 110) * 0.5 * Decay(t, 2.2) + Sine(t, 165) * 0.3 * Decay(t, 3) + Sine(t, 277) * 0.18 * Decay(t, 5)) * Math.Min(1, t / 0.04)),
             SoundId.WulverGreeting => Mix(1.7, (t, i) => ((Sine(t, 196) * 0.45 + Sine(t, 294) * 0.25 + Sine(t, 392) * 0.12) * Decay(t, 2.6) + (t > 0.35 ? (Sine(t - 0.35, 247) * 0.3 + Sine(t - 0.35, 370) * 0.12) * Decay(t - 0.35, 2.8) : 0) + Noise(i, 32) * Math.Sin(Math.PI * Math.Min(1, t / 0.5)) * 0.03) * Math.Min(1, t / 0.12) * (1 + 0.04 * Math.Sin(Tau * 4.5 * t)) * 0.8),
             SoundId.WulverGift => Mix(1.6, (t, _) => Chime(t, 523.25, 0) + Chime(t, 659.25, 0.11) + Chime(t, 783.99, 0.22) + Chime(t, 1046.5, 0.36) * 0.8),
+            SoundId.FireCrackle => Crackle(),
+            SoundId.CatMeow => Meow(0.62),
+            SoundId.CatPurr => Purr(),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
-        if (id != SoundId.Ambience) Finish(samples);
+        if (!Loops(id)) Finish(samples);
         return samples;
     }
 
     /// <summary>Whether a sound is meant to repeat seamlessly.</summary>
-    public static bool Loops(SoundId id) => id == SoundId.Ambience;
+    public static bool Loops(SoundId id) => id is SoundId.Ambience or SoundId.FireCrackle or SoundId.CatPurr;
 
     // ---- building blocks -----------------------------------------------------------------------
 
@@ -261,6 +274,62 @@ public static class Synth
             double swell = 0.75 + 0.25 * Math.Sin(Tau * t / AmbienceSeconds);
             double drone = Sine(t, 55) * 0.5 + Sine(t, 55.25) * 0.4 + Sine(t, 82.5) * 0.25 + Sine(t, 110.25) * 0.12;
             return drone * swell * 0.5;
+        });
+
+    /// <summary>
+    /// A fire burning softly: a low warm bed of filtered noise that swells and falls, with small pops and snaps scattered through it. Pops wrap
+    /// round the end of the loop, so it joins without a click. Every pop's time and pitch come from a hash.
+    /// </summary>
+    private static float[] Crackle()
+    {
+        const int Pops = 22;
+        var bed = OnePole(Mix(CrackleSeconds, (_, i) => Noise(i, 60)), 700);
+        var hiss = OnePole(Mix(CrackleSeconds, (_, i) => Noise(i, 61)), 3000);
+        var times = new double[Pops];
+        var pitch = new double[Pops];
+        var loud = new double[Pops];
+        for (int k = 0; k < Pops; k++)
+        {
+            times[k] = SeedHash.ToUnit(SeedHash.Hash(62, k, 0)) * CrackleSeconds;
+            pitch[k] = 900 + SeedHash.ToUnit(SeedHash.Hash(63, k, 0)) * 2600;
+            loud[k] = 0.35 + SeedHash.ToUnit(SeedHash.Hash(64, k, 0)) * 0.65;
+        }
+        return Mix(CrackleSeconds, (t, i) =>
+        {
+            double swell = 0.7 + 0.3 * Math.Sin(Tau * t / CrackleSeconds) * Math.Sin(Tau * 2 * t / CrackleSeconds);
+            double sum = bed[i] * 1.7 * swell + (hiss[i] - bed[i]) * 0.5 * swell;
+            for (int k = 0; k < Pops; k++)
+            {
+                double d = (t - times[k] + CrackleSeconds) % CrackleSeconds;
+                if (d > 0.08) continue;
+                sum += (Noise(i, 65) * 0.5 + Sine(d, pitch[k]) * 0.5) * Decay(d, 70) * loud[k] * 0.5;
+            }
+            return sum * 0.45;
+        });
+    }
+
+    /// <summary>A short, soft meow: a rising then falling voice with a few harmonics and a little breath, over a bit more than half a second.</summary>
+    private static float[] Meow(double seconds) =>
+        Mix(seconds, (t, i) =>
+        {
+            double f0 = 480, bend = 360;
+            // Phase is the integral of the glide, so there are no clicks.
+            double phase = f0 * t + bend * seconds / Math.PI * (1 - Math.Cos(Math.PI * t / seconds)) * 0.5;
+            double voice = Math.Sin(Tau * phase) + 0.55 * Math.Sin(Tau * 2 * phase) + 0.3 * Math.Sin(Tau * 3 * phase) + 0.12 * Math.Sin(Tau * 5 * phase);
+            double env = Math.Sin(Math.PI * Math.Min(1, t / seconds));
+            env = Math.Pow(env, 0.7) * Math.Min(1, t / 0.04);
+            double vowel = 0.75 + 0.25 * Math.Sin(Tau * 3 * t);
+            return (voice * env * vowel * 0.22 + Noise(i, 66) * env * 0.02) * 1.4;
+        });
+
+    /// <summary>A soft purr: a low buzz at about 25 pulses a second, swelling and fading once per loop like a breath.</summary>
+    private static float[] Purr() =>
+        Mix(PurrSeconds, (t, i) =>
+        {
+            double pulse = 0.5 + 0.5 * Math.Sin(Tau * 25 * t);
+            double breath = 0.65 + 0.35 * Math.Sin(Tau * t / PurrSeconds);
+            double buzz = Sine(t, 75) * 0.5 + Sine(t, 150) * 0.3 + Sine(t, 225) * 0.12;
+            return buzz * pulse * pulse * breath * 0.5;
         });
 
     /// <summary>Normalises loud sounds to a safe peak and fades the first and last milliseconds so nothing clicks.</summary>

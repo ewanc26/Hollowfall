@@ -83,6 +83,9 @@ public static class ModelCatalog
         Scroll,
         // ---- the Wulver: a hidden figure on a hill (append further models above this line, not below) ----
         Wulver,
+        // ---- fire pits and something warm beside one (append further models above this line, not below) ----
+        FirePit,
+        Cat,
     ];
 
     public static LowPolyModel ForEnemy(EnemyKind kind) => kind switch
@@ -502,5 +505,126 @@ public static class ModelCatalog
 
         m.Anchor("eyes", V(0, 1.85, -0.3));
         return m.Build();
+    }
+
+    // ---- the fire pit: a ring of rough stones, crossed logs and a flame of glowing gems --------
+
+    private static readonly Lazy<LowPolyModel> FirePitModel = new(BuildFirePit);
+
+    public static LowPolyModel FirePit => FirePitModel.Value;
+
+    private static LowPolyModel BuildFirePit()
+    {
+        var ash = ModelColor.Hex(0x2a2522);
+        var charred = ModelColor.Hex(0x3b2b20);
+        var m = new ModelBuilder("fire_pit");
+
+        // Eight rough stones around the edge, each a little different in height, tilt and shade. The ring is half a block across.
+        var stones = m.Part("stones", V(0, 0, 0));
+        stones.Prism(V(0, 0.02, 0), 0.36, 0.04, 8, ash, 0.95);
+        double[] heights = [0.2, 0.15, 0.22, 0.17, 0.19, 0.14, 0.21, 0.16];
+        double[] shades = [-0.05, 0.08, -0.15, 0.03, 0.1, -0.1, 0.0, 0.12];
+        for (int k = 0; k < 8; k++)
+        {
+            double a = (k * 45 + (k % 2 == 0 ? 4 : -5)) * Math.PI / 180;
+            stones.Prism(V(Math.Cos(a) * 0.42, heights[k] / 2, Math.Sin(a) * 0.42), 0.13, heights[k], 5, Palette.Stone.Shade((float)shades[k]), 0.78, V(0, k * 31, 0));
+        }
+
+        // Three logs, crossed over the ash.
+        var logs = m.Part("logs", V(0, 0, 0));
+        for (int k = 0; k < 3; k++)
+            logs.Prism(V(0, 0.1 + k * 0.025, 0), 0.055, 0.62, 5, k == 1 ? charred : Palette.Wood.Shade(-0.2f), 0.9, V(0, 15 + k * 60, 90 - k * 5));
+
+        // A few embers glowing where the logs cross.
+        m.Part("embers", V(0, 0.12, 0))
+            .Gem(V(0.05, 0, 0.03), V(0.045, 0.03, 0.045), Palette.Hot, glow: true)
+            .Gem(V(-0.06, 0.01, -0.02), V(0.04, 0.028, 0.04), Palette.Ember, V(0, 30, 0), glow: true)
+            .Gem(V(0.0, 0.02, -0.08), V(0.035, 0.025, 0.035), Palette.Hot, glow: true);
+
+        // The flame: tall and thin, an amber heart and a pale core, all emissive gems. The parts sway apart from one another.
+        m.Part("flame", V(0, 0.12, 0))
+            .Gem(V(0, 0.2, 0), V(0.11, 0.26, 0.11), Palette.Ember, glow: true)
+            .Gem(V(0, 0.15, 0), V(0.07, 0.19, 0.07), Palette.EyeAmber, V(0, 45, 0), glow: true)
+            .Gem(V(0, 0.09, 0), V(0.04, 0.09, 0.04), Palette.White, glow: true);
+        m.Part("tongue_a", V(0.1, 0.12, 0.02))
+            .Gem(V(0, 0.12, 0), V(0.06, 0.17, 0.06), Palette.Ember, V(0, 0, -12), glow: true);
+        m.Part("tongue_b", V(-0.09, 0.12, -0.05))
+            .Gem(V(0, 0.1, 0), V(0.055, 0.15, 0.055), Palette.EyeAmber, V(0, 0, 14), glow: true);
+
+        return m.Anchor("flame", V(0, 0.45, 0)).Build();
+    }
+
+    // ---- the cat: a Russian Blue on a little stone seat with a rug, beside a fire pit -----------
+
+    private static readonly Lazy<LowPolyModel> CatModel = new(BuildCat);
+
+    public static LowPolyModel Cat => CatModel.Value;
+
+    private static LowPolyModel BuildCat()
+    {
+        // A short, dense, silvery blue-grey coat with a faint sheen, vivid green eyes, a wedge head with big wide-set ears.
+        var coat = ModelColor.Hex(0x8490a0);
+        var coatLight = coat.Shade(0.14f);
+        var coatDark = coat.Shade(-0.2f);
+        var pad = ModelColor.Hex(0x8c7480);
+        var nose = ModelColor.Hex(0x4a525b);
+        var green = ModelColor.Hex(0x3cf06a);
+        var cloth = ModelColor.Hex(0x2c2838);
+        var hem = ModelColor.Hex(0x6a2f34);
+        var m = new ModelBuilder("cat");
+
+        // The hearth: a flat stone seat, a rug of dark cloth with a red hem on it, and two stones at the back to lean on.
+        m.Part("hearth", V(0, 0, 0))
+            .Box(V(0, 0.08, 0), V(0.88, 0.16, 0.88), Palette.Stone.Shade(-0.08f))
+            .Box(V(0, 0.168, 0.01), V(0.78, 0.016, 0.7), hem)
+            .Box(V(0, 0.178, 0.01), V(0.7, 0.016, 0.62), cloth)
+            .Box(V(-0.3, 0.2, 0.36), V(0.22, 0.18, 0.2), Palette.Stone.Shade(-0.2f), V(0, 12, 0))
+            .Box(V(0.28, 0.17, 0.38), V(0.2, 0.14, 0.18), Palette.Stone.Shade(-0.1f), V(0, -10, 0));
+
+        // The body is built as a loaf lying on the rug (hips at the back, chest at the front); sitting up tips it about the hips.
+        m.Part("body", V(0, 0.3, 0.2))
+            .Blob(V(0, 0.01, -0.18), V(0.13, 0.115, 0.3), coat)
+            .Blob(V(0, 0.0, 0.0), V(0.16, 0.13, 0.15), coat)
+            .Blob(V(0, 0.03, -0.37), V(0.115, 0.115, 0.13), coat.Shade(0.04f))
+            .Box(V(0, 0.115, -0.15), V(0.1, 0.02, 0.34), coatLight);
+
+        foreach (double side in new[] { -1.0, 1.0 })
+        {
+            string tag = side < 0 ? "l" : "r";
+            m.Part($"leg_b{tag}", V(0.13 * side, 0.27, 0.22), "body")
+                .Blob(V(0, -0.01, 0), V(0.065, 0.1, 0.12), coat)
+                .Box(V(0, -0.1, -0.1), V(0.07, 0.04, 0.16), coatDark);
+            m.Part($"leg_f{tag}", V(0.075 * side, 0.3, -0.2), "body")
+                .Box(V(0, -0.105, 0), V(0.064, 0.21, 0.064), coat)
+                .Box(V(0, -0.225, -0.02), V(0.074, 0.04, 0.1), pad);
+        }
+
+        // The wedge-shaped head, with a gentle smile.
+        m.Part("head", V(0, 0.4, -0.3), "body")
+            .Blob(V(0, 0, -0.03), V(0.115, 0.095, 0.095), coat)
+            .Box(V(0, -0.04, -0.115), V(0.085, 0.055, 0.07), coatLight)
+            .Box(V(0, -0.015, -0.153), V(0.036, 0.026, 0.016), nose)
+            .Box(V(-0.022, -0.068, -0.148), V(0.04, 0.012, 0.012), nose, V(0, 0, -22))
+            .Box(V(0.022, -0.068, -0.148), V(0.04, 0.012, 0.012), nose, V(0, 0, 22))
+            .Gem(V(-0.105, -0.035, -0.045), V(0.04, 0.05, 0.055), coat.Shade(0.06f))
+            .Gem(V(0.105, -0.035, -0.045), V(0.04, 0.05, 0.055), coat.Shade(0.06f));
+
+        // Vivid green eyes: their own part so a slow blink can close them.
+        m.Part("eyes", V(0, 0.42, -0.42), "head")
+            .Gem(V(-0.052, 0, 0), V(0.032, 0.022, 0.012), green, glow: true)
+            .Gem(V(0.052, 0, 0), V(0.032, 0.022, 0.012), green, glow: true);
+
+        // Large, wide-set ears.
+        foreach (double side in new[] { -1.0, 1.0 })
+            m.Part($"ear_{(side < 0 ? "l" : "r")}", V(0.075 * side, 0.475, -0.31), "head")
+                .Prism(V(0, 0.06, 0), 0.075, 0.13, 4, coat, 0, V(0, 0, -14 * side), spin: 45);
+
+        // A long, fine tail in two segments.
+        m.Part("tail_1", V(0, 0.32, 0.37), "body")
+            .Prism(V(0, 0.0, 0.14), 0.036, 0.28, 5, coat, 0.88, V(90, 0, 0));
+        m.Part("tail_2", V(0, 0.32, 0.65), "tail_1")
+            .Prism(V(0, 0.0, 0.13), 0.032, 0.26, 5, coatDark, 0.45, V(90, 0, 0));
+
+        return m.Anchor("eyes", V(0, 0.42, -0.42)).Build();
     }
 }
