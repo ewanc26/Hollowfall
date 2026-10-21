@@ -45,7 +45,7 @@ public static class ReplayRunner
         if (world.Generator.Dungeons?.GetSite(replay.RegionX, replay.RegionZ) is not { } site || replay.Floor >= site.FloorCount) return false;
 
         // The game plays with the relationship system on, so the re-simulation does too (creatures use ids and can be shot).
-        var sim = new CombatSim(world, site);
+        var sim = new CombatSim(world, site, replay.Stats);
         sim.EnableRelations();
         outcome = Play(replay, sim, site);
         return outcome.Completed is { } c && c.Floor == replay.Floor && c.Result.Overall == replay.Result.Grade && c.Result.Points == replay.Result.Points &&

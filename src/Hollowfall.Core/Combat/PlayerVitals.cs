@@ -32,11 +32,24 @@ public sealed class PlayerVitals
     private double _invulnerableFor;
     private double _hitHealScale = 1;
 
-    public double Health { get; private set; } = MaxHealth;
+    /// <summary>A character with the base maximum health.</summary>
+    public PlayerVitals() : this(MaxHealth) { }
+
+    /// <summary>A character with <paramref name="max"/> health (Vigour raises it for a run; see RunStats in the Progression namespace).</summary>
+    public PlayerVitals(double max)
+    {
+        Max = max;
+        Health = max;
+    }
+
+    /// <summary>The most health this character can have in this run.</summary>
+    public double Max { get; }
+
+    public double Health { get; private set; }
     public double HardDamage { get; private set; }
 
     /// <summary>The most health you can have right now: the maximum less hard damage.</summary>
-    public double Ceiling => MaxHealth - HardDamage;
+    public double Ceiling => Max - HardDamage;
 
     /// <summary>Multiplier on blood from hits (the Bloodlust perk). 1 normally; clamped to 1..4.</summary>
     public double HitHealScale
@@ -55,7 +68,7 @@ public sealed class PlayerVitals
         double taken = Math.Min(amount, Health);
         Health -= taken;
 
-        HardDamage = Math.Min(MaxHealth - 1, HardDamage + taken * HardDamageShare);
+        HardDamage = Math.Min(Max - 1, HardDamage + taken * HardDamageShare);
         _hardDamageDelay = HardDamageBaseDelay + taken * HardDamageDelayPerPoint;
         return taken;
     }
@@ -121,7 +134,7 @@ public sealed class PlayerVitals
 
     public void Reset()
     {
-        Health = MaxHealth;
+        Health = Max;
         HardDamage = 0;
         _hardDamageDelay = 0;
         _invulnerableFor = 0;

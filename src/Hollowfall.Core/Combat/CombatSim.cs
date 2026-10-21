@@ -1,5 +1,6 @@
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Portals;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.Relations;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
@@ -85,7 +86,10 @@ public sealed class CombatSim
     /// <summary>The player's portal pair. The host moves the player through it with <see cref="PortalWalker"/>.</summary>
     public PortalSystem Portals { get; } = new();
 
-    public PlayerVitals Vitals { get; } = new();
+    public PlayerVitals Vitals { get; }
+
+    /// <summary>The character's stats for this run, read once when it starts (see RunStats). Vigour sets the maximum health; Might scales the guns and parries.</summary>
+    public RunStats Stats { get; }
 
     /// <summary>Seconds left in the open parry window (0 when closed), which a Wide Parry perk lengthens.</summary>
     public double ParryWindowLeft => _parryWindow;
@@ -104,10 +108,12 @@ public sealed class CombatSim
     public int CurrentFloor { get; private set; } = -1;
     public bool Dead => Vitals.Dead;
 
-    public CombatSim(VoxelWorld world, DungeonSite site)
+    public CombatSim(VoxelWorld world, DungeonSite site, RunStats stats = default)
     {
         _world = world;
         _site = site;
+        Stats = stats;
+        Vitals = new PlayerVitals(stats.MaxHealth);
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
         _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add,
             cleanse: Vitals.Cleanse, boostStyle: m => Style.Award(StyleBonus.Parry, extraMultiplier: m));
@@ -542,7 +548,7 @@ public sealed class CombatSim
 
             var zone = target.ZoneAt(end.Y);
             double mult = zone == HitZone.Head ? weapon.HeadMultiplier : zone == HitZone.Limb ? weapon.LimbMultiplier : 1.0;
-            double damage = weapon.Damage * mult;
+            double damage = weapon.Damage * mult * Stats.DamageScale;
 
             if (weapon.Pellets > 1 && distance <= ShotgunParryReach && target.Telegraphing && !parried)
             {
@@ -664,7 +670,7 @@ public sealed class CombatSim
         e.State = EnemyState.Stunned;
         e.Timer = ParryStunSeconds;
         _events.Add(new Parried(kind, healed));
-        DamageEnemy(e, ParryDamage * (kind == ParryKind.Shotgun ? 1.5 : 1.0), HitZone.Torso, e.Feet + new Vec3(0, 1, 0), "parry", false);
+        DamageEnemy(e, ParryDamage * (kind == ParryKind.Shotgun ? 1.5 : 1.0) * Stats.DamageScale, HitZone.Torso, e.Feet + new Vec3(0, 1, 0), "parry", false);
     }
 
     // ---- meteor (momentum kills) --------------------------------------------------------------
