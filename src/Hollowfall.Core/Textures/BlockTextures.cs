@@ -64,6 +64,10 @@ public enum Tile
 
     // Gap pits.
     Spikes,
+
+    // Village cottages (appended).
+    Plank,
+    Thatch,
 }
 
 /// <summary>
@@ -131,6 +135,8 @@ public static partial class BlockTextures
         BlockType.Gate => Tile.Gate,
         BlockType.Door => Tile.Door,
         BlockType.Spikes => Tile.Spikes,
+        BlockType.Plank => Tile.Plank,
+        BlockType.Thatch => Tile.Thatch,
         _ => Tile.Stone,
     };
 

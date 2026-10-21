@@ -1,4 +1,5 @@
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Village;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Core.Terrain;
@@ -33,6 +34,9 @@ public sealed class TerrainGenerator
     /// <summary>Where dungeons sit in this world, or null if dungeons are disabled.</summary>
     public DungeonMap? Dungeons { get; }
 
+    /// <summary>Where villages stand in this world, and the plan of each.</summary>
+    public VillagePlanner Villages { get; }
+
     public TerrainGenerator(long seed, bool enableDungeons = true)
     {
         Seed = seed;
@@ -47,6 +51,7 @@ public sealed class TerrainGenerator
         _detail = new PerlinNoise(SeedHash.Derive(seed, 8));
         _river = new PerlinNoise(SeedHash.Derive(seed, 9));
         _ores = OreSpec.Defaults.Select(o => (o, new PerlinNoise(SeedHash.Derive(seed, o.Salt)))).ToArray();
+        Villages = new VillagePlanner(this);
     }
 
     /// <summary>Convenience: accept a text seed like Minecraft does.</summary>
@@ -153,6 +158,8 @@ public sealed class TerrainGenerator
                 FillColumn(chunk, lx, lz, ox + lx, oz + lz, cols[(lx + TreeMargin) * span + lz + TreeMargin]);
 
         PlaceVegetation(chunk, cols, span);
+        foreach (var village in Villages.Overlapping(chunkX, chunkZ))
+            VillageBuilder.Apply(chunk, village);
         Dungeons?.SiteForChunk(chunkX, chunkZ)?.Apply(chunk);
         return chunk;
     }
