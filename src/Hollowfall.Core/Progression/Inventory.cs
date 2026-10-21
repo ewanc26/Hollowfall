@@ -94,7 +94,7 @@ public sealed class Inventory
     /// <summary>The name and use of an item.</summary>
     public static (string Name, ItemUse Use, string Blurb) Info(ItemKind kind) => kind switch
     {
-        ItemKind.BrownieCream => ("Brownie's cream", ItemUse.Consumable, "A warm jar of cream, owed to you by a brownie."),
+        ItemKind.BrownieCream => ("Brownie's cream", ItemUse.Consumable, "A warm jar of cream, owed to you by a brownie or a villager."),
         ItemKind.ThornCharm => ("Thorn charm", ItemUse.Charm, "Rowan and thorn, bound with red thread."),
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };

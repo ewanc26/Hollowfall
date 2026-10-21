@@ -191,7 +191,7 @@ public class DispositionMatrixTests
             Assert.Equal(d, Dispositions.Decide(input));
             n++;
         }
-        Assert.Equal(8 * 6 * 5 * 4, n);
+        Assert.Equal(SpeciesInfo.All.Count * 6 * 5 * 4, n);
     }
 
     [Fact]
