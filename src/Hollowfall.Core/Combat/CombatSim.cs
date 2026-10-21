@@ -12,7 +12,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding, Vec3 Velocity = default, bool Crossed = false);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false, bool FireMortar = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -68,6 +68,7 @@ public sealed class CombatSim
     private readonly FloorProgress[] _floors;
     private readonly List<Enemy> _enemies = [];
     private readonly List<Projectile> _projectiles = [];
+    private readonly List<MortarShell> _shells = [];
     private readonly List<CombatEvent> _events = [];
     private readonly HashSet<(int, int)> _dirtyChunks = [];
     private readonly Dictionary<string, double> _cooldowns = [];
@@ -110,6 +111,7 @@ public sealed class CombatSim
 
     public IReadOnlyList<Enemy> Enemies => _enemies;
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
+    public IReadOnlyList<MortarShell> Shells => _shells;
 
     public int CurrentFloor { get; private set; } = -1;
     public bool Dead => Vitals.Dead;
@@ -267,9 +269,11 @@ public sealed class CombatSim
 
         if (actions.FireRevolver) Fire(WeaponSpec.Revolver, view);
         if (actions.FireShotgun) Fire(WeaponSpec.Shotgun, view);
+        if (actions.FireMortar) FireMortar(view);
 
         foreach (var e in _enemies.ToList()) UpdateEnemy(e, dt, view);
         UpdateProjectiles(dt, view);
+        UpdateShells(dt, view);
         CheckEncounterClears();
         _enemies.RemoveAll(e => e.Dead);
     }
@@ -326,9 +330,17 @@ public sealed class CombatSim
             DamageEnemy(e, SlamShockwaveDamage * Stats.DamageScale, HitZone.Torso, e.Feet + new Vec3(0, 1, 0), "slam", false);
         }
 
-        var underfoot = new Vec3(feet.X, feet.Y - 1, feet.Z);
-        if (_breach.Land(_world, (int)Math.Floor(underfoot.X), (int)Math.Floor(underfoot.Y), (int)Math.Floor(underfoot.Z), Time) == FloorSlam.Broken)
-            _hollowfallUntil = Time + HollowfallWindowSeconds;
+        int ux = (int)Math.Floor(feet.X), uy = (int)Math.Floor(feet.Y - 1), uz = (int)Math.Floor(feet.Z);
+        var result = _breach.Land(_world, ux, uy, uz, Time);
+        if (result != FloorSlam.None) MarkEdited(ux, uz, SlamBreach.HoleRadius);
+        if (result == FloorSlam.Broken) _hollowfallUntil = Time + HollowfallWindowSeconds;
+    }
+
+    /// <summary>Queues the chunks around a block edit for re-meshing, including the neighbour whose border faces it changes.</summary>
+    private void MarkEdited(int x, int z, int reach)
+    {
+        for (int cx = (x - reach - 1) >> 4; cx <= (x + reach + 1) >> 4; cx++)
+            for (int cz = (z - reach - 1) >> 4; cz <= (z + reach + 1) >> 4; cz++) _dirtyChunks.Add((cx, cz));
     }
 
     private void CompleteFloor(int floor)
@@ -511,6 +523,7 @@ public sealed class CombatSim
         }
         _enemies.Clear();
         _projectiles.Clear();
+        _shells.Clear();
         if (Relations != null)
         {
             Relations.OmenArmed = false;
@@ -534,6 +547,49 @@ public sealed class CombatSim
     }
 
     // ---- weapons ----------------------------------------------------------------------------
+
+    public const double MortarCooldownSeconds = 1.4;
+
+    private void FireMortar(PlayerView view)
+    {
+        if (_cooldowns.GetValueOrDefault("mortar") > 0) return;
+        _cooldowns["mortar"] = MortarCooldownSeconds;
+        Style.NotifyWeaponUsed("mortar");
+        _shells.Add(new MortarShell(_nextId++, view.Eye, view.Forward.Normalized() * MortarShell.Speed));
+    }
+
+    private void UpdateShells(double dt, PlayerView view)
+    {
+        foreach (var s in _shells.ToList())
+        {
+            s.Age += dt;
+            s.Velocity -= new Vec3(0, MortarShell.Gravity * dt, 0);
+            var next = s.Position + s.Velocity * dt;
+
+            var hitEnemy = _enemies.FirstOrDefault(e => !e.Dead && e.Mind is not { Disposition: Disposition.Allied } && Inflate(e.Bounds, Projectile.Radius).Contains(next));
+            if (hitEnemy == null && s.Age <= MortarShell.LifetimeSeconds && !BlockInfo.IsSolid(Blocks((int)Math.Floor(next.X), (int)Math.Floor(next.Y), (int)Math.Floor(next.Z))))
+            {
+                s.Position = next;
+                continue;
+            }
+
+            Detonate(s, hitEnemy != null ? next : s.Position, view);
+        }
+    }
+
+    private void Detonate(MortarShell shell, Vec3 at, PlayerView view)
+    {
+        _shells.Remove(shell);
+        if (MortarBlast.Carve(_world, at) > 0) MarkEdited((int)Math.Floor(at.X), (int)Math.Floor(at.Z), (int)Math.Ceiling(MortarBlast.Radius));
+        foreach (var e in _enemies.ToList())
+        {
+            if (e.Dead || e.Mind is { Disposition: Disposition.Allied }) continue;
+            double dist = (e.Feet + new Vec3(0, 0.9, 0)).DistanceTo(at);
+            if (dist > MortarBlast.Radius) continue;
+            DamageEnemy(e, MortarBlast.DamageAt(dist) * Stats.DamageScale, HitZone.Torso, at, "mortar", view.Airborne);
+        }
+        _events.Add(new ProjectileGone(shell.Id, Exploded: true, at));
+    }
 
     private void Fire(WeaponSpec weapon, PlayerView view)
     {
