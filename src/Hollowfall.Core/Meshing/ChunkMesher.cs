@@ -26,7 +26,7 @@ public static class ChunkMesher
 
     private static readonly float[] AoCurve = [0.45f, 0.65f, 0.82f, 1.0f];
 
-    public static ChunkMesh Build(int chunkX, int chunkZ, Func<int, int, int, BlockType> blockAt)
+    public static ChunkMesh Build(int chunkX, int chunkZ, Func<int, int, int, BlockType> blockAt, Func<int, int, int, BlockHole?>? holeAt = null)
     {
         var mesh = new ChunkMesh();
         int ox = chunkX * Chunk.Size, oz = chunkZ * Chunk.Size;
@@ -45,6 +45,12 @@ public static class ChunkMesher
                         continue;
                     }
 
+                    if (holeAt is not null && BlockInfo.Occludes(b) && TouchesHole(holeAt, wx, y, wz))
+                    {
+                        AddCubes(mesh.Opaque, blockAt, holeAt, wx, y, wz, lx, lz, b);
+                        continue;
+                    }
+
                     var target = b == BlockType.Water ? mesh.Water : mesh.Opaque;
                     for (int f = 0; f < Faces.Length; f++)
                     {
@@ -55,6 +61,101 @@ public static class ChunkMesher
                     }
                 }
         return mesh;
+    }
+
+    private static bool TouchesHole(Func<int, int, int, BlockHole?> holeAt, int x, int y, int z)
+    {
+        if (holeAt(x, y, z) is not null) return true;
+        for (int f = 0; f < Faces.Length; f++)
+            if (holeAt(x + Faces[f].Nx, y + Faces[f].Ny, z + Faces[f].Nz) is not null) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Draws a solid block one 10 cm cube at a time, so a dug hole shows its walls and the blocks around it show the
+    /// cavity. Only cubes whose neighbour is not solid get a face.
+    /// </summary>
+    private static void AddCubes(MeshBuffer buf, Func<int, int, int, BlockType> blockAt, Func<int, int, int, BlockHole?> holeAt,
+        int wx, int y, int wz, int lx, int lz, BlockType b)
+    {
+        int n = BlockHole.Side;
+        var hole = holeAt(wx, y, wz);
+        for (int sz = 0; sz < n; sz++)
+            for (int sy = 0; sy < n; sy++)
+                for (int sx = 0; sx < n; sx++)
+                {
+                    if (!BlockHole.IsSolid(b, hole, sx, sy, sz)) continue;
+                    for (int f = 0; f < Faces.Length; f++)
+                    {
+                        var face = Faces[f];
+                        if (CubeSolid(blockAt, holeAt, wx, y, wz, b, hole, sx + face.Nx, sy + face.Ny, sz + face.Nz)) continue;
+                        AddCubeFace(buf, blockAt, wx, y, wz, lx, lz, sx, sy, sz, f, b);
+                    }
+                }
+    }
+
+    private static bool CubeSolid(Func<int, int, int, BlockType> blockAt, Func<int, int, int, BlockHole?> holeAt,
+        int wx, int wy, int wz, BlockType self, BlockHole? selfHole, int sx, int sy, int sz)
+    {
+        int n = BlockHole.Side;
+        if ((uint)sx < n && (uint)sy < n && (uint)sz < n) return BlockHole.IsSolid(self, selfHole, sx, sy, sz);
+
+        int dx = sx < 0 ? -1 : sx >= n ? 1 : 0, dy = sy < 0 ? -1 : sy >= n ? 1 : 0, dz = sz < 0 ? -1 : sz >= n ? 1 : 0;
+        int bx = wx + dx, by = wy + dy, bz = wz + dz;
+        var neighbour = blockAt(bx, by, bz);
+        return BlockInfo.Occludes(neighbour) && BlockHole.IsSolid(neighbour, holeAt(bx, by, bz), sx - dx * n, sy - dy * n, sz - dz * n);
+    }
+
+    private static void AddCubeFace(MeshBuffer buf, Func<int, int, int, BlockType> blockAt, int wx, int y, int wz, int lx, int lz,
+        int sx, int sy, int sz, int faceIndex, BlockType b)
+    {
+        const float cube = 1f / BlockHole.Side;
+        var f = Faces[faceIndex];
+        var colour = BlockPalette.Color(b, faceIndex, DungeonThemes.IsThemed(b) ? DungeonThemes.ForY(y) : DungeonTheme.Plain);
+        var rect = BlockTextures.Rect(TileSelector.Pick(b, faceIndex, wx, y, wz, blockAt));
+        uint spin = (uint)SeedHash.Hash(0, wx, wz, y);
+        bool flipU = (spin & 1) != 0, flipV = faceIndex is 2 or 3 && (spin & 2) != 0;
+        bool sideFace = f.Ny == 0;
+
+        float cx = lx + (sx + 0.5f) * cube + 0.5f * cube * f.Nx;
+        float cy = y + (sy + 0.5f) * cube + 0.5f * cube * f.Ny;
+        float cz = lz + (sz + 0.5f) * cube + 0.5f * cube * f.Nz;
+        int along0 = sx * f.Ux + sy * f.Uy + sz * f.Uz;
+        int up0 = sx * f.Vx + sy * f.Vy + sz * f.Vz;
+
+        Span<int> idx = stackalloc int[4];
+        for (int c = 0; c < 4; c++)
+        {
+            var (du, dv) = Corners[c];
+            float px = cx + 0.5f * cube * (du * f.Ux + dv * f.Vx);
+            float py = cy + 0.5f * cube * (du * f.Uy + dv * f.Vy);
+            float pz = cz + 0.5f * cube * (du * f.Uz + dv * f.Vz);
+
+            // Texture coordinates run over the whole block, so the picture stays continuous across its cubes.
+            float cu = (along0 + (du + 1) * 0.5f) * cube * 2f - 1f;
+            float cv = (up0 + (dv + 1) * 0.5f) * cube * 2f - 1f;
+            float along, up;
+            if (sideFace)
+            {
+                bool uVertical = f.Uy != 0;
+                up = uVertical ? cu * f.Uy : cv * f.Vy;
+                along = uVertical ? cv : cu;
+            }
+            else
+            {
+                along = cu;
+                up = cv;
+            }
+            float s = (along + 1) * 0.5f, t = sideFace ? 1f - (up + 1) * 0.5f : (up + 1) * 0.5f;
+            if (flipU) s = 1f - s;
+            if (flipV) t = 1f - t;
+            idx[c] = buf.AddVertex(px, py, pz, f.Nx, f.Ny, f.Nz,
+                colour.R * f.Shade, colour.G * f.Shade, colour.B * f.Shade, 1f,
+                rect.U0 + (rect.U1 - rect.U0) * s, rect.V0 + (rect.V1 - rect.V0) * t);
+        }
+
+        buf.AddTriangle(idx[0], idx[1], idx[2]);
+        buf.AddTriangle(idx[0], idx[2], idx[3]);
     }
 
     private static bool FaceVisible(BlockType self, BlockType neighbour)

@@ -10,7 +10,7 @@ public class MortarTests
     private const double Dt = 1.0 / 60;
 
     [Fact]
-    public void CarvesASphereOfBreakableBlocksAndLeavesTheRest()
+    public void CarvesASphereOfCubesAndLeavesTheRest()
     {
         var world = new VoxelWorld(7);
         const int x = 500, y = 40, z = 500;
@@ -23,10 +23,30 @@ public class MortarTests
         int removed = MortarBlast.Carve(world, new Vec3(x + 0.5, y + 0.5, z + 0.5));
 
         Assert.Equal(BlockType.Air, world.GetBlock(x, y, z));
-        Assert.Equal(BlockType.Air, world.GetBlock(x + 2, y, z));
-        Assert.Equal(BlockType.Stone, world.GetBlock(x + 3, y, z));
         Assert.Equal(BlockType.Gate, world.GetBlock(x + 1, y, z));
-        Assert.True(removed > 0 && removed <= 90, $"removed {removed}");
+        Assert.Equal(BlockType.Stone, world.GetBlock(x + 3, y, z));
+        Assert.Null(world.HoleAt(x + 3, y, z));
+        Assert.Equal(BlockType.Stone, world.GetBlock(x + 2, y, z));
+        Assert.False(BlockHole.IsSolid(BlockType.Stone, world.HoleAt(x + 2, y, z), 0, 4, 4), "the cube nearest the centre is dug");
+        Assert.True(BlockHole.IsSolid(BlockType.Stone, world.HoleAt(x + 2, y, z), 9, 9, 9), "the corner cube of the same block lies outside the sphere");
+        Assert.InRange(removed, 60_000, 66_000);
+    }
+
+    [Fact]
+    public void DiggingEveryCubeOfABlockLeavesAir()
+    {
+        var world = new VoxelWorld(7);
+        const int x = 500, y = 40, z = 500;
+        world.SetBlock(x, y, z, BlockType.Dirt);
+
+        for (int sz = 0; sz < BlockHole.Side; sz++)
+            for (int sy = 0; sy < BlockHole.Side; sy++)
+                for (int sx = 0; sx < BlockHole.Side; sx++)
+                    Assert.True(world.DigCube(x, y, z, sx, sy, sz));
+
+        Assert.Equal(BlockType.Air, world.GetBlock(x, y, z));
+        Assert.Null(world.HoleAt(x, y, z));
+        Assert.False(world.DigCube(x, y, z, 0, 0, 0));
     }
 
     [Theory]
@@ -84,7 +104,7 @@ public class MortarTests
         Assert.Empty(a.Sim.Shells);
         Assert.Equal(BlockType.Air, a.World.GetBlock(bx, by, bz));
         Assert.Contains((bx >> 4, bz >> 4), a.Sim.TakeDirtyChunks());
-        Assert.Equal(BlockType.Air, a.World.GetBlock(bx + 2, by, bz));
+        Assert.False(BlockHole.IsSolid(BlockType.Stone, a.World.HoleAt(bx + 2, by, bz), 0, 9, 5), "the rim cube nearest the impact is dug");
         Assert.Contains(a.Sim.DrainEvents(), e => e is ProjectileGone { Exploded: true });
         Assert.True(husk.Health < huskBefore, "the blast should reach a husk a block away");
     }
