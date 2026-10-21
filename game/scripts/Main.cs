@@ -483,6 +483,7 @@ public partial class Main : Node3D
             if (_demo == "gap") (view, actions) = RunGapDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
             if (_replay != null) (view, actions) = _replay.Capture(delta, view, actions);
+            if (_player.TakeSlamLanding() is { } fall) Combat.Sim.Slam(view.Feet, fall);
             Combat.Step(delta, view, actions);
             foreach (var impact in Combat.LastEvents.OfType<MeteorImpact>()) _player.KeepSpeed(impact.SpeedKept);
             // Fell into a pit: the sim says where it is safe, and the body goes there (the replay records the new place on the next step).

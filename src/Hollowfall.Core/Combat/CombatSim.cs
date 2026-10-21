@@ -32,6 +32,10 @@ public sealed class CombatSim
     public const double ReflectedDamageBoost = 2.5;
     public const double ExplosionRadius = 3;
     public const double ExplosionDamage = 40;
+    public const double SlamShockwaveRadius = 3.5;
+    public const double SlamShockwaveDamage = 30;
+    public const double AirSlamHeight = 8;
+    public const double HollowfallWindowSeconds = 8;
 
     private sealed class Encounter
     {
@@ -58,6 +62,8 @@ public sealed class CombatSim
     private readonly VoxelWorld _world;
     private readonly DungeonSite _site;
     private readonly SeededRandom _rng;
+    private readonly SlamBreach _breach = new();
+    private double _hollowfallUntil = -1;
     private readonly List<Encounter> _encounters = [];
     private readonly FloorProgress[] _floors;
     private readonly List<Enemy> _enemies = [];
@@ -285,6 +291,7 @@ public sealed class CombatSim
         if (floor < 0 || floor == CurrentFloor) return;
 
         // Finishing a floor means getting down to the next one.
+        int from = CurrentFloor;
         if (CurrentFloor >= 0 && floor > CurrentFloor) CompleteFloor(CurrentFloor);
         CurrentFloor = floor;
         PopulateFloor(floor);
@@ -296,6 +303,32 @@ public sealed class CombatSim
             p.StartTime = Time;
             p.StartStyle = Style.TotalScore;
         }
+
+        if (from >= 0 && floor > from && view.Airborne && Time <= _hollowfallUntil && _encounters.Any(e => e.Floor == floor))
+        {
+            Style.Award(StyleBonus.Hollowfall);
+            _hollowfallUntil = -1;
+        }
+    }
+
+    /// <summary>
+    /// Called on the step the player lands from a slam: shocks the enemies around the landing, awards the slam, and cracks or
+    /// breaks the brick underfoot. <paramref name="fallBlocks"/> is how far the slam dropped.
+    /// </summary>
+    public void Slam(Vec3 feet, double fallBlocks)
+    {
+        if (Vitals.Dead) return;
+
+        Style.Award(fallBlocks > AirSlamHeight ? StyleBonus.AirSlam : StyleBonus.GroundSlam);
+        foreach (var e in _enemies.ToList())
+        {
+            if (e.Dead || e.Feet.DistanceTo(feet) > SlamShockwaveRadius) continue;
+            DamageEnemy(e, SlamShockwaveDamage * Stats.DamageScale, HitZone.Torso, e.Feet + new Vec3(0, 1, 0), "slam", false);
+        }
+
+        var underfoot = new Vec3(feet.X, feet.Y - 1, feet.Z);
+        if (_breach.Land(_world, (int)Math.Floor(underfoot.X), (int)Math.Floor(underfoot.Y), (int)Math.Floor(underfoot.Z), Time) == FloorSlam.Broken)
+            _hollowfallUntil = Time + HollowfallWindowSeconds;
     }
 
     private void CompleteFloor(int floor)

@@ -113,6 +113,9 @@ public partial class PlayerController : Node3D
     /// <summary>True the frame the respawn action was pressed.</summary>
     public bool RespawnRequested => InputMapper.JustPressed(GameAction.Respawn);
 
+    /// <summary>How far a slam dropped since this was last asked, once it has landed.</summary>
+    public double? TakeSlamLanding() => Body.TakeSlamLanding();
+
     /// <summary>
     /// Advances the player one fixed step and returns this step's button presses. Portals, if any, are walked through.
     /// Called by the director so movement always happens before combat.
@@ -136,6 +139,7 @@ public partial class PlayerController : Node3D
         if (!dead)
         {
             if (InputMapper.JustPressed(GameAction.FlyToggle)) Flying = !Flying;
+            if (live && !Flying && InputMapper.JustPressed(GameAction.Slam)) Body.BeginSlam();
             double yBefore = Body.Y;
             bool groundedBefore = Body.OnGround;
             Move(delta, portals);

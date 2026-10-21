@@ -17,14 +17,21 @@ public sealed class PlayerBody
     public const double Gravity = 28.0;
     public const double JumpSpeed = 8.5;
     public const double TerminalSpeed = 50.0;
+    public const double SlamSpeed = 30.0;
 
     private const double Epsilon = 1e-4;
     private const double MaxSubstep = 0.05;
+
+    private double _slamFromY;
+    private double? _slamLanding;
 
     public double X { get; set; }
     public double Y { get; set; }
     public double Z { get; set; }
     public double VelocityY { get; private set; }
+
+    /// <summary>Whether a slam is under way: a straight drop at <see cref="SlamSpeed"/> with no steering, until the body lands.</summary>
+    public bool Slamming { get; private set; }
 
     /// <summary>
     /// Horizontal velocity. On the ground it simply follows the input; in the air it does too, unless the body
@@ -54,6 +61,24 @@ public sealed class PlayerBody
         VelocityY = vy;
         VelocityZ = vz;
         OnGround = false;
+        Slamming = false;
+    }
+
+    /// <summary>Starts a slam from the air. Does nothing on the ground or if one is already under way.</summary>
+    public bool BeginSlam()
+    {
+        if (OnGround || Slamming) return false;
+        Slamming = true;
+        _slamFromY = Y;
+        return true;
+    }
+
+    /// <summary>How far the slam that just landed fell, in blocks, once; null while none has landed since.</summary>
+    public double? TakeSlamLanding()
+    {
+        var fall = _slamLanding;
+        _slamLanding = null;
+        return fall;
     }
 
     public PlayerBody(double x, double y, double z)
@@ -89,7 +114,15 @@ public sealed class PlayerBody
             OnGround = false;
         }
 
-        VelocityY = Math.Max(VelocityY - Gravity * dt, -TerminalSpeed);
+        if (Slamming)
+        {
+            VelocityY = -SlamSpeed;
+            VelocityX = 0;
+            VelocityZ = 0;
+            moveX = 0;
+            moveZ = 0;
+        }
+        else VelocityY = Math.Max(VelocityY - Gravity * dt, -TerminalSpeed);
 
         bool wasOnGround = OnGround;
         double wantX = moveX * speed, wantZ = moveZ * speed;
@@ -177,6 +210,11 @@ public sealed class PlayerBody
         {
             Y = Math.Floor(Y + dy) + 1; // rest on top of the block below
             OnGround = true;
+            if (Slamming)
+            {
+                Slamming = false;
+                _slamLanding = _slamFromY - Y;
+            }
         }
         else
         {

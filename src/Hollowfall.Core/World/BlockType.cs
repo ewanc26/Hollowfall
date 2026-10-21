@@ -30,6 +30,9 @@ public enum BlockType : byte
 
     /// <summary>Iron spikes on the floor of a pit (appended: block values never shift).</summary>
     Spikes,
+
+    /// <summary>A brick floor a slam has cracked; a second slam soon after breaks it (appended: block values never shift).</summary>
+    CrackedFloor,
 }
 
 public static class BlockInfo

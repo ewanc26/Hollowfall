@@ -56,6 +56,7 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. The game 
 | Parry (hit it while an enemy flashes yellow) | V | X |
 | Teal / violet portal | Q / E | LB / RB |
 | Close portals (sever anything standing in them) | C | D-pad down |
+| Slam (drop straight down from the air; cracks, then breaks, brick floor) | X | D-pad up |
 | Open chests (a key for locked ones), read notes, speak to what you find | F | Left stick click |
 | Respawn | R | Y |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
