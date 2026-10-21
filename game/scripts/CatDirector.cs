@@ -1,6 +1,7 @@
 using Godot;
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Story.Dialogue;
 
@@ -29,6 +30,8 @@ public sealed class CatDirector
 
     /// <summary>The label of the menu button (set by the host).</summary>
     public Func<string> MenuLabel { get; set; } = () => "Menu";
+
+    public Loc Loc { get; set; } = new();
 
     public CatEncounter Encounter => _encounter;
 
@@ -108,7 +111,7 @@ public sealed class CatDirector
         if (_warmthShown)
         {
             _warmthShown = false;
-            _ui.ShowCaption("The fire is warm, and you feel a little better.", 3.5);
+            _ui.ShowCaption(Loc.Tr("cat.warmth"), 3.5);
         }
     }
 

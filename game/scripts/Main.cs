@@ -249,6 +249,7 @@ public partial class Main : Node3D
             var catEncounter = new CatEncounter(World.Seed, _seedName, catSpot, storyProgress.CatFlags(_seedName), storyProgress.CatVisits(_seedName));
             _cat = new CatDirector(catEncounter, Combat.Sim.Vitals, _storyUi, storyProgress, _seedName, StoryPath, (id, at) => _audio.Play(id, at))
             {
+                Loc = _loc,
                 InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
                 MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
             };
