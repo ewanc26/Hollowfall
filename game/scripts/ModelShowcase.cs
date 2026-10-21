@@ -1,5 +1,6 @@
 using Godot;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Input;
 using Hollowfall.Core.Models;
 
 namespace Hollowfall.Game;
@@ -18,7 +19,7 @@ public partial class ModelShowcase : Node3D
 
     public override void _Ready()
     {
-        _page = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SHOWCASE") ?? "enemies";
+        _page = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SHOWCASE") ?? DevRequests.TakeShowcasePage() ?? "enemies";
 
         AddChild(new WorldEnvironment
         {
@@ -56,6 +57,11 @@ public partial class ModelShowcase : Node3D
             case "effects": AddChild(new EffectsShowcase(_camera)); break;
             default: BuildEnemies(); break;
         }
+    }
+
+    public override void _UnhandledInput(InputEvent e)
+    {
+        if (e.IsActionPressed(InputMapper.Name(GameAction.Pause)) && !e.IsEcho()) GetTree().ChangeSceneToFile("res://scenes/Main.tscn");
     }
 
     private void Place(Node3D node, Vector3 at, string label, double spin = 0, float labelHeight = 0.2f)

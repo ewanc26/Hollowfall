@@ -22,6 +22,9 @@ public enum MenuScreen
 
     /// <summary>The character: experience, level and the stat points to spend (progression). Appended after Standing.</summary>
     Character,
+
+    /// <summary>Developer tools (debug builds only): test levels, the model showcase and the debug overlay. Appended last.</summary>
+    Developer,
 }
 
 /// <summary>
@@ -94,6 +97,18 @@ public partial class Menus : CanvasLayer
     /// <summary>Raised by the pause menu's main menu button.</summary>
     public event Action? MainMenuRequested;
 
+    /// <summary>Developer menu: start a run in the glued test room.</summary>
+    public event Action? GluedRoomRequested;
+
+    /// <summary>Developer menu: open a page of the model showcase, named as HOLLOWFALL_SHOWCASE names them.</summary>
+    public event Action<string>? ShowcaseRequested;
+
+    /// <summary>Developer menu: whether the debug overlay is showing, and the change when the player ticks it.</summary>
+    public Func<bool> DebugOverlayOn { get; set; } = () => false;
+    public event Action<bool>? DebugOverlayChanged;
+
+    private CheckBox? _debugBox;
+
     /// <summary>Fired whenever a setting or binding changes, so the game can apply it.</summary>
     public event Action? SettingsChanged;
 
@@ -122,6 +137,7 @@ public partial class Menus : CanvasLayer
         _screens[MenuScreen.Journal] = BuildJournal();
         _screens[MenuScreen.Standing] = BuildStanding();
         _screens[MenuScreen.Character] = BuildCharacter();
+        _screens[MenuScreen.Developer] = BuildDeveloper();
         foreach (var s in _screens.Values)
         {
             s.Visible = false;
@@ -162,6 +178,7 @@ public partial class Menus : CanvasLayer
         if (screen == MenuScreen.Journal) RefreshJournal();
         if (screen == MenuScreen.Standing) RefreshStanding();
         if (screen == MenuScreen.Character) RefreshCharacter();
+        if (screen == MenuScreen.Developer && _debugBox != null) _debugBox.SetPressedNoSignal(DebugOverlayOn());
         if (screen != MenuScreen.None) FocusFirst(_screens[screen]);
     }
 
@@ -210,7 +227,7 @@ public partial class Menus : CanvasLayer
         {
             if (_current == MenuScreen.None) Open(MenuScreen.Pause);
             else if (_current == MenuScreen.Pause) { Close(); ResumeRequested?.Invoke(); }
-            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing or MenuScreen.Character) Open(ReturnScreen());
+            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing or MenuScreen.Character or MenuScreen.Developer) Open(ReturnScreen());
             GetViewport().SetInputAsHandled();
         }
     }
@@ -363,9 +380,37 @@ public partial class Menus : CanvasLayer
             Close();
             ResumeRequested?.Invoke();
         }));
+        if (OS.IsDebugBuild()) col.AddChild(MakeButton("Developer", () => OpenFrom(MenuScreen.Title, MenuScreen.Developer)));
         col.AddChild(MakeButton(_loc.Tr("menu.controls"), () => OpenFrom(MenuScreen.Title, MenuScreen.Controls)));
         col.AddChild(MakeButton(_loc.Tr("menu.settings"), () => OpenFrom(MenuScreen.Title, MenuScreen.Settings)));
         col.AddChild(MakeButton(_loc.Tr("menu.quit"), () => QuitRequested?.Invoke()));
+        return screen;
+    }
+
+    /// <summary>Developer tools, reachable from the title screen in debug builds only. Labels are English: these are for the team, not players.</summary>
+    private Control BuildDeveloper()
+    {
+        var (screen, col) = Panel(560, 500);
+        col.AddChild(Heading("DEVELOPER", 36));
+
+        col.AddChild(new Label { Text = "Test levels", HorizontalAlignment = HorizontalAlignment.Center });
+        col.AddChild(MakeButton("Glued test room", () => GluedRoomRequested?.Invoke()));
+
+        col.AddChild(new Label { Text = "Model showcase", HorizontalAlignment = HorizontalAlignment.Center });
+        var pages = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        pages.AddThemeConstantOverride("separation", 8);
+        foreach (var page in new[] { "enemies", "poses", "weapons", "props", "cat", "effects" })
+            pages.AddChild(MakeButton(char.ToUpperInvariant(page[0]) + page[1..], () => ShowcaseRequested?.Invoke(page)));
+        col.AddChild(pages);
+
+        col.AddChild(new Label { Text = "Overlay", HorizontalAlignment = HorizontalAlignment.Center });
+        _debugBox = new CheckBox { Text = "Debug overlay (F3)", ButtonPressed = DebugOverlayOn() };
+        _debugBox.Toggled += on => DebugOverlayChanged?.Invoke(on);
+        col.AddChild(_debugBox);
+
+        var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
+        col.AddChild(footer);
         return screen;
     }
 
