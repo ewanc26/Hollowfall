@@ -63,7 +63,7 @@ public class CombatSimTests
 {
     private const double Dt = 1.0 / 60;
 
-    private sealed class Arena
+    internal sealed class Arena
     {
         public required VoxelWorld World { get; init; }
         public required DungeonSite Site { get; init; }
@@ -78,7 +78,7 @@ public class CombatSimTests
     }
 
     /// <summary>A real dungeon room with a big open floor: the player at the west end, empty space to the east.</summary>
-    private static Arena MakeArena(long seed = 1)
+    internal static Arena MakeArena(long seed = 1)
     {
         for (long s = seed; s < seed + 20; s++)
         {
