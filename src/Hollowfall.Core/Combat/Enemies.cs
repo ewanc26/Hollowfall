@@ -14,6 +14,12 @@ public enum EnemyKind
     Kelpie,
     BeanNighe,
     Hare,
+
+    // ---- the Hollow's fast hounds (appended after the Folk; a spectral fairy hound of the Highland roads) ----
+    CuSith,
+
+    // ---- the village folk (appended last; crofters who keep to their doors) ----
+    Villager,
 }
 
 public enum EnemyState
@@ -53,6 +59,8 @@ public sealed record EnemySpec(
         EnemyKind.Kelpie => new(EnemyKind.Kelpie, 90, 4.2, 2.2, 28, 0.55, 1.8, 0, 0, 0, 0, 0.5, 1.9),
         EnemyKind.BeanNighe => new(EnemyKind.BeanNighe, 30, 1.6, 0, 0, 0.5, 1.5, 0, 0, 0, 0, 0.3, 1.55),
         EnemyKind.Hare => new(EnemyKind.Hare, 6, 5.0, 0, 0, 0.5, 1.5, 0, 0, 0, 0, 0.2, 0.55),
+        EnemyKind.CuSith => new(EnemyKind.CuSith, 22, 5.6, 1.4, 12, 0.3, 0.9, 0, 0, 0, 0, 0.3, 0.9),
+        EnemyKind.Villager => new(EnemyKind.Villager, 24, 2.4, 1.2, 8, 0.5, 1.6, 0, 0, 0, 0, 0.3, 1.75),
         _ => new(EnemyKind.Warden, 260, 2.8, 2.2, 35, 0.7, 2.0, 18, 5, 11, 3, 0.5, 2.3),
     };
 }

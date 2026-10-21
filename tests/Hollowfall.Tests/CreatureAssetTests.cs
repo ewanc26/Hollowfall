@@ -9,7 +9,7 @@ namespace Hollowfall.Tests;
 /// <summary>The look, sound and screen text of the Folk, the Bean Nighe and the hare.</summary>
 public class CreatureAssetTests
 {
-    private static readonly EnemyKind[] Kinds = [EnemyKind.Brownie, EnemyKind.Selkie, EnemyKind.Kelpie, EnemyKind.BeanNighe, EnemyKind.Hare];
+    private static readonly EnemyKind[] Kinds = [EnemyKind.Brownie, EnemyKind.Selkie, EnemyKind.Kelpie, EnemyKind.BeanNighe, EnemyKind.Hare, EnemyKind.Villager];
 
     public static TheoryData<EnemyKind> Creatures => [.. Kinds];
 
@@ -68,7 +68,7 @@ public class CreatureAssetTests
         // The creatures were appended as one run after the older models (other features add their own runs after it).
         int first = ids.IndexOf("brownie");
         Assert.True(first > ids.IndexOf("torch"));
-        Assert.Equal(["brownie", "selkie", "kelpie", "bean_nighe", "hare", "cistern_pool"], ids.Skip(first).Take(6));
+        Assert.Equal(["brownie", "selkie", "kelpie", "bean_nighe", "hare", "villager", "cistern_pool"], ids.Skip(first).Take(7));
         Assert.Equal("husk", ids[0]);
     }
 
