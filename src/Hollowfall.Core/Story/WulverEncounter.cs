@@ -1,4 +1,5 @@
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Story.Dialogue;
 
 namespace Hollowfall.Core.Story;
@@ -35,6 +36,9 @@ public sealed class WulverEncounter
     private bool _inRange;
 
     public WulverSpot Spot { get; }
+
+    /// <summary>The interface language (set by the host). In Gàidhlig and Bilingual he greets in Gàidhlig first, with the English beneath.</summary>
+    public Language Language { get; set; } = Language.English;
     public int Visits { get; private set; }
     public bool GiftTaken { get; private set; }
 
@@ -84,7 +88,9 @@ public sealed class WulverEncounter
         }
         if (!Notices(x, y, z)) return null;
         _inRange = true;
-        return Visits == 0 ? WulverDialogue.GreetingFirst : WulverDialogue.GreetingReturn;
+        string english = Visits == 0 ? WulverDialogue.GreetingFirst : WulverDialogue.GreetingReturn;
+        if (!Languages.ShowsGaelic(Language)) return english;
+        return (Visits == 0 ? WulverGreetings.Line(WulverGreetings.Hello, WulverGreetings.Welcome) : WulverGreetings.Line(WulverGreetings.Welcome)) + "\n\n" + english;
     }
 
     /// <summary>Starts a conversation, applying anything its first node gives.</summary>
@@ -104,6 +110,7 @@ public sealed class WulverEncounter
             HasKey = facts.HasKey,
             GiftGiven = GiftTaken,
             EndingReached = facts.EndingReached,
+            Language = Language,
             Flags = new HashSet<string>(_flags),
         };
         var runner = new DialogueRunner(WulverDialogue.Graph, context);
