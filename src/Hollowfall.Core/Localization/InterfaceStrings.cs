@@ -121,6 +121,7 @@ public static class InterfaceStrings
             T(ActionKey(GameAction.ClosePortals), "Close portals (sever)"),
             T(ActionKey(GameAction.Pause), "Pause menu"),
             T(ActionKey(GameAction.Slam), "Slam"),
+            T(ActionKey(GameAction.FireMortar), "Fire block mortar"),
 
             // ---- settings ----
             G("settings.title", "SETTINGS", "ROGHAINNEAN", ReviewStatus.Verified, "FF", "capitals of Firefox gd's 'Roghainnean'"),
