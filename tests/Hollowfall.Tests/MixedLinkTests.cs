@@ -619,4 +619,15 @@ public class MixedLinkTests
         // It ended up at the lip, as close to the player as it could get.
         Assert.True(gap.Within(gap.HallTo, ((int)Math.Floor(enemy.Feet.X) - site.OriginX, (int)Math.Floor(enemy.Feet.Z) - site.OriginZ), 1));
     }
+
+    [Fact]
+    public void TheHintsNameTheRealPortalBindings()
+    {
+        var gap = GapHints.AtTheEdge(LinkKind.PortalGap, "Q", "E");
+        Assert.StartsWith("A gap. Fire a portal across it (Q), then another beside you (E), and step through.", gap);
+        Assert.Contains("alcove", GapHints.AtTheEdge(LinkKind.ShaftGap, "Q", "E"));
+        Assert.Contains("Q", GapHints.AfterTheFirstFall("Q", "E"));
+        Assert.Contains("-8", GapHints.FallBanner(new PlayerFell(GapHazard.Bare, 8, true)));
+        Assert.DoesNotContain("-", GapHints.FallBanner(new PlayerFell(GapHazard.Water, 0, false)));
+    }
 }

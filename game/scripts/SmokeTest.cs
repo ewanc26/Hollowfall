@@ -179,6 +179,7 @@ public partial class SmokeTest : Node
             CheckRunRecordsSaveAndReload(main);
             await CheckReplaySavedByARealRunAsync(main);
             CheckUiScaling(main);
+            await CheckAGapIsCrossedAsync(main);
             await CheckABotCanPlayTheWholeDungeonAsync(main);
             await CheckSeedChangesTheWorldAsync(main);
             main.QueueFree();
@@ -995,6 +996,96 @@ public partial class SmokeTest : Node
             return ok;
         });
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// A scripted player crosses a real portal gap in the real scene: it stands at the lip of the first gap out of the entrance room,
+    /// fires the teal portal at the far hallway and the violet one at the wall beside it through the real combat sim, then walks into
+    /// the violet portal with the real walking physics and must come out in the far hallway, on its feet and alive. Then it falls
+    /// into the pit, and the sim must put it back on its own side without killing it.
+    /// </summary>
+    private async Task CheckAGapIsCrossedAsync(Main main)
+    {
+        const string name = "a player crosses a real portal gap, and falling into the pit recovers without dying";
+        string forwardAction = InputMapper.Name(GameAction.MoveForward);
+        try
+        {
+            var combat = main.Combat ?? throw new InvalidOperationException("no dungeon");
+            var sim = combat.Sim;
+            var site = combat.Site;
+            var layout = site.Floors[0];
+            sim.Respawn();
+            combat.RefreshPortals();
+
+            var gap = layout.Gaps.First(g => g.Kind == LinkKind.PortalGap && g.Hazard == GapHazard.Bare && (layout.Links[g.LinkIndex].A == layout.EntranceRoom.Id || layout.Links[g.LinkIndex].B == layout.EntranceRoom.Id));
+            var plan = GapCrossing.Plan(site, 0, gap, true) ?? throw new InvalidOperationException("no way across the gap was found");
+
+            // Stand a few cells back first, so the sim learns where it is safe, then walk to the lip: the hint appears there.
+            var back = gap.Hall(true)[^3];
+            var backFeet = GapCrossing.FeetAt(site, 0, back);
+            double yaw = Math.Atan2(-gap.DirX, -gap.DirZ);
+            main.Player.PlaceAt(new Vector3((float)backFeet.X, (float)backFeet.Y, (float)backFeet.Z), yaw);
+            for (int i = 0; i < 25; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            main.Player.PlaceAt(new Vector3((float)plan.Feet.X, (float)plan.Feet.Y, (float)plan.Feet.Z), yaw);
+            for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            string hint = main.StoryUi.CaptionText;
+            bool hinted = hint.StartsWith("A gap. Fire a portal across it") && hint.Contains(BindingNames.Display(main.Settings.Bindings.Get(GameAction.PortalTeal, Slot.KeyboardMouse)));
+
+            // Fire both portals from the lip: far hallway first, then the wall beside the player.
+            var feet = new Vec3(main.Player.Body.X, main.Player.Body.Y, main.Player.Body.Z);
+            PlayerView At(Vec3 look) => new(feet, feet + new Vec3(0, 1.62, 0), look, false, false);
+            combat.Step(1.0 / 60, At(plan.FarAim), new PlayerActions(false, false, false, PortalTeal: true));
+            combat.Step(1.0 / 60, At(plan.NearAim), new PlayerActions(false, false, false, PortalViolet: true));
+            bool linked = sim.Portals.Linked;
+            var violet = sim.Portals.Violet ?? throw new InvalidOperationException("the violet portal did not place");
+            var teal = sim.Portals.Teal ?? throw new InvalidOperationException("the teal portal did not place");
+
+            // Face the violet portal and walk forward into it with the real physics.
+            var to = violet.Frame.Center - new Vec3(main.Player.Body.X, violet.Frame.Center.Y, main.Player.Body.Z);
+            main.Player.PlaceAt(new Vector3((float)feet.X, (float)feet.Y, (float)feet.Z), Math.Atan2(-to.X, -to.Z));
+            bool crossed = false;
+            main.Player.Crossed += _ => crossed = true;
+            Input.ActionPress(forwardAction);
+            try
+            {
+                for (int i = 0; i < 60 * 6 && !crossed; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+                for (int i = 0; i < 60; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame); // keep walking away from the exit
+            }
+            finally { Input.ActionRelease(forwardAction); }
+            for (int i = 0; i < 90; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+
+            var body = main.Player.Body;
+            var cell = ((int)Math.Floor(body.X) - site.OriginX, (int)Math.Floor(body.Z) - site.OriginZ);
+            bool farSide = gap.Within(gap.HallTo, cell, 1);
+            bool standing = body.OnGround && Math.Abs(body.Y - (DungeonSite.FloorY(0) + 1 + layout.HeightAt(cell.Item1, cell.Item2))) < 0.55;
+            bool alive = !sim.Dead;
+
+            // Now fall in: stand safe on the near side first, then drop into the middle of the pit.
+            sim.ClosePortals();
+            combat.RefreshPortals();
+            main.Player.PlaceAt(new Vector3((float)backFeet.X, (float)backFeet.Y, (float)backFeet.Z), yaw);
+            for (int i = 0; i < 30; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            bool fell = false, recovered = false;
+            combat.EventRaised += e => { if (e is PlayerFell) fell = true; else if (e is PlayerRecovered) recovered = true; };
+            var mid = gap.Span[gap.Span.Count / 2];
+            double healthBefore = sim.Vitals.Health;
+            main.Player.PlaceAt(new Vector3(site.OriginX + mid.X + 0.5f, DungeonSite.FloorY(0) + 1.2f, site.OriginZ + mid.Z + 0.5f), yaw);
+            for (int i = 0; i < 60 * 4 && !recovered; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            for (int i = 0; i < 40; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            var afterFall = ((int)Math.Floor(main.Player.Body.X) - site.OriginX, (int)Math.Floor(main.Player.Body.Z) - site.OriginZ);
+            bool backOnOurSide = gap.Within(gap.HallFrom, afterFall, 1) && main.Player.Body.OnGround && main.Player.Body.Y > DungeonSite.FloorY(0) + 1.5;
+            bool hurtNotKilled = sim.Vitals.Health < healthBefore && !sim.Dead;
+
+            bool ok = hinted && linked && crossed && farSide && standing && alive && fell && recovered && backOnOurSide && hurtNotKilled;
+            Report(name, ok, $"hinted={hinted} ('{hint}') linked={linked} crossed={crossed} farSide={farSide} cell={cell} standing={standing} y={body.Y:F2} alive={alive} fell={fell} recovered={recovered} backOnOurSide={backOnOurSide} hurtNotKilled={hurtNotKilled}");
+            _ = teal;
+        }
+        catch (Exception e)
+        {
+            Input.ActionRelease(forwardAction);
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
     }
 
     /// <summary>
