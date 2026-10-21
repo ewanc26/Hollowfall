@@ -33,6 +33,12 @@ public enum BlockType : byte
 
     /// <summary>A brick floor a slam has cracked; a second slam soon after breaks it (appended: block values never shift).</summary>
     CrackedFloor,
+
+    /// <summary>Timber walls and floors of a village cottage (appended: block values never shift).</summary>
+    Plank,
+
+    /// <summary>Straw roof of a village cottage (appended: block values never shift).</summary>
+    Thatch,
 }
 
 public static class BlockInfo
