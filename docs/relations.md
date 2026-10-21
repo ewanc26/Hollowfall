@@ -27,7 +27,7 @@ stance never changes whatever the standing says, so the existing monsters stay e
 
 | Faction | Group | Stance toward the player | Fixed | Starts at |
 |---|---|---|---|---|
-| Husks, Spitters, Wardens | Hollow | Enemy | yes | -90 (Hated) |
+| Husks, Spitters, Wardens, Cù-sìth | Hollow | Enemy | yes | -90 (Hated) |
 | Brownies | Folk | Neutral | no | 0 |
 | Selkies | Folk | Neutral | no | 0 |
 | Kelpies | Folk | Hostile | no | -50 (Hostile) |
@@ -42,7 +42,7 @@ always mutual, and no pair disagrees by more than three steps (tests check all o
 | | Delver | Husks | Spitters | Wardens | Brownies | Selkies | Kelpies | Wanderers | Vermin |
 |---|---|---|---|---|---|---|---|---|---|
 | Delver | A | E | E | E | N | N | H | N | N |
-| Husks, Spitters, Wardens | E | A | A | A | H | H | N | W | N |
+| Husks, Spitters, Wardens, Cù-sìth | E | A | A | A | H | H | N | W | N |
 | Brownies | N | E | E | E | A | F | W | N | F |
 | Selkies | N | E | E | E | F | A | W | F | N |
 | Kelpies | H | N | N | N | W | W | A | N | W |
@@ -204,6 +204,6 @@ The cistern pool is a model too (`cistern_pool`), laid once per pool at a water-
 
 ## Later phases
 
-Phase 2 (in progress, issue #3): character progression and stats. Built so far: experience from the Hollow (10 for a Husk, 12 for a Spitter, 60 for a Warden; creatures give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour (+10 maximum health per point) and Might (+5 percent damage per point) to spend them on. Done: the run reads Vigour (maximum health) and Might (guns and parries) once at its start, and the replay records them (format 3). Still to do: a screen to spend points, and Might on melee, meteor and the Warden's explosions. Phase 3 (in progress, issue #4): inventory and equipment. Built: the bag, the worn charm, and the cream a friendly Brownie leaves (`Progression/Inventory.cs`). The cream heals 40 in a run, the thorn charm takes 10 percent less damage, and a Bag screen in the pause menu wears and takes off charms. Chest loot is still used on the spot (not yet items). The replay records creams and the worn charm (format 4). Phase 4: quests and
+Phase 2 (in progress, issue #3): character progression and stats. Built so far: experience from the Hollow (10 for a Husk, 12 for a Spitter, 14 for a Cù-sìth, 60 for a Warden; creatures give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour (+10 maximum health per point) and Might (+5 percent damage per point) to spend them on. Done: the run reads Vigour (maximum health) and Might (guns and parries) once at its start, and the replay records them (format 3). Still to do: a screen to spend points, and Might on melee, meteor and the Warden's explosions. Phase 3 (in progress, issue #4): inventory and equipment. Built: the bag, the worn charm, and the cream a friendly Brownie leaves (`Progression/Inventory.cs`). The cream heals 40 in a run, the thorn charm takes 10 percent less damage, and a Bag screen in the pause menu wears and takes off charms. Chest loot is still used on the spot (not yet items). The replay records creams and the worn charm (format 4). Phase 4: quests and
 merchants, using standing for prices and access. The relationship system is built so each of those reads `Reputation` and `Mind` rather
 than adding new state.

@@ -73,6 +73,8 @@ public sealed record SpeciesInfo(
         new(EnemyKind.Kelpie, Faction.Kelpies, "Kelpie", Disposition.Territorial, false, false, false, (0.6, 1), (0.4, 0.9), (0, 0.3), 24, 7),
         new(EnemyKind.BeanNighe, Faction.Wanderers, "Bean Nighe", Disposition.Passive, true, false, false, (0.0, 0.2), (0.6, 1), (0, 0.3)),
         new(EnemyKind.Hare, Faction.Vermin, "Hare", Disposition.Skittish, true, false, false, (0.0, 0.3), (0.0, 0.3), (0.2, 0.8)),
+        new(EnemyKind.CuSith, Faction.Husks, "Cù-sìth", Disposition.Aggressive, false, false, false, (0.7, 1), (0.5, 1), (0, 0.2), double.PositiveInfinity),
+        new(EnemyKind.Villager, Faction.Villagers, "Villager", Disposition.Passive, true, false, false, (0.1, 0.4), (0.3, 0.7), (0.4, 0.9)),
     ];
 
     public static SpeciesInfo Of(EnemyKind kind) => Table[(int)kind];

@@ -163,6 +163,8 @@ public class ModelCatalogTests
     [InlineData(EnemyKind.Husk)]
     [InlineData(EnemyKind.Spitter)]
     [InlineData(EnemyKind.Warden)]
+    [InlineData(EnemyKind.CuSith)]
+    [InlineData(EnemyKind.Villager)]
     public void EnemyModelsMatchTheirHitBoxes(EnemyKind kind)
     {
         var model = ModelCatalog.ForEnemy(kind);

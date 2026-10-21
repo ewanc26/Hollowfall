@@ -473,7 +473,7 @@ public sealed class CombatSim
 
         foreach (var sp in enc.Spawns)
         {
-            var kind = sp.Kind == SpawnKind.Boss ? EnemyKind.Warden : (sp.X + sp.Z) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
+            var kind = sp.Kind == SpawnKind.Boss ? EnemyKind.Warden : HollowKindAt(sp.X, sp.Z);
             var enemy = Adopt(new Enemy(_nextId++, SpecFor(kind, enc.Floor, enc.RoomId), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), enc.Floor, enc.RoomId));
             _enemies.Add(enemy);
             enc.Enemies.Add(enemy);
@@ -956,13 +956,13 @@ public sealed class CombatSim
         if (Relations != null && e.Mind is { Species.Kind: EnemyKind.BeanNighe }) Relations.OmenArmed = false;
     }
 
-    /// <summary>Interact beside a Brownie while the Brownies think well of you: it repays you once with a warm hearth.</summary>
+    /// <summary>Interact beside a Brownie or villager while its folk think well of you: it repays you once with a warm hearth or a jar of cream.</summary>
     private bool TryBoon(PlayerView view)
     {
-        if (Relations!.Reputation.Tier(Faction.Brownies) < ReputationTier.Friendly) return false;
         foreach (var e in _enemies)
         {
-            if (e.Dead || e.Mind is not { Species.Kind: EnemyKind.Brownie, BoonGiven: false } m) continue;
+            if (e.Dead || e.Mind is not { Species.Kind: EnemyKind.Brownie or EnemyKind.Villager, BoonGiven: false } m) continue;
+            if (Relations!.Reputation.Tier(m.Faction) < ReputationTier.Friendly) continue;
             double dx = e.Feet.X - view.Feet.X, dz = e.Feet.Z - view.Feet.Z;
             if (Math.Sqrt(dx * dx + dz * dz) > BoonReach || Math.Abs(e.Feet.Y - view.Feet.Y) > 2) continue;
             m.BoonGiven = true;
@@ -1030,7 +1030,7 @@ public sealed class CombatSim
         for (int i = 0; i < extra; i++)
         {
             var (wx, wy, wz) = _site.ToWorld(enc.Floor, cells[i].X, cells[i].Z);
-            var kind = (wx + wz) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
+            var kind = HollowKindAt(wx, wz);
             var enemy = Adopt(new Enemy(_nextId++, SpecFor(kind, enc.Floor, enc.RoomId), new Vec3(wx + 0.5, wy, wz + 0.5), enc.Floor, enc.RoomId));
             _enemies.Add(enemy);
             enc.Enemies.Add(enemy);
@@ -1046,7 +1046,8 @@ public sealed class CombatSim
 
         if (spec.MeleeRange > 0 && flat <= spec.MeleeRange && Math.Abs(toPlayer.Y) < 2)
         {
-            BeginWindup(e);
+            if (HasAttackSlot(e)) BeginWindup(e);
+            else Circle(e, dt, toPlayer, flat);
             return;
         }
 
@@ -1085,12 +1086,31 @@ public sealed class CombatSim
         bool sees = RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.4, 0), view.Eye);
         if (sees && flat >= spec.PreferredMin && flat <= spec.PreferredMax)
         {
-            BeginWindup(e);
+            if (HasAttackSlot(e)) BeginWindup(e);
+            else Circle(e, dt, toPlayer, flat);
             return;
         }
 
         double dir = flat < spec.PreferredMin && sees ? -1 : 1;
         Walk(e, dt, dx * dir, dz * dir);
+    }
+
+    /// <summary>A room lets only this many enemies wind up at once, so a crowd takes its turns instead of swarming the player.</summary>
+    public const int AttackSlots = 2;
+
+    /// <summary>The Hollow kind on a cell: odd cells are Spitters, a quarter of the even cells are Cù-sìth, the rest Husks.</summary>
+    public static EnemyKind HollowKindAt(int x, int z) =>
+        (x + z) % 2 != 0 ? EnemyKind.Spitter : (x + z) / 2 % 4 == 0 ? EnemyKind.CuSith : EnemyKind.Husk;
+
+    private bool HasAttackSlot(Enemy e) =>
+        _enemies.Count(o => !o.Dead && o.State == EnemyState.Windup && o.Floor == e.Floor && o.RoomId == e.RoomId) < AttackSlots;
+
+    /// <summary>Waiting for a slot: walks sideways around the player at a slower pace, keeping its distance, instead of standing still.</summary>
+    private void Circle(Enemy e, double dt, Vec3 toPlayer, double flat)
+    {
+        if (flat < 1e-6) return;
+        double side = e.Id % 2 == 0 ? 1 : -1;
+        Walk(e, dt, -toPlayer.Z / flat * side, toPlayer.X / flat * side, 0.6);
     }
 
     /// <summary>Moves an enemy, letting it walk through portal openings and come out of the other one.</summary>

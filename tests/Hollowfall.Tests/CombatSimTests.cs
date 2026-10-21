@@ -290,6 +290,39 @@ public class CombatSimTests
     }
 
     [Fact]
+    public void AQuarterOfTheHollowSpawnAsCuSithAndTheRestAsHusksOrSpitters()
+    {
+        var cells = Enumerable.Range(-20, 40).SelectMany(x => Enumerable.Range(-20, 40).Select(z => (x, z))).ToList();
+        var kinds = cells.Select(c => CombatSim.HollowKindAt(c.x, c.z)).ToList();
+        int even = cells.Count(c => (c.x + c.z) % 2 == 0);
+        Assert.InRange(kinds.Count(k => k == EnemyKind.CuSith), even * 0.2, even * 0.3);
+        for (int i = 0; i < cells.Count; i++)
+        {
+            bool evenCell = (cells[i].x + cells[i].z) % 2 == 0;
+            Assert.True(evenCell ? kinds[i] is EnemyKind.Husk or EnemyKind.CuSith : kinds[i] == EnemyKind.Spitter);
+        }
+        Assert.True(EnemySpec.Of(EnemyKind.CuSith).Speed > EnemySpec.Of(EnemyKind.Husk).Speed);
+    }
+
+    [Fact]
+    public void ACrowdTakesTurnsAtAttacking()
+    {
+        var a = MakeArena();
+        var husks = new[] { Place(a, EnemyKind.Husk, 1.3), Place(a, EnemyKind.Husk, 0, 1.3), Place(a, EnemyKind.Husk, 0, -1.3), Place(a, EnemyKind.Husk, -1.3) };
+        var view = a.View();
+        var telegraphed = new HashSet<int>();
+        int most = 0;
+        for (int i = 0; i < 60 * 20; i++)
+        {
+            a.Sim.Tick(Dt, view, default);
+            most = Math.Max(most, husks.Count(h => h.Telegraphing));
+            foreach (var t in a.Sim.DrainEvents().OfType<EnemyTelegraph>()) telegraphed.Add(t.Id);
+        }
+        Assert.Equal(CombatSim.AttackSlots, most);
+        Assert.All(husks, h => Assert.Contains(h.Id, telegraphed));
+    }
+
+    [Fact]
     public void PointBlankShotgunParriesAWindup()
     {
         var a = MakeArena();
