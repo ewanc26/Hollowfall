@@ -11,7 +11,7 @@ namespace Hollowfall.Game;
 /// </summary>
 public partial class ViewModels : SubViewportContainer
 {
-    private const float Scale = 1.7f;
+    private const float HandScale = 1.7f;
 
     private SubViewport _viewport = null!;
     private ModelRig _revolver = null!, _shotgun = null!;
@@ -100,7 +100,7 @@ public partial class ViewModels : SubViewportContainer
         _flashTime = 0.07;
         _flash.LightEnergy = energy;
         if (model.Anchors.TryGetValue("muzzle", out var muzzle))
-            _flash.Position = hand.Position + hand.Transform.Basis * (ModelFactory.ToVector(muzzle) * Scale);
+            _flash.Position = hand.Position + hand.Transform.Basis * (ModelFactory.ToVector(muzzle) * HandScale);
     }
 
     /// <summary>Weapons that would sit under a portal opening fade out, so nothing covers the view through it.</summary>
@@ -153,7 +153,7 @@ public partial class ViewModels : SubViewportContainer
     private void PoseHand(Node3D hand, Vector3 rest, int side, double kick, double kickDegrees)
     {
         double walk = Math.Sin(_bob * side) * 0.012, step = Math.Abs(Math.Cos(_bob)) * 0.012;
-        hand.Scale = Vector3.One * Scale;
+        hand.Scale = Vector3.One * HandScale;
         hand.Position = rest + new Vector3(_sway.X * 0.5f + (float)walk, -_sway.Y * 0.4f - (float)step, (float)(kick * 0.07));
         hand.RotationDegrees = new Vector3((float)(kick * kickDegrees + _sway.Y * 20), (float)(-side * 3 + _sway.X * 25), (float)(-side * 2 + walk * 80));
     }
