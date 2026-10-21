@@ -76,4 +76,38 @@ public class GluedBoxTests
         Assert.Equal(BlockType.Stone, box.BlockAt(0, -1, 0));
         Assert.Equal(BlockType.Stone, box.BlockAt(1, 0, Depth));
     }
+
+    [Fact]
+    public void TheTestLevelShowsItsLandmarkMirroredAcrossTheSeam()
+    {
+        var box = GluedTestLevel.Create();
+
+        Assert.Equal(BlockType.Log, box.BlockAt(2, 1, 2));
+        Assert.Equal(BlockType.Air, box.BlockAt(2, 1, GluedTestLevel.Depth - 1 - 2));
+        Assert.Equal(BlockType.Log, box.BlockAt(2 + GluedTestLevel.Width, 1, GluedTestLevel.Depth - 1 - 2));
+    }
+
+    [Fact]
+    public void TheSpawnStandsOnTheFloorInOpenAir()
+    {
+        var box = GluedTestLevel.Create();
+        var (x, y, z) = GluedTestLevel.Spawn;
+
+        Assert.Equal(BlockType.Stone, box.BlockAt((int)x, (int)y - 1, (int)z));
+        Assert.Equal(BlockType.Air, box.BlockAt((int)x, (int)y, (int)z));
+    }
+
+    [Fact]
+    public void AMirroredSeamTurnsTheFacingAcrossTheXAxis()
+    {
+        var mirrored = new GluedBox(Width, Depth, Empty, mirrored: true);
+        var plain = new GluedBox(Width, Depth, Empty, mirrored: false);
+
+        double yaw = 0.7;
+        var (fx, fz) = (-Math.Sin(yaw), -Math.Cos(yaw));
+        double after = mirrored.YawAfterCrossing(yaw);
+        Assert.True(Math.Abs(-Math.Sin(after) - fx) < 1e-9);
+        Assert.True(Math.Abs(-Math.Cos(after) - -fz) < 1e-9);
+        Assert.Equal(yaw, plain.YawAfterCrossing(yaw));
+    }
 }

@@ -9,6 +9,7 @@ using Hollowfall.Core.Progression;
 using Hollowfall.Core.Relations;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
+using Hollowfall.Core.Topology;
 using Hollowfall.Core.Textures;
 using Hollowfall.Core.World;
 using Hollowfall.Core.Ui;
@@ -131,7 +132,9 @@ public partial class Main : Node3D
         GetWindow().SizeChanged += ApplyUiScale;
 
         string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : Settings.Seed;
+        bool gluedLevel = System.Environment.GetEnvironmentVariable("HOLLOWFALL_LEVEL") == "glued";
         World = new VoxelWorld(TerrainGenerator.SeedFromString(seedText));
+        if (gluedLevel) World.Glue = GluedTestLevel.Create();
         _seedName = seedText;
         _records = RunRecords.Load(RecordsPath);
 
@@ -152,8 +155,10 @@ public partial class Main : Node3D
         _uiSound = id => _audio.Play(id);
         Menus.UiSound += _uiSound;
 
-        var site = FindNearestSite(World);
-        var (feet, yaw, where) = Spawn(World, site);
+        var site = gluedLevel ? null : FindNearestSite(World);
+        var (feet, yaw, where) = gluedLevel
+            ? (new Vector3((float)GluedTestLevel.Spawn.X, (float)GluedTestLevel.Spawn.Y, (float)GluedTestLevel.Spawn.Z), 0.0, "in the glued test level")
+            : Spawn(World, site);
         _where = where;
 
         _view = new WorldView { Name = "World" };
