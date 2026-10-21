@@ -116,7 +116,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 101.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 102.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -133,6 +133,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 101.
 | `pause.title` | PAUSED | AIR STAD | NeedsReview | WK FF | held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state |
 | `pause.resume` | Resume | Lean air | Verified | FF WK | Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue |
 | `pause.respawn` | Respawn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pause.standing` | Standing | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.journal` | Journal | Leabhar-latha | Verified | WK | leabhar-latha, diary or journal |
 | `pause.mainMenu` | Main menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `journal.title` | JOURNAL | LEABHAR-LATHA | Verified | WK | capitals of the entry above |
