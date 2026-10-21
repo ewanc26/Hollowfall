@@ -342,14 +342,26 @@ public partial class Main : Node3D
     /// </summary>
     public void ApplyUiScale()
     {
+        // Setting the factor fires SizeChanged synchronously, which lands back here.
+        if (_applyingUiScale) return;
         var window = GetWindow();
         if (window == null) return;
-        double factor = UiScaling.Factor(window.Size.X, window.Size.Y, Settings.UiScale, Settings.AutoUiScale);
-        window.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
-        window.ContentScaleSize = Vector2I.Zero; // no base size: the factor alone decides
-        window.ContentScaleFactor = (float)factor;
-        UiScaleApplied = factor;
+        _applyingUiScale = true;
+        try
+        {
+            double factor = UiScaling.Factor(window.Size.X, window.Size.Y, Settings.UiScale, Settings.AutoUiScale);
+            window.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+            window.ContentScaleSize = Vector2I.Zero; // no base size: the factor alone decides
+            window.ContentScaleFactor = (float)factor;
+            UiScaleApplied = factor;
+        }
+        finally
+        {
+            _applyingUiScale = false;
+        }
     }
+
+    private bool _applyingUiScale;
 
     /// <summary>The interface scale in force, for tests and the debug overlay.</summary>
     public double UiScaleApplied { get; private set; } = 1.0;
