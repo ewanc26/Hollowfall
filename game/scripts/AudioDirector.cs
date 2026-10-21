@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Assets;
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Input;
@@ -51,6 +52,15 @@ public partial class AudioDirector : Node
 
     private static AudioStreamWav ToStream(SoundId id)
     {
+        var loop = Synth.Loops(id) ? AudioStreamWav.LoopModeEnum.Forward : AudioStreamWav.LoopModeEnum.Disabled;
+        if (GD.Load<AudioStreamWav>("res://" + StaticAssets.SoundFile(id)) is { } stored)
+        {
+            stored.LoopMode = loop;
+            stored.LoopBegin = 0;
+            stored.LoopEnd = stored.Data.Length / 2;
+            return stored;
+        }
+
         var samples = Synth.Render(id);
         var bytes = new byte[samples.Length * 2];
         for (int i = 0; i < samples.Length; i++)
@@ -65,7 +75,7 @@ public partial class AudioDirector : Node
             MixRate = Synth.SampleRate,
             Stereo = false,
             Data = bytes,
-            LoopMode = Synth.Loops(id) ? AudioStreamWav.LoopModeEnum.Forward : AudioStreamWav.LoopModeEnum.Disabled,
+            LoopMode = loop,
             LoopBegin = 0,
             LoopEnd = samples.Length,
         };
