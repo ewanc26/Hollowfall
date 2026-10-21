@@ -135,9 +135,11 @@ public static class GameIcons
     public const string Kills = "icon_kills";
     public const string Stairs = "icon_stairs";
     public const string Key = "icon_key";
+    public const string Cream = "icon_cream";
+    public const string Charm = "icon_charm";
 
     public static IReadOnlyList<string> All { get; } =
-        [PortalTeal, PortalViolet, Revolver, Shotgun, Parry, Health, Blood, Style, Skull, Time, Kills, Stairs, Key];
+        [PortalTeal, PortalViolet, Revolver, Shotgun, Parry, Health, Blood, Style, Skull, Time, Kills, Stairs, Key, Cream, Charm];
 
     /// <summary>The chevron emblem for a style rank (one chevron for the lowest, eight for the highest), or null for no rank.</summary>
     public static string? RankIcon(StyleRank rank) => rank == StyleRank.None ? null : $"rank_{(int)rank}";

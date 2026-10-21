@@ -3,6 +3,12 @@ using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
+if (args is ["--po", var poPath])
+{
+    File.WriteAllText(poPath, Hollowfall.Core.Localization.PoFiles.Export(Hollowfall.Core.Localization.LocTable.All, "gd"), new UTF8Encoding(false));
+    return;
+}
+
 // Usage: dotnet run --project src/Hollowfall.Cli -- [seed] [chunksRadius]
 string seedText = args.Length > 0 ? args[0] : "voxel";
 int radius = args.Length > 1 && int.TryParse(args[1], out var r) ? Math.Clamp(r, 1, 12) : 5;

@@ -99,3 +99,8 @@ public sealed record OmenFulfilled(int Floor, int RoomId, int Extra) : CombatEve
 
 /// <summary>A creature accepted an offering of the player's blood and thinks more of them for it.</summary>
 public sealed record OfferingAccepted(int Id, Relations.Faction Faction) : CombatEvent;
+
+// ---- items (append new events below) ----
+
+/// <summary>The player ate a jar of cream and healed <paramref name="Healed"/>. The host takes the jar out of the bag.</summary>
+public sealed record CreamUsed(double Healed) : CombatEvent;

@@ -170,8 +170,8 @@ public class ReplayTests
         Assert.Equal(ExpectedGoldenChecksum, ReplayCodec.Fnv32(bytes));
     }
 
-    private const int ExpectedGoldenLength = 4210;
-    private const uint ExpectedGoldenChecksum = 1301924721; // changed on purpose: the header carries SimVersion 6 (the glued room changed the simulation)
+    private const int ExpectedGoldenLength = 4212;
+    private const uint ExpectedGoldenChecksum = 1383049449; // changed on purpose: the header now carries the run's creams and worn charm (format 4)
 
     [Fact]
     public void FileSizesStaySane()

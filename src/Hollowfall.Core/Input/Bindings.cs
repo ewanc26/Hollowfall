@@ -26,6 +26,7 @@ public enum GameAction
     Pause,
     Slam,
     FireMortar,
+    UseCream,
 }
 
 public enum ActionGroup
@@ -120,7 +121,7 @@ public static class ActionInfo
     {
         GameAction.MoveForward or GameAction.MoveBack or GameAction.MoveLeft or GameAction.MoveRight or GameAction.Jump or GameAction.Interact or GameAction.Slam => ActionGroup.Movement,
         GameAction.LookUp or GameAction.LookDown or GameAction.LookLeft or GameAction.LookRight => ActionGroup.Look,
-        GameAction.FirePrimary or GameAction.FireSecondary or GameAction.FireMortar or GameAction.Parry => ActionGroup.Combat,
+        GameAction.FirePrimary or GameAction.FireSecondary or GameAction.FireMortar or GameAction.Parry or GameAction.UseCream => ActionGroup.Combat,
         GameAction.PortalTeal or GameAction.PortalViolet or GameAction.ClosePortals => ActionGroup.Portals,
         _ => ActionGroup.System,
     };
@@ -149,6 +150,7 @@ public static class ActionInfo
         GameAction.ClosePortals => "Close portals (sever)",
         GameAction.Slam => "Slam",
         GameAction.FireMortar => "Fire block mortar",
+        GameAction.UseCream => "Use Brownie's cream",
         _ => "Pause menu",
     };
 
@@ -300,6 +302,7 @@ public sealed class BindingMap
             GameAction.DebugInfo => Binding.Key("F3"),
             GameAction.Slam => Binding.Key("X"),
             GameAction.FireMortar => Binding.Key("T"),
+            GameAction.UseCream => Binding.Key("H"),
             GameAction.Pause => PauseKey,
             _ => null,
         };
@@ -327,6 +330,7 @@ public sealed class BindingMap
             GameAction.FlyDown => Binding.Button("B"),
             GameAction.Slam => Binding.Button("DpadUp"),
             GameAction.FireMortar => Binding.Button("DpadLeft"),
+            GameAction.UseCream => Binding.Button("DpadRight"),
             GameAction.Pause => Binding.Button("Start"),
             _ => null,
         };
