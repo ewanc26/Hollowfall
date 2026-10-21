@@ -164,6 +164,11 @@ public static class InterfaceStrings
             T("toast.boon", "The brownie warms the hearth for you (+{0} health)"),
             T("standing.better", "{0} think better of you: {1}"),
             T("standing.worse", "{0} now regard you as {1}"),
+            T("standing.title", "STANDING"),
+            T("standing.subtitle", "How the dungeon's peoples regard you. Hurt a creature in front of its kin and they will remember."),
+            T("standing.nobody", "Nobody here has an opinion of you yet."),
+            T("standing.recent", "RECENT"),
+            T("standing.nothingYet", "Nothing yet."),
 
             // ---- gaps and falls ----
             T("gap.edge", "A gap. Fire a portal across it ({0}), then another beside you ({1}), and step through."),
@@ -187,6 +192,7 @@ public static class InterfaceStrings
             // ---- prompts and panels ----
             G("prompt.read", "{0}  read: {1}", "{0}  leugh: {1}", ReviewStatus.Likely, "WK", "leugh, read (the imperative; Wiktionary quotes 'Leugh seo', Read this)"),
             G("prompt.speak", "{0}  speak", "{0}  bruidhinn", ReviewStatus.Likely, "WK", "bruidhinn, to speak or talk; the bare verb is the imperative"),
+            T("cat.warmth", "The fire is warm, and you feel a little better."),
             T("prompt.closeHint", "{0} or {1} to close"),
             T("prompt.leaveHint", "{0} or {1} to leave"),
 
