@@ -65,7 +65,10 @@ public class CreatureAssetTests
     public void NewModelsWereAppendedAtTheEndOfTheCatalogue()
     {
         var ids = ModelCatalog.All.Select(m => m.Id).ToList();
-        Assert.Equal(["brownie", "selkie", "kelpie", "bean_nighe", "hare", "cistern_pool"], ids.TakeLast(6));
+        // The creatures were appended as one run after the older models (other features add their own runs after it).
+        int first = ids.IndexOf("brownie");
+        Assert.True(first > ids.IndexOf("torch"));
+        Assert.Equal(["brownie", "selkie", "kelpie", "bean_nighe", "hare", "cistern_pool"], ids.Skip(first).Take(6));
         Assert.Equal("husk", ids[0]);
     }
 
@@ -84,8 +87,9 @@ public class CreatureAssetTests
     public void CreatureSoundsAreNewDistinctAndAppendedAfterTheOldOnes()
     {
         var ids = Enum.GetValues<SoundId>().ToList();
-        Assert.Equal(SoundId.TitleCard + 1, SoundId.BrownieHiss);
-        Assert.Equal(SoundId.AllyJoin, ids[^1]);
+        // The creature sounds were added as one run, after the older ones (other features add their own runs after it).
+        Assert.True(SoundId.BrownieHiss > SoundId.TitleCard);
+        Assert.Equal(9, SoundId.AllyJoin - SoundId.BrownieHiss);
         Assert.Equal(SoundId.RevolverShot, ids[0]);
     }
 
