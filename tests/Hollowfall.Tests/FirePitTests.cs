@@ -106,8 +106,9 @@ public class FirePitPlacerTests
             {
                 var blocked = pits.Where(p => p.Floor == floor.Floor).Select(p => (p.CellX, p.CellZ)).ToHashSet();
                 var reach = Flood(floor, blocked);
-                if (floor.ExitStairs is { } e) Assert.Contains((e.X, e.Z), reach);
                 var reachWithout = Flood(floor, []);
+                // Some links are portal gaps, so the stairs are not always reachable on foot: what matters is that the pits change nothing.
+                if (floor.ExitStairs is { } e) Assert.Equal(reachWithout.Contains((e.X, e.Z)), reach.Contains((e.X, e.Z)));
                 Assert.Equal(reachWithout.Count - blocked.Count(b => reachWithout.Contains(b)), reach.Count);
             }
         }
