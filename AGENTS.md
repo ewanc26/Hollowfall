@@ -4,7 +4,7 @@ Guidance for AI coding agents working in **Hollowfall**.
 
 ## Project overview
 
-A voxel dungeon crawler in C# on .NET 10. `Hollowfall.Core` holds world data, seeded terrain and dungeon generation, the combat and portal simulation, input rules and sound synthesis (no engine dependency), `game/` is the Godot shell, `Hollowfall.Cli` is a seed inspector, `tools/Hollowfall.AssetGen` writes the committed static assets (SVG glyphs, the block atlas PNG and the sound effect WAVs; `Hollowfall.Core.Assets.StaticAssets` lists them, and the game falls back to generating them only when a file is missing), and `Hollowfall.Tests` is the xunit suite.
+A voxel dungeon crawler in C# on .NET 10. `Hollowfall.Core` holds world data, seeded terrain and dungeon generation, the combat and portal simulation, input rules and sound synthesis (no engine dependency), `game/` is the Godot shell, `Hollowfall.Cli` is a seed inspector, `tools/Hollowfall.AssetGen` writes the committed static assets (SVG glyphs, the block atlas PNG, the sound effect WAVs and the model GLBs; `Hollowfall.Core.Assets.StaticAssets` lists them, and the game falls back to generating them only when a file is missing), and `Hollowfall.Tests` is the xunit suite.
 
 - Language: C#
 - Default branch: main

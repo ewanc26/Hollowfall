@@ -305,4 +305,16 @@ public class AssetTests
         Assert.Empty(actual.Except(expected));
         Assert.Empty(expected.Except(actual));
     }
+
+    [Fact]
+    public void NoStrayFilesSitInTheModelFolder()
+    {
+        var expected = Hollowfall.Core.Assets.StaticAssets.All()
+            .Select(f => Path.GetFileName(f.Path))
+            .Where(n => n.EndsWith(".glb"))
+            .ToHashSet();
+        var actual = Directory.EnumerateFiles(Path.Combine(Root, "game", "assets", "models"), "*.glb").Select(Path.GetFileName).ToHashSet();
+        Assert.Empty(actual.Except(expected));
+        Assert.Empty(expected.Except(actual));
+    }
 }
