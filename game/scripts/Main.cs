@@ -271,6 +271,8 @@ public partial class Main : Node3D
         _menus.MainMenuRequested += () => Restart(skipTitle: false);
         _menus.JournalProvider = () => (plan.Title, _story.Journal());
         _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
+        _menus.CharacterProvider = () => _character;
+        _menus.SpendRequested += stat => { if (_character.Spend(stat)) ProgressionStore.TrySave(_character, ProgressionPath); };
         AddChild(_menus);
         if (_wulver != null)
         {
