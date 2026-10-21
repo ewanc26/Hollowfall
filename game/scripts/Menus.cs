@@ -331,6 +331,9 @@ public partial class Menus : CanvasLayer
         ShowName();
         var dice = MakeButton(_loc.Tr("title.random"), () => seedEdit.Text = SeedWords.From((ulong)System.Random.Shared.NextInt64()));
         seedRow.AddChild(dice);
+        // The same dungeon for everyone who plays today (UTC), so a daily run can be compared with the rest of the day's players.
+        var daily = MakeButton(_loc.Tr("title.daily"), () => seedEdit.Text = DailySeed.Today(DateTime.UtcNow));
+        seedRow.AddChild(daily);
         col.AddChild(seedRow);
 
         col.AddChild(MakeButton(_loc.Tr("menu.play"), () =>
