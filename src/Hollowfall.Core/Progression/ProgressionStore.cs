@@ -17,6 +17,9 @@ public static class ProgressionStore
     {
         var items = new JsonObject();
         foreach (var (kind, count) in progression.Items.Contents()) items[kind.ToString()] = count;
+        var quests = new JsonObject();
+        foreach (var (quest, progress, done) in progression.Quests.Entries())
+            quests[quest.ToString()] = new JsonObject { ["progress"] = progress, ["done"] = done };
         return new JsonObject
         {
             ["version"] = Version,
@@ -25,6 +28,7 @@ public static class ProgressionStore
             ["might"] = progression.Might,
             ["items"] = items,
             ["charm"] = progression.Items.Charm is { } worn ? worn.ToString() : null,
+            ["quests"] = quests,
         }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
     }
 
@@ -42,6 +46,7 @@ public static class ProgressionStore
 
         progression.Restore(Number(root, "experience"), Number(root, "vigour"), Number(root, "might"));
         progression.Items.Restore(ReadItems(root), ReadCharm(root));
+        ReadQuests(root, progression.Quests);
         return progression;
     }
 
@@ -91,6 +96,19 @@ public static class ProgressionStore
                 list.Add((kind, (int)Math.Clamp(d, 0, int.MaxValue)));
         }
         return list;
+    }
+
+    /// <summary>The quests from the file, each clamped. Names that are not known quests are dropped.</summary>
+    private static void ReadQuests(JsonObject root, QuestLog quests)
+    {
+        if (root["quests"] is not JsonObject entries) return;
+        foreach (var (name, node) in entries)
+        {
+            if (!Enum.TryParse<QuestId>(name, out var quest) || !Enum.IsDefined(quest)) continue;
+            if (node is not JsonObject entry) continue;
+            bool done = entry["done"] is JsonValue v && v.TryGetValue<bool>(out var b) && b;
+            quests.Restore(quest, Number(entry, "progress"), done);
+        }
     }
 
     /// <summary>The worn charm from the file, or null if there is none or the name is not known.</summary>
