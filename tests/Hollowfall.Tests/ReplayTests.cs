@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4210;
-    private const uint ExpectedGoldenChecksum = 3993741719; // changed on purpose: FormatVersion 3 records the run's two stats (two zero bytes here)
+    private const uint ExpectedGoldenChecksum = 3367250316; // changed on purpose: FormatVersion 3 records the run's two stats, and SimVersion 5 is in the header
 
     [Fact]
     public void FileSizesStaySane()
