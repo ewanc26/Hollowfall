@@ -50,6 +50,23 @@ Used in the cat's lines unless noted. "FGB" is the *Foclóir Gaeilge–Béarla* 
 
 *Aodhán*: an Irish male name, a diminutive of *Aodh* (from Old Irish *Áed*, "fire"), commonly glossed "little fire"; Aidan is its anglicised form. Sources: Wikipedia "Aodhán" and "Aidan"; Behind the Name. Wiktionary gives the derivation (Old Irish *Aédán*, *Aodh* plus the suffix *-án*) but not a gloss. Status: Verified for the derivation, Likely for the exact gloss "little fire" (the sources agree, but some give "fiery one").
 
+## Independent re-check (21 October 2026)
+
+A second pass read the Ó Dónaill dictionary (*Foclóir Gaeilge–Béarla*) entries directly on teanglann.ie, instead of relying on summaries. It confirmed these exact lines and found nothing wrong. It is still not a fluent speaker's review.
+
+| Irish | Result | Source |
+| --- | --- | --- |
+| *Oíche mhaith agat* | Confirmed: "(On taking leave, retiring) Oíche mhaith agat, (I bid you) good night." | [FGB: maith](https://www.teanglann.ie/en/fgb/maith) |
+| *Maith thú* | Confirmed: "(Praise, thanks) ~ thú, (i) good for you, (ii) thanks." | [FGB: maith](https://www.teanglann.ie/en/fgb/maith) |
+| *Suigh láimh liom* | Confirmed, under the entry for *lámh*: "Suigh láimh liom, sit at my hand, beside me." | [FGB: suigh](https://www.teanglann.ie/en/fgb/suigh) |
+| *Tine bheag* | Confirmed: "~ bheag, (i) little fire, (ii) small open-air fire"; *tine* is feminine, which is why *bheag* is lenited. | [FGB: tine](https://www.teanglann.ie/en/fgb/tine) |
+| *Slán leat* | Confirmed: "~ agat! ~ leat! Good-bye!" The dictionary does not say who each is said to; the usual rule (*slán leat* to the one who is leaving, *slán agat* to the one who stays) comes from learner usage, not from this entry. | [FGB: slán](https://www.teanglann.ie/en/fgb/slán) |
+| *Codladh sámh duit* | Confirmed, under *do*: "Codladh sámh duit, may you sleep well." | [FGB: codladh](https://www.teanglann.ie/en/fgb/codladh) |
+| *Dia is Muire duit* | Given as the reply to *Dia duit* by several learner references; spellings vary (*Dia 's Muire duit*, and *dhuit* in older spelling). It stays Likely, since the dictionary entry checked does not print it. | [Wikibooks: Irish, Lesson One](https://en.wikibooks.org/wiki/Irish/Lesson_One), [Transparent Language](https://blogs.transparent.com/irish/?p=4063) |
+| The meaning of the name *Aodhán* | A diminutive (*-án*) of *Aodh*, "fire", often glossed "little fire". That gloss is the popular one, repeated by name sites without a dictionary; a more careful wording is "a diminutive of *Aodh*, fire". Name sites also say "little fiery one". | [Wikipedia: Aodh (given name)](https://en.wikipedia.org/wiki/Aodh_(given_name)) |
+
+What this changes: nothing in the game needed fixing. Six of the thirteen Verified phrases were re-read in the dictionary itself and all matched. The one source-quality point is the name's meaning, which the doc above states a little more firmly than the sources do; read "little fire" as a popular gloss.
+
 ## What could not be checked
 
 - Whether each phrase sounds natural in a particular county or dialect. The standard (*Caighdeán Oifigiúil*) spellings are used. Munster, Connacht and Ulster speakers may prefer other greetings (for example *Dia dhuit* in the older spelling, or *Cén chaoi a bhfuil tú?*).

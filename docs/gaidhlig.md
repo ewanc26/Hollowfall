@@ -108,6 +108,28 @@ Add a value to `Language`, a native name in `Languages.NativeName`, a column (or
 
 If you read Gàidhlig, please look over the tables below and tell us what is wrong, odd, stiff or unnatural: spelling, accents, mutation, word order, a better word, a regional preference, anything. You do not need to be a programmer: a list of the keys and what each should say is enough, in an issue or an email to the author. Corrections are welcome and will be credited if you wish. Thank you; the game takes Gaelic seriously and wants to get it right.
 
+## Independent re-check (21 October 2026)
+
+A second pass, made after the first build, read the primary pages directly instead of relying on summaries. It confirmed these and found nothing wrong, but it is still not a speaker's review.
+
+| Point | Result | Source |
+| --- | --- | --- |
+| *Fàg an-seo* is Quit, *Roghainnean* is Settings | Confirmed in Firefox's own Scottish Gaelic file (`menu-quit` is *Fàg an-seo* on Windows and other platforms; `menu-settings` is *Roghainnean*). On macOS Firefox uses *Fàg* plus the app name. | [mozilla-l10n gd `menubar.ftl`](https://raw.githubusercontent.com/mozilla-l10n/firefox-l10n/main/gd/browser/browser/menubar.ftl) |
+| *doras* (door) is masculine | Confirmed: `doras m (genitive dorais, plural dorsan)`. So *An Doras Deireannach* needs no mutation. | [Wiktionary: doras](https://en.wiktionary.org/wiki/doras) |
+| *deireannach* means last, final | Confirmed (adjective; also "tardy"). | [Wiktionary: deireannach](https://en.wiktionary.org/wiki/deireannach) |
+| *sgòrnan* is masculine, the throat | Confirmed: `sgòrnan m (genitive sgòrnain)`, throat, gullet, also windpipe. So *An Sgòrnan* is correct for "the Throat". | [Wiktionary: sgòrnan](https://en.wiktionary.org/wiki/sgòrnan) |
+| *iuchair* (key) is feminine, plural *iuchraichean* | Confirmed (genitive *iuchrach*). The label *Iuchraichean {0}* is a correct plural. | [Wiktionary: iuchair](https://en.wiktionary.org/wiki/iuchair) |
+| *cluich* is the verb "to play" | Confirmed. Imperative singular *cluich*, plural *cluichibh*. The game uses the singular. | [Wiktionary: cluich](https://en.wiktionary.org/wiki/cluich) |
+| *fàg* is "leave, quit, abandon" | Confirmed, transitive only; *falbh* is the intransitive "go". *Fàg an-seo* is therefore software wording, not a rule of the dictionary. | [Wiktionary: fàg](https://en.wiktionary.org/wiki/fàg) |
+| *loch* gender | **Still unsettled.** Wiktionary prints `loch f (genitive locha, plural lochan)`, yet the diminutive *lochan* is masculine there and real names such as *Loch Fada* are written without lenition, which a feminine noun would normally cause. Keep using *loch* on its own, never with an adjective. | [Wiktionary: loch](https://en.wiktionary.org/wiki/loch), [Wiktionary: lochan](https://www.wiktionary.com/wiki/lochan) |
+| *tobar* gender | **Varies by dialect.** Wiktionary prints `m or f`, masculine forms in Uist and feminine in Lewis. Keep it alone. | [Wiktionary: tobar](https://en.wiktionary.org/wiki/tobar) |
+| *Halò*, *Fàilte*, *Mòran taing*, *Mar sin leat* | Printed in beginner references. Note that *Mar sin leat* is the goodbye to one person you know well; to several people or a stranger it is *Mar sin leibh*, and *Mòran taing* is a "many thanks", usually a reply to thanks. | [Omniglot](https://omniglot.com/language/phrases/gaelic.php), [LearnGaelic unit 1](https://learngaelic.net/littlebylittle/unit01), [Gaelic Grammar Wiki: Idiomatic Pleasantries](https://gaelicgrammar.org/~gaelic/mediawiki/index.php/Idiomatic_Pleasantries) |
+| *brùnaidh* and *gruagach* as the brownie | Both are listed as Scottish Gaelic names on Wikipedia's brownie page, which also lists *ùruisg*. No dictionary page was reached, so the status stays Likely, not Verified. | [Wikipedia: Brownie (folklore)](https://en.wikipedia.org/wiki/Brownie_(folklore)) |
+| *Air ais* as "Back" on a button | **Not confirmed.** It means "back" and "ago" in general; no software source for the button was found. Keep it Likely. | (none found) |
+| The name Eòghann | It is the Scottish Gaelic form of Ewan. Its meaning is disputed: "born of the yew" is the usual popular reading, while Wikipedia also gives "noble born" from Latin *Eugenius*. Say "often glossed as" rather than stating a meaning. | [Wikipedia: Ewan](https://en.wikipedia.org/wiki/Ewan) |
+
+What this changes: nothing in the game needed fixing. *Fàg an-seo* and *Roghainnean* are now confirmed from the primary file. The two floor-card names are grammatically sound (a masculine noun and a masculine noun plus adjective, each unmutated), though the whole phrases are composed, not quoted. The cautions that remain are the ones above: *loch* and *tobar* stay out of noun-plus-adjective names, *Air ais* needs a speaker, and the greetings' register (singular and informal) is worth a speaker's ear.
+
 ## The tables
 
 Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated" rows are the ones with no Gàidhlig yet.

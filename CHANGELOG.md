@@ -32,6 +32,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Changed
 
+- The Gàidhlig and Irish docs gained an independent re-check against primary sources (Firefox's Gaelic file, the Ó Dónaill dictionary, Wiktionary): nothing needed fixing, and the remaining doubts (the gender of *loch* and *tobar*, *Air ais* as a button, the register of the greetings) are written down for a speaker.
 - Replays are recorded under `RunReplay.SimVersion` 4 (the game now simulates with the relationship system on); older ghosts are unverifiable, and the replay golden checksum in `ReplayTests` changed with the version byte.
 - Chests hold real loot, rolled from the seed (`LootTable`): the same dungeon always holds the same loot. Ordinary chests are common; locked chests (treasure and boss rooms) roll a better table with stronger, longer effects. Outcomes are a vial of blood (health), a cleansing drop (clears hard damage), a style shard (a burst of style), Bloodlust (hits heal more for a while), Open guard (a longer parry window for a while) and, from ordinary chests only, a spare key.
 - Opening a chest releases a floating pickup (five new low-poly models: vial, drop, star, fang and shield) and the banner names the loot. `ChestOpened` now carries the `Loot` and what it did.
