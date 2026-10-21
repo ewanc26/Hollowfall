@@ -49,6 +49,7 @@ public static class MusicLayers
             case MusicLayer.Shimmer: Shimmer(buffer, score); break;
             case MusicLayer.Choir: Choir(buffer, score); break;
             case MusicLayer.Heartbeat: Heartbeat(buffer); break;
+            case MusicLayer.Hearth: Hearth(buffer, score); break;
             default: throw new ArgumentOutOfRangeException(nameof(layer));
         }
         buffer.Normalise(MusicTuning.Peak(layer));
@@ -148,6 +149,32 @@ public static class MusicLayers
     {
         foreach (var n in score.ChoirNotes)
             buffer.Add(Instruments.BeatToSample(n.Beat), Instruments.BrassSwell(Modes.Hertz(n.Midi), n.Velocity, n.Length * BeatSeconds, 2.4, 2.2), 0.5);
+    }
+
+    private static void Hearth(LoopBuffer buffer, MusicScore score)
+    {
+        // A low hum on the root and the fifth below it (whole cycles in the loop, so it joins up), swelling slowly like breathing.
+        var data = buffer.Data;
+        (int Offset, double Amp)[] tones = [(-12, 0.8), (-5, 0.45), (0, 0.5)];
+        foreach (var (offset, amp) in tones)
+        {
+            double hz = Instruments.SnapToLoop(Modes.Hertz(score.Key.RootMidi + offset));
+            for (int i = 0; i < data.Length; i++)
+            {
+                double t = (double)i / MusicTuning.SampleRate;
+                double breath = 0.8 + 0.2 * Math.Sin(Tau * 4 * t / MusicTuning.LoopSeconds + offset);
+                data[i] += (float)((Math.Sin(Tau * hz * t) + 0.3 * Math.Sin(Tau * 2 * hz * t) + 0.12 * Math.Sin(Tau * 3 * hz * t)) * amp * breath);
+            }
+        }
+
+        // The harp, one soft note on the first beat of each bar, dull and slow.
+        for (int i = 0; i < score.HarpNotes.Count; i++)
+        {
+            var n = score.HarpNotes[i];
+            if (Math.Abs(n.Beat % 4) > 1e-6) continue;
+            var pluck = Instruments.Pluck(Modes.Hertz(n.Midi - 12), n.Velocity, 4.5, 0.3, 6000 + i);
+            buffer.Add(Instruments.BeatToSample(n.Beat), pluck, 1.1);
+        }
     }
 
     private static void Heartbeat(LoopBuffer buffer)
