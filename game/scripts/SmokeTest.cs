@@ -206,10 +206,10 @@ public partial class SmokeTest : Node
         {
             var music = main.Music;
             var deadline = Time.GetTicksMsec() + 60_000;
-            while (Time.GetTicksMsec() < deadline && !music.Ready && music.Failure == null) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            bool built = music.Ready && music.Failure == null
+            while (Time.GetTicksMsec() < deadline && !music.IsReady && music.Failure == null) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            bool built = music.IsReady && music.Failure == null
                 && Enum.GetValues<Hollowfall.Core.Audio.Music.MusicContext>().All(c => music.StreamCount(c) == Enum.GetValues<Hollowfall.Core.Audio.Music.MusicLayer>().Length);
-            if (!built) { _failed++; GD.PrintErr($"  FAIL {name}: ready={music.Ready} failure={music.Failure}"); return; }
+            if (!built) { _failed++; GD.PrintErr($"  FAIL {name}: ready={music.IsReady} failure={music.Failure}"); return; }
             GD.Print($"    music: render {music.RenderMilliseconds:F0} ms, build {music.BuildMilliseconds:F0} ms, {music.BufferBytes / 1048576.0:F1} MB of audio, engine static memory {OS.GetStaticMemoryUsage() / 1048576.0:F0} MB");
 
             var layer = Hollowfall.Core.Audio.Music.MusicLayer.DrumLight;
