@@ -64,6 +64,10 @@ public enum SoundId
     StandingDown,
     BoonChime,
     AllyJoin,
+
+    // ---- items (appended; new sounds go below this line) ----
+    CreamSip,
+    CharmWear,
 }
 
 /// <summary>
@@ -143,6 +147,8 @@ public static class Synth
             SoundId.StandingDown => Mix(0.8, (t, i) => (Sine(t, 196) + 0.5 * Sine(t, 185)) * Decay(t, 4) * 0.5 + (t > 0.14 ? (Sine(t - 0.14, 147) + 0.5 * Sine(t - 0.14, 139)) * Decay(t - 0.14, 4) * 0.5 : 0)),
             SoundId.BoonChime => Mix(0.9, (t, _) => (Sine(t, 880) * Decay(t, 5) + (t > 0.1 ? Sine(t - 0.1, 1175) * Decay(t - 0.1, 5) : 0) + (t > 0.2 ? Sine(t - 0.2, 1568) * Decay(t - 0.2, 5) : 0)) * 0.3),
             SoundId.AllyJoin => Mix(0.6, (t, _) => (Sine(t, Lerp(330, 660, Math.Min(1, t / 0.2))) * Decay(t, 5) + Sine(t, 990) * Decay(t, 9) * 0.4) * 0.45),
+            SoundId.CreamSip => Mix(0.35, (t, _) => (Sine(t, Lerp(280, 540, Math.Min(1, t / 0.12))) * Decay(t, 12) + Sine(t, 1080) * Decay(t, 30) * 0.2) * 0.5),
+            SoundId.CharmWear => Mix(0.8, (t, _) => (Sine(t, 1046.5) * Decay(t, 6) + (t > 0.08 ? Sine(t - 0.08, 1568) * Decay(t - 0.08, 7) : 0)) * 0.4),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 

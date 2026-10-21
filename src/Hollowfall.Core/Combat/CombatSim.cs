@@ -12,7 +12,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding, Vec3 Velocity = default, bool Crossed = false);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false, bool FireMortar = false);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false, bool FireMortar = false, bool UseCream = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -76,6 +76,7 @@ public sealed class CombatSim
     private double _parryWindow, _parryCooldown;
     private readonly MeteorTracker _meteor = new();
     private int _nextId = 1;
+    private int _creams;
     private readonly HashSet<int> _populated = [];
 
     /// <summary>
@@ -97,6 +98,9 @@ public sealed class CombatSim
 
     /// <summary>The character's stats for this run, read once when it starts (see RunStats). Vigour sets the maximum health; Might scales the guns and parries.</summary>
     public RunStats Stats { get; }
+
+    /// <summary>Jars of cream the run still has: the bag's count when the run started, less those used.</summary>
+    public int CreamsLeft => _creams;
 
     /// <summary>Seconds left in the open parry window (0 when closed), which a Wide Parry perk lengthens.</summary>
     public double ParryWindowLeft => _parryWindow;
@@ -121,6 +125,7 @@ public sealed class CombatSim
         _world = world;
         _site = site;
         Stats = stats;
+        _creams = stats.ClampedCreams;
         Vitals = new PlayerVitals(stats.MaxHealth);
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
         _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add,
@@ -270,6 +275,7 @@ public sealed class CombatSim
         if (actions.FireRevolver) Fire(WeaponSpec.Revolver, view);
         if (actions.FireShotgun) Fire(WeaponSpec.Shotgun, view);
         if (actions.FireMortar) FireMortar(view);
+        if (actions.UseCream) UseCream();
 
         foreach (var e in _enemies.ToList()) UpdateEnemy(e, dt, view);
         UpdateProjectiles(dt, view);
@@ -1149,11 +1155,19 @@ public sealed class CombatSim
 
     private void HurtPlayer(double damage)
     {
-        double taken = Vitals.Damage(damage);
+        double taken = Vitals.Damage(damage * (1 - Stats.WardFraction));
         if (taken <= 0) return;
         Style.OnDamaged();
         _events.Add(new PlayerHurt(taken, Vitals.Health));
         if (Vitals.Dead) _events.Add(new PlayerDied());
+    }
+
+    /// <summary>Eats a jar of cream to heal, if the run has one and the player is hurt. A jar is not used up at full health.</summary>
+    private void UseCream()
+    {
+        if (_creams <= 0 || Vitals.Dead || Vitals.Health >= Vitals.Ceiling) return;
+        _creams--;
+        _events.Add(new CreamUsed(Vitals.Heal(Inventory.CreamHeal)));
     }
 
     private void UpdateProjectiles(double dt, PlayerView view)

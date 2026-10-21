@@ -58,6 +58,7 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. The game 
 | Close portals (sever anything standing in them) | C | D-pad down |
 | Slam (drop straight down from the air; cracks, then breaks, brick floor) | X | D-pad up |
 | Block mortar (arcing shell that digs a sphere of brick, earth and stone, in 10 cm cubes) | T | D-pad left |
+| Use Brownie's cream (heals 40 when hurt) | H | D-pad right |
 | Open chests (a key for locked ones), read notes, speak to what you find | F | Left stick click |
 | Respawn | R | Y |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |

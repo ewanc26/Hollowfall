@@ -172,6 +172,18 @@ mesh-based shooter can, and gives each floor a distinct ending.
 **Tests:** rings remove the expected blocks in order, the player ends on the next floor, no softlocks if the player stands on
 the stairs, floor timer pauses. **Effort:** large.
 
+### 3.4 The bag, the cream and the thorn charm (built)
+
+**Pitch.** Something to carry, so a friendly brownie's gift is worth keeping.
+
+**Rules.** The bag has 12 slots of up to 9 of each item. A **Brownie's cream** heals 40 when used in a run (H, or D-pad right),
+and only when you are hurt below your ceiling; it is used up on use. A full bag leaves the cream behind. Creams found during a
+run are not usable until the next run. The **thorn charm** can be worn in the one charm slot (Bag screen, Wear or Take off) and
+takes 10 percent less damage. Worn charms and carried creams are read when a run starts, so changes take effect from the next run.
+
+**Build on.** `Inventory`, `RunStats` (creams and charm recorded in the replay, format 4), `CreamUsed` in `CombatSim`. **Tests:**
+`ItemUseTests`. **Not yet:** chest loot still heals on the spot rather than becoming items.
+
 ## 4. Pillar three: Chain
 
 Make style the currency of a run.
