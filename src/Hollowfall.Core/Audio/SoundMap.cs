@@ -33,6 +33,15 @@ public static class SoundMap
         ChestLocked => SoundId.ChestLocked,
         TrapSprung => SoundId.TrapStrike,
         MeteorImpact => SoundId.Meteor,
+        ReputationChanged r => r.New > r.Old ? SoundId.StandingUp : SoundId.StandingDown,
+        EntityProvoked { Faction: Relations.Faction.Brownies } => SoundId.BrownieHiss,
+        EntityProvoked { Faction: Relations.Faction.Selkies } => SoundId.SelkieCry,
+        EntityProvoked { Faction: Relations.Faction.Kelpies } => SoundId.KelpieWhinny,
+        EntityProvoked { Faction: Relations.Faction.Wanderers } => SoundId.NigheWail,
+        EntityProvoked { Faction: Relations.Faction.Vermin } => SoundId.HareScream,
+        OmenSensed or OmenFulfilled => SoundId.OmenToll,
+        BoonGiven or OfferingAccepted => SoundId.BoonChime,
+        EntityAllied => SoundId.AllyJoin,
         _ => null,
     };
 

@@ -30,6 +30,20 @@ public static class Palette
     public static readonly ModelColor Teal = ModelColor.Hex(0x19d3c5);
     public static readonly ModelColor VioletGlow = ModelColor.Hex(0xa24bff);
     public static readonly ModelColor White = ModelColor.Hex(0xfff6e0);
+
+    // The Folk (appended with the creatures): earthy browns for the household, sea greys and water for the water-folk, a hag's green.
+    public static readonly ModelColor Skin = ModelColor.Hex(0xe0b894);
+    public static readonly ModelColor Hair = ModelColor.Hex(0x2b2220);
+    public static readonly ModelColor Homespun = ModelColor.Hex(0x7a5a3a);
+    public static readonly ModelColor HomespunDark = ModelColor.Hex(0x4d3824);
+    public static readonly ModelColor SealGrey = ModelColor.Hex(0x7d8a96);
+    public static readonly ModelColor SealDark = ModelColor.Hex(0x434d58);
+    public static readonly ModelColor Water = ModelColor.Hex(0x1e5a6e);
+    public static readonly ModelColor WaterDeep = ModelColor.Hex(0x0f2f40);
+    public static readonly ModelColor HagGreen = ModelColor.Hex(0x4f6a4a);
+    public static readonly ModelColor HagDark = ModelColor.Hex(0x2c3d2b);
+    public static readonly ModelColor Fur = ModelColor.Hex(0x9a7a52);
+    public static readonly ModelColor FurLight = ModelColor.Hex(0xd8c7a4);
 }
 
 /// <summary>
@@ -86,12 +100,19 @@ public static class ModelCatalog
         // ---- fire pits and something warm beside one (append further models above this line, not below) ----
         FirePit,
         Cat,
+        // ---- the Folk, a wanderer and vermin (relationship system; append further models above this line) ----
+        Brownie, Selkie, Kelpie, BeanNighe, Hare, CisternPool,
     ];
 
     public static LowPolyModel ForEnemy(EnemyKind kind) => kind switch
     {
         EnemyKind.Husk => Husk,
         EnemyKind.Spitter => Spitter,
+        EnemyKind.Brownie => Brownie,
+        EnemyKind.Selkie => Selkie,
+        EnemyKind.Kelpie => Kelpie,
+        EnemyKind.BeanNighe => BeanNighe,
+        EnemyKind.Hare => Hare,
         _ => Warden,
     };
 
@@ -588,6 +609,43 @@ public static class ModelCatalog
             .Blob(V(0, 0.03, -0.37), V(0.115, 0.115, 0.13), coat.Shade(0.04f))
             .Box(V(0, 0.115, -0.15), V(0.1, 0.02, 0.34), coatLight);
 
+    // ---- the Folk, a wanderer and vermin ---------------------------------------------------------------------------
+
+    private static readonly Lazy<LowPolyModel> BrownieModel = new(BuildBrownie);
+    private static readonly Lazy<LowPolyModel> SelkieModel = new(BuildSelkie);
+    private static readonly Lazy<LowPolyModel> KelpieModel = new(BuildKelpie);
+    private static readonly Lazy<LowPolyModel> BeanNigheModel = new(BuildBeanNighe);
+    private static readonly Lazy<LowPolyModel> HareModel = new(BuildHare);
+    private static readonly Lazy<LowPolyModel> CisternPoolModel = new(BuildCisternPool);
+
+    public static LowPolyModel Brownie => BrownieModel.Value;
+    public static LowPolyModel Selkie => SelkieModel.Value;
+    public static LowPolyModel Kelpie => KelpieModel.Value;
+    public static LowPolyModel BeanNighe => BeanNigheModel.Value;
+    public static LowPolyModel Hare => HareModel.Value;
+
+    /// <summary>The shallow pool laid on the floor of a round cistern room, centred on the model origin.</summary>
+    public static LowPolyModel CisternPool => CisternPoolModel.Value;
+
+    // Brownie: a small, shy household helper in a ragged hood, big ears and an apron.
+    private static LowPolyModel BuildBrownie()
+    {
+        var m = new ModelBuilder("brownie");
+
+        m.Part("torso", V(0, 0.5, 0))
+            .Box(V(0, 0.02, 0), V(0.34, 0.4, 0.24), Palette.Homespun)
+            .Box(V(0, -0.17, 0), V(0.4, 0.12, 0.28), Palette.HomespunDark)
+            .Box(V(0, 0.0, 0), V(0.36, 0.05, 0.26), Palette.Gold)
+            .Box(V(0, -0.04, -0.125), V(0.2, 0.3, 0.02), Palette.FurLight);
+
+        m.Part("head", V(0, 0.78, 0), "torso")
+            .Box(V(0, 0, 0), V(0.3, 0.26, 0.26), Palette.Skin)
+            .Box(V(0, 0.09, 0.03), V(0.34, 0.14, 0.3), Palette.HomespunDark)
+            .Wedge(V(-0.2, 0.0, 0), V(0.1, 0.12, 0.04), Palette.Skin, V(0, 0, 90))
+            .Wedge(V(0.2, 0.0, 0), V(0.1, 0.12, 0.04), Palette.Skin, V(0, 0, -90))
+            .Box(V(-0.06, 0.02, -0.135), V(0.05, 0.04, 0.02), Palette.EyeAmber, glow: true)
+            .Box(V(0.06, 0.02, -0.135), V(0.05, 0.04, 0.02), Palette.EyeAmber, glow: true);
+
         foreach (double side in new[] { -1.0, 1.0 })
         {
             string tag = side < 0 ? "l" : "r";
@@ -626,5 +684,157 @@ public static class ModelCatalog
             .Prism(V(0, 0.0, 0.13), 0.032, 0.26, 5, coatDark, 0.45, V(90, 0, 0));
 
         return m.Anchor("eyes", V(0, 0.42, -0.42)).Build();
+            m.Part($"arm_{tag}", V(0.22 * side, 0.66, 0), "torso")
+                .Box(V(0, -0.15, 0), V(0.1, 0.3, 0.1), Palette.Homespun)
+                .Box(V(0, -0.32, -0.01), V(0.1, 0.08, 0.1), Palette.Skin);
+            m.Part($"leg_{tag}", V(0.09 * side, 0.3, 0))
+                .Box(V(0, -0.14, 0), V(0.12, 0.28, 0.14), Palette.HomespunDark)
+                .Box(V(0, -0.29, -0.03), V(0.13, 0.06, 0.2), Palette.Wood);
+        }
+
+        return m.Anchor("eye", V(0, 0.8, -0.15)).Build();
+    }
+
+    // Selkie: a seal-woman in a dark sealskin cloak, flippered feet and long hair; her eyes glow the colour of the sea.
+    private static LowPolyModel BuildSelkie()
+    {
+        var m = new ModelBuilder("selkie");
+
+        m.Part("torso", V(0, 1.0, 0))
+            .Box(V(0, 0.05, 0), V(0.46, 0.55, 0.28), Palette.SealGrey)
+            .Box(V(0, 0.1, -0.145), V(0.3, 0.3, 0.02), Palette.Skin)
+            .Box(V(0, 0.33, 0), V(0.6, 0.12, 0.3), Palette.SealDark)
+            .Box(V(0, -0.1, 0.17), V(0.5, 0.75, 0.07), Palette.SealDark)
+            .Box(V(0, -0.2, 0), V(0.5, 0.16, 0.3), Palette.SealDark.Shade(0.1f));
+
+        m.Part("head", V(0, 1.5, 0), "torso")
+            .Box(V(0, 0, 0), V(0.26, 0.28, 0.26), Palette.Skin)
+            .Box(V(0, 0.06, 0.05), V(0.3, 0.26, 0.28), Palette.Hair)
+            .Box(V(0, -0.2, 0.12), V(0.26, 0.4, 0.08), Palette.Hair)
+            .Box(V(-0.06, 0.0, -0.135), V(0.05, 0.04, 0.02), Palette.Teal, glow: true)
+            .Box(V(0.06, 0.0, -0.135), V(0.05, 0.04, 0.02), Palette.Teal, glow: true);
+
+        foreach (double side in new[] { -1.0, 1.0 })
+        {
+            string tag = side < 0 ? "l" : "r";
+            m.Part($"arm_{tag}", V(0.33 * side, 1.3, 0), "torso")
+                .Box(V(0, -0.12, 0), V(0.13, 0.26, 0.13), Palette.SealGrey)
+                .Box(V(0, -0.38, 0), V(0.09, 0.26, 0.09), Palette.Skin);
+            m.Part($"leg_{tag}", V(0.11 * side, 0.8, 0))
+                .Box(V(0, -0.4, 0), V(0.15, 0.72, 0.16), Palette.SealGrey.Shade(0.05f))
+                .Wedge(V(0, -0.765, -0.1), V(0.18, 0.07, 0.34), Palette.SealDark, V(0, 180, 0));
+        }
+
+        return m.Anchor("eye", V(0, 1.52, -0.15)).Build();
+    }
+
+    // Kelpie: a black water-horse with a dripping weed mane and tail, and cold teal eyes.
+    private static LowPolyModel BuildKelpie()
+    {
+        var m = new ModelBuilder("kelpie");
+
+        m.Part("body", V(0, 1.05, 0))
+            .Box(V(0, 0, 0), V(0.55, 0.55, 0.9), Palette.WaterDeep.Shade(0.05f))
+            .Box(V(0, -0.2, 0), V(0.5, 0.14, 0.86), Palette.Water)
+            .Prism(V(0, 0.31, 0.05), 0.07, 0.14, 4, Palette.HagGreen, 0, spin: 45)
+            .Prism(V(0, 0.3, 0.25), 0.06, 0.12, 4, Palette.HagGreen, 0, spin: 45);
+
+        m.Part("neck", V(0, 1.2, -0.3), "body")
+            .Box(V(0, 0.3, -0.07), V(0.28, 0.7, 0.3), Palette.WaterDeep, V(-18, 0, 0))
+            .Box(V(0, 0.3, 0.12), V(0.08, 0.66, 0.1), Palette.HagGreen, V(-18, 0, 0));
+
+        m.Part("head", V(0, 1.75, -0.42), "neck")
+            .Box(V(0, 0.06, -0.1), V(0.22, 0.24, 0.4), Palette.WaterDeep.Shade(0.08f), V(12, 0, 0))
+            .Box(V(0, 0.0, -0.3), V(0.16, 0.15, 0.1), Palette.Water, V(12, 0, 0))
+            .Wedge(V(-0.07, 0.24, 0.0), V(0.05, 0.1, 0.05), Palette.WaterDeep)
+            .Wedge(V(0.07, 0.24, 0.0), V(0.05, 0.1, 0.05), Palette.WaterDeep)
+            .Box(V(-0.115, 0.1, -0.14), V(0.02, 0.05, 0.06), Palette.Teal, glow: true)
+            .Box(V(0.115, 0.1, -0.14), V(0.02, 0.05, 0.06), Palette.Teal, glow: true);
+
+        string[] legs = ["fl", "fr", "bl", "br"];
+        for (int i = 0; i < 4; i++)
+        {
+            double x = (i % 2 == 0 ? -1 : 1) * 0.2, z = i < 2 ? -0.32 : 0.32;
+            m.Part($"leg_{legs[i]}", V(x, 0.95, z), "body")
+                .Box(V(0, -0.45, 0), V(0.14, 0.9, 0.14), Palette.WaterDeep)
+                .Box(V(0, -0.92, -0.01), V(0.16, 0.06, 0.18), Palette.Bone);
+        }
+
+        m.Part("tail", V(0, 1.12, 0.45), "body")
+            .Prism(V(0, -0.3, 0.02), 0.09, 0.6, 5, Palette.HagGreen, 0.3, V(180, 0, 0))
+            .Gem(V(0, -0.62, 0.02), V(0.03, 0.04, 0.03), Palette.Teal, glow: true);
+
+        return m.Anchor("eye", V(0, 1.85, -0.55)).Build();
+    }
+
+    // Bean Nighe: a stooped washerwoman in a green gown and hood, wringing out a pale cloth that glows faintly.
+    private static LowPolyModel BuildBeanNighe()
+    {
+        var m = new ModelBuilder("bean_nighe");
+
+        m.Part("torso", V(0, 0.55, 0))
+            .Prism(V(0, 0, 0), 0.3, 1.0, 6, Palette.HagGreen, 0.55)
+            .Box(V(0, 0.4, -0.08), V(0.34, 0.3, 0.28), Palette.HagGreen.Shade(0.08f), V(-15, 0, 0))
+            .Box(V(0, -0.1, -0.2), V(0.2, 0.5, 0.02), Palette.HagDark);
+
+        m.Part("head", V(0, 1.35, -0.12), "torso")
+            .Box(V(0, 0, 0), V(0.22, 0.24, 0.22), Palette.FurLight)
+            .Box(V(0, 0.04, 0.05), V(0.3, 0.3, 0.28), Palette.HagDark)
+            .Box(V(0, -0.07, -0.115), V(0.06, 0.06, 0.02), Palette.White)
+            .Box(V(-0.05, 0.02, -0.115), V(0.04, 0.03, 0.02), Palette.Teal, glow: true)
+            .Box(V(0.05, 0.02, -0.115), V(0.04, 0.03, 0.02), Palette.Teal, glow: true);
+
+        foreach (double side in new[] { -1.0, 1.0 })
+        {
+            string tag = side < 0 ? "l" : "r";
+            m.Part($"arm_{tag}", V(0.2 * side, 1.05, -0.05), "torso")
+                .Box(V(0, -0.15, -0.1), V(0.09, 0.3, 0.09), Palette.HagGreen, V(-40, 0, 0))
+                .Box(V(0, -0.27, -0.2), V(0.09, 0.08, 0.09), Palette.FurLight);
+        }
+
+        m.Part("cloth", V(0, 0.78, -0.38), "torso")
+            .Box(V(0, 0, 0), V(0.3, 0.05, 0.22), Palette.Bone)
+            .Gem(V(0, -0.1, 0), V(0.04, 0.06, 0.04), Palette.Teal, glow: true);
+
+        return m.Anchor("eye", V(0, 1.38, -0.25)).Build();
+    }
+
+    // Hare: a long-eared brown hare, crouched and ready to bolt.
+    private static LowPolyModel BuildHare()
+    {
+        var m = new ModelBuilder("hare");
+
+        m.Part("body", V(0, 0.25, 0))
+            .Box(V(0, 0, 0), V(0.22, 0.24, 0.34), Palette.Fur)
+            .Box(V(0, -0.06, -0.02), V(0.2, 0.1, 0.3), Palette.FurLight)
+            .Box(V(0, 0.04, 0.2), V(0.1, 0.1, 0.08), Palette.FurLight);
+
+        m.Part("head", V(0, 0.36, -0.2), "body")
+            .Box(V(0, 0, -0.03), V(0.15, 0.15, 0.18), Palette.Fur)
+            .Box(V(0, -0.03, -0.12), V(0.07, 0.07, 0.04), Palette.FurLight)
+            .Box(V(-0.045, 0.03, -0.12), V(0.025, 0.03, 0.02), Palette.EyeAmber, glow: true)
+            .Box(V(0.045, 0.03, -0.12), V(0.025, 0.03, 0.02), Palette.EyeAmber, glow: true);
+
+        m.Part("ear_l", V(-0.04, 0.4, -0.18), "head").Box(V(0, 0.1, 0), V(0.04, 0.2, 0.03), Palette.Fur.Shade(0.1f));
+        m.Part("ear_r", V(0.04, 0.4, -0.18), "head").Box(V(0, 0.1, 0), V(0.04, 0.2, 0.03), Palette.Fur.Shade(0.1f));
+
+        foreach (double side in new[] { -1.0, 1.0 })
+        {
+            string tag = side < 0 ? "l" : "r";
+            m.Part($"leg_{tag}", V(0.1 * side, 0.2, 0.1), "body")
+                .Box(V(0, -0.08, 0.0), V(0.07, 0.2, 0.18), Palette.Fur)
+                .Box(V(0, -0.18, -0.04), V(0.07, 0.04, 0.16), Palette.FurLight);
+        }
+
+        return m.Anchor("eye", V(0, 0.4, -0.3)).Build();
+    }
+
+    private static LowPolyModel BuildCisternPool()
+    {
+        var m = new ModelBuilder("cistern_pool");
+        m.Part("water", V(0, 0, 0))
+            .Prism(V(0, 0.03, 0), 1.8, 0.06, 12, Palette.Water, 1)
+            .Prism(V(0, 0.062, 0), 1.2, 0.01, 12, Palette.WaterDeep, 1);
+        return m.Build();
     }
 }
