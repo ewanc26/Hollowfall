@@ -16,6 +16,19 @@ Hollowfall is dark fantasy, and its flavour is Scottish. This note records what 
 
 Left alone for now, and good candidates later: selkies (seal-folk and their hidden skins), the each-uisge (the savage water horse), the Nuckelavee (an Orkney horse-and-rider horror), fin-folk, and the Cailleach as a boss or a weather system.
 
+## Gàidhlig names
+
+Where the Gàidhlig name of one of these is known, it is below. The game does not show these names on screen yet. **None has been reviewed by a native speaker**; see [gaidhlig.md](gaidhlig.md) for the sources and the review status of each.
+
+| Creature | Gàidhlig | Status | Note |
+| --- | --- | --- | --- |
+| Kelpie, the water spirit that looks like a horse | none verified | Untranslated | No source checked gave a Gàidhlig word for the kelpie itself |
+| Each-uisge, the savage water-horse (a candidate for later, not in the game) | *each-uisge* | Verified | The Gaelic Wikipedia has a page *Each-uisge* and Tobar an Dualchais titles a recording *Each-uisge ann an Loch Fada* |
+| Bean nighe, the washerwoman at the ford | *bean-nighe* | Verified | The Gaelic Wikipedia page is *Bean-nighe* |
+| Brownie, the unseen household helper | *gruagach* | Likely | The Gaelic Wikipedia describes the gruagach as a spirit of the cattle given milk; Wiktionary's Scottish Gaelic entry says only 'maiden', so the brownie sense is reasoned. *brùnaidh* was not found in any source |
+| Seal-folk, the selkie | *ròn* is the seal (the animal) | Verified (ròn only) | No Gàidhlig for selkie or seal-folk was verified |
+| Cailleach, the winter hag | *Cailleach* (old woman, hag) | Verified | |
+
 ## The Wulver, and Eòghann
 
 The Wulver is a wolf-headed man of Shetland who sits on a rock fishing and, in the best-known telling, leaves fish on the windowsills of poor families. Be aware of its history: the Shetland Museum and Archives argues that the figure comes from the folklorist Jessie Saxby's writing in the 1930s and was not an older Shetland tradition, and it has grown popular only in recent decades. So the Wulver is a lovely modern legend rather than ancient lore, and the game treats him that way: he is kind, he is a little out of place, and nobody in the Hollow's story knows who he is.
@@ -24,6 +37,7 @@ In Hollowfall he is hidden on a hill on the surface, holding a branch of yew, an
 
 ## Sources
 
+- [Wiktionary, Scottish Gaelic entries](https://en.wiktionary.org/wiki/Category:Scottish_Gaelic_lemmas), [Vicipeid na Gàidhlig](https://gd.wikipedia.org) and [Tobar an Dualchais](https://www.tobarandualchais.co.uk/track/5824), for the Gàidhlig names above
 - [Wulver, Wikipedia](https://en.wikipedia.org/wiki/Wulver)
 - [The real story behind the Shetland wulver, Shetland Museum and Archives](https://shetlandmuseumandarchives.org.uk/blog/the-real-story-behind-the-shetland-wulver)
 - [Scottish Mythical Beasts and Monsters, Live Breathe Scotland](https://www.livebreathescotland.com/scottish-mythical-beasts-monsters/)

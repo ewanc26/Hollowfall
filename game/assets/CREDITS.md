@@ -12,6 +12,22 @@ version must keep the licence. They were downloaded unmodified from the
 | Chakra Petch | Titles, headings, rank and number emphasis | `fonts/ChakraPetch/ChakraPetch-Bold.ttf`, `-SemiBold.ttf` | Copyright 2018 The Chakra Petch Project Authors |
 | Rajdhani | Menus, HUD text, hints | `fonts/Rajdhani/Rajdhani-Medium.ttf`, `-SemiBold.ttf`, `-Bold.ttf` | Copyright (c) 2014 Indian Type Foundry |
 
+Both families were checked in the real game scene to draw every Scottish Gaelic grave-accented vowel (à è ì ò ù and the capitals), which the smoke test (`every UI font draws the grave-accented vowels`) keeps true.
+
+## Gàidhlig text
+
+The Gàidhlig (Scottish Gaelic) words in the interface were checked against, and in places taken from, these sources (full detail and the status of every string in [docs/gaidhlig.md](../../docs/gaidhlig.md)):
+
+- [Wiktionary](https://en.wiktionary.org/wiki/Category:Scottish_Gaelic_lemmas), the Scottish Gaelic entries (CC BY-SA 4.0): spellings, genders, meanings and mutated forms.
+- [Firefox in Gàidhlig](https://github.com/mozilla-l10n/firefox-l10n/tree/main/gd) (Mozilla Public Licence 2.0): the software words *Roghainnean* and *Fàg*.
+- [LearnGaelic](https://learngaelic.scot/fichead-facal/ff-aimsir.jsp) (Bòrd na Gàidhlig): the weather pattern *Tha i ...*.
+- [DASG](https://dasg.ac.uk), the Digital Archive of Scottish Gaelic (University of Glasgow): a recorded sentence for *an-diugh*.
+- [Scottish Gaelic Grammar Wiki](https://gaelicgrammar.org/~gaelic/mediawiki/index.php/Article): the article and lenition rules.
+- [Vicipeid na Gàidhlig](https://gd.wikipedia.org) and [Tobar an Dualchais](https://www.tobarandualchais.co.uk/track/5824): the creature names.
+- A Gàidhlig translation of the Drupal Colossal Menu module: *Clàr-taice*.
+
+Only short words and phrases are used, as facts about the language; no text was copied from any of them. The wording is the project's own and has not been reviewed by a native speaker.
+
 ## Glyphs, icons and logo
 
 The controller, mouse and keyboard prompts, HUD icons, style-rank emblems, app icon and banner are original vector art made for

@@ -64,6 +64,8 @@ to `~/.ewanc26/hollowfall/settings.json`. Everything the game saves lives in tha
 
 Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, interface size (and whether it scales with the window), master, effects, ambience and music volume, render distance, inverted Y for mouse and
 gamepad, and controller prompts. The music is adaptive and entirely synthesised in code (see [docs/music.md](docs/music.md)); its volume defaults to 60 percent, and the Ambience slider scales the music's drone layer, which replaces the old dungeon drone once the music is ready. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
+Settings: language (English, Gàidhlig or Gàidhlig agus Beurla, below), mouse sensitivity, gamepad look speed, stick dead zone, field of view, interface size (and whether it scales with the window), master, effects and ambience volume, render distance, inverted Y for mouse and
+gamepad, and controller prompts. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
 Nintendo letters, with the bottom and right buttons swapped), or you can pick a style.
 
 Blocks wear 16 by 16 pixel textures drawn in code, tinted by each block's colour with baked ambient occlusion, and you carry a torch for the dungeons.
@@ -93,6 +95,10 @@ portal setup for screenshots, `HOLLOWFALL_DEMO=sever` closes the pair on a husk,
 saved (the smoke test points them at temporary files), `HOLLOWFALL_SKIP_TITLE=1` skips the title screen,
 `HOLLOWFALL_MENU=title|pause|controls|settings|journal` opens that menu screen straight away, and `HOLLOWFALL_SHOWCASE=enemies|poses|weapons|props|effects`
 picks the page of the model showcase scene (see [docs/art-style.md](docs/art-style.md)).
+
+## Interface language (Gàidhlig)
+
+Settings has a **Language** row at the top: `English`, `Gàidhlig` (Scottish Gaelic) or `Gàidhlig agus Beurla` (Gàidhlig with the English beside it). Changing it rebuilds every screen at once and is saved with your other settings. In Gàidhlig the title screen also shows a Gàidhlig name for the dungeon under its English one, and Eòghann greets you in Gàidhlig. Only Gàidhlig that could be checked against a source is shown; everything else stays in English, and **no native speaker has reviewed any of it yet**. [docs/gaidhlig.md](docs/gaidhlig.md) lists every string with its status and source, what is not translated, and a request for a Gaelic speaker to review it.
 
 ## Language
 
