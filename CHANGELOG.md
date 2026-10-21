@@ -4,6 +4,10 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ## [Unreleased]
 
+### Changed
+
+- The gap captions, fall banners, the omen and boon toasts and the standing toast now come from the interface string table, so they go through the language setting like everything else. English reads exactly as before; Gàidhlig shows English for them until a speaker has checked the lines (issue #2).
+
 ### Added
 
 - Adaptive ambient music (`Hollowfall.Core.Audio.Music`, described in [docs/music.md](docs/music.md)), Scottish-flavoured and entirely synthesised in code (no audio files): modes (Dorian, Aeolian, Phrygian, major pentatonic), a drone on the root and fifth, a plucked clarsach (Karplus-Strong), a bodhran-like frame drum, a breathy whistle, warm detuned-saw pads, a brass and choir swell for the boss, a high glassy shimmer and a heartbeat, in a 8-bar 4/4 loop at 84 BPM. The key and tunes come from the world seed; the surface is Dorian, floors follow the dungeon themes (cold Aeolian, slower mossy harp, ashen Phrygian with a heavier drum) and the Wulver's hill has a warm major-pentatonic whistle tune. Every layer is a mono loop of exactly the same length, so they stay in step and cross over without clicks. `MusicMixer` turns a `MusicState` (floor, encounter, enemies near, style rank, health, boss, death, the Wulver, a hearth, dialogue, pause, a passive creature, linked portals) into smoothed layer gains: combat comes in fast and leaves slowly with a hold so it does not flicker, the heavy drum has hysteresis, dialogue ducks the music to 40 percent, pausing ducks it and removes the highs, and dying fades everything out over about 3 seconds. Short stingers (floor complete, boss intro, death, ending, the Wulver's greeting motif) play over it. `MusicDirector` renders the loops on a background task at startup and plays them as one `AudioStreamSynchronized` per context. New **Music volume** setting (0 to 100 percent, default 60; `GameSettings.MusicVolume`). The Ambience slider now scales the music's drone layer once the music is ready; the old looping drone stays only as a fallback, so the two never double.

@@ -1,4 +1,5 @@
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Localization;
 
 namespace Hollowfall.Core.Relations;
 
@@ -25,12 +26,10 @@ public static class StandingBoard
         }).ToList();
 
     /// <summary>"The Brownies now regard you as Wary", or "You are now Revered by the Selkies" for the good ones.</summary>
-    public static string Toast(ReputationChanged e)
+    public static string Toast(ReputationChanged e, Loc? loc = null)
     {
         string name = Capital(FactionGraph.Info(e.Faction).Name);
-        return e.New > e.Old
-            ? $"{name} think better of you: {ReputationTiers.Label(e.New)}"
-            : $"{name} now regard you as {ReputationTiers.Label(e.New)}";
+        return (loc ?? new Loc()).Tr(e.New > e.Old ? "standing.better" : "standing.worse", name, ReputationTiers.Label(e.New));
     }
 
     /// <summary>The most recent standing changes, newest first, as short lines ("-20 the Brownies: Killed a Brownie").</summary>
