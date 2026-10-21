@@ -29,9 +29,11 @@ public static class StaticAssets
         foreach (var id in Enum.GetValues<SoundId>())
             files.Add(("game/" + SoundFile(id), WavFile.Encode(Synth.Render(id), Synth.SampleRate)));
         foreach (var model in ModelCatalog.All)
-            files.Add(("game/" + ModelPath(model.Id), GlbWriter.Encode(model)));
+            files.Add(("game/" + ModelPath(model.Id), ModelBytes(model)));
         return files;
     }
+
+    public static byte[] ModelBytes(LowPolyModel model) => GlbWriter.Encode(model, EnemyMotions.For(model));
 
     private static string Snake(string pascal)
     {
