@@ -62,8 +62,8 @@ to `~/.ewanc26/hollowfall/settings.json`. Everything the game saves lives in tha
 | Pause menu | Esc | Start |
 | Debug overlay (fps, position, speed) | F3 | none |
 
-Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, interface size (and whether it scales with the window), master, effects and ambience volume, render distance, inverted Y for mouse and
-gamepad, and controller prompts. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
+Settings: mouse sensitivity, gamepad look speed, stick dead zone, field of view, interface size (and whether it scales with the window), master, effects, ambience and music volume, render distance, inverted Y for mouse and
+gamepad, and controller prompts. The music is adaptive and entirely synthesised in code (see [docs/music.md](docs/music.md)); its volume defaults to 60 percent, and the Ambience slider scales the music's drone layer, which replaces the old dungeon drone once the music is ready. Button prompts follow the controller you are holding (Xbox letters, PlayStation shapes, or
 Nintendo letters, with the bottom and right buttons swapped), or you can pick a style.
 
 Blocks wear 16 by 16 pixel textures drawn in code, tinted by each block's colour with baked ambient occlusion, and you carry a torch for the dungeons.
