@@ -78,7 +78,7 @@ public static class WulverGreetings
     public static readonly LocEntry Welcome = new("wulver.welcome", "Welcome.", "Fàilte.", ReviewStatus.Verified, "WK", "fàilte, welcome");
     public static readonly LocEntry Goodbye = new("wulver.farewell", "Goodbye.", "Mar sin leat.", ReviewStatus.Verified, "WK", "an informal farewell to one person");
     public static readonly LocEntry Thanks = new("wulver.thanks", "Thank you.", "Mòran taing.", ReviewStatus.Verified, "WK FF", "many thanks; Firefox gd also uses 'Mòran taing'");
-    public static readonly LocEntry Weather = new("wulver.weather", "It is cold today.", "Tha i fuar an-diugh.", ReviewStatus.Likely, "LG DASG WK", "'Tha i' + a weather adjective is taught by LearnGaelic (fuar, cold); an-diugh, today; DASG records 'Tha i ciùin an-diugh'; the full sentence is put together, not quoted");
+    public static readonly LocEntry Weather = new("wulver.weather", "It is cold.", "Tha i fuar.", ReviewStatus.Verified, "LG", "LearnGaelic's Little by Little unit 7 prints 'Tha i fuar.' (It's cold.)");
 
     public static IReadOnlyList<LocEntry> All { get; } = [Hello, Welcome, Goodbye, Thanks, Weather];
 

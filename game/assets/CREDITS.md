@@ -19,9 +19,8 @@ Both families were checked in the real game scene to draw every Scottish Gaelic 
 The Gàidhlig (Scottish Gaelic) words in the interface were checked against, and in places taken from, these sources (full detail and the status of every string in [docs/gaidhlig.md](../../docs/gaidhlig.md)):
 
 - [Wiktionary](https://en.wiktionary.org/wiki/Category:Scottish_Gaelic_lemmas), the Scottish Gaelic entries (CC BY-SA 4.0): spellings, genders, meanings and mutated forms.
-- [Firefox in Gàidhlig](https://github.com/mozilla-l10n/firefox-l10n/tree/main/gd) (Mozilla Public Licence 2.0): the software words *Roghainnean* and *Fàg*.
-- [LearnGaelic](https://learngaelic.scot/fichead-facal/ff-aimsir.jsp) (Bòrd na Gàidhlig): the weather pattern *Tha i ...*.
-- [DASG](https://dasg.ac.uk), the Digital Archive of Scottish Gaelic (University of Glasgow): a recorded sentence for *an-diugh*.
+- [Firefox in Gàidhlig](https://github.com/mozilla-l10n/firefox-l10n/tree/main/gd) (Mozilla Public Licence 2.0): the software words *Roghainnean*, *Fàg an-seo*, *Lean air*, *Cànan* and *Aisig na bun-roghainnean*.
+- [LearnGaelic, Little by Little](https://learngaelic.net/littlebylittle/unit07/index.jsp) (Bòrd na Gàidhlig): the weather sentence *Tha i fuar.*
 - [Scottish Gaelic Grammar Wiki](https://gaelicgrammar.org/~gaelic/mediawiki/index.php/Article): the article and lenition rules.
 - [Vicipeid na Gàidhlig](https://gd.wikipedia.org) and [Tobar an Dualchais](https://www.tobarandualchais.co.uk/track/5824): the creature names.
 - A Gàidhlig translation of the Drupal Colossal Menu module: *Clàr-taice*.
