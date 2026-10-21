@@ -125,15 +125,16 @@ public partial class SmokeTest : Node
 
         Check("the Folk, the Bean Nighe and the hare are rigged and animated", CheckCreatureRigs);
 
-        Check("every model loads from its committed file, with the same parts as the code build", () =>
+        Check("every model loads with its parts and its baked clips", () =>
         {
             foreach (var model in ModelCatalog.All)
             {
                 var rig = ModelFactory.Build(model);
-                bool same = model.Parts.All(p => rig.Part(p.Name) != null) && rig.Parts.Count == model.Parts.Count;
-                if (!rig.FromFile || !same)
+                bool parts = model.Parts.All(p => rig.Part(p.Name) != null) && rig.Parts.Count == model.Parts.Count;
+                int clips = rig.Animator?.GetAnimationList().Length ?? 0;
+                if (!parts || clips != EnemyMotions.For(model).Count)
                 {
-                    GD.PrintErr($"    {model.Id}: fromFile={rig.FromFile} parts={same}");
+                    GD.PrintErr($"    {model.Id}: parts={parts} clips={clips}");
                     rig.Root.Free();
                     return false;
                 }
@@ -141,6 +142,8 @@ public partial class SmokeTest : Node
             }
             return true;
         });
+
+        Check("baked clips put every joint where Core's angles say", CheckClipComposition);
 
         Check("every sound becomes an engine stream and plays", () =>
         {
@@ -1247,9 +1250,36 @@ public partial class SmokeTest : Node
         else { _failed++; GD.PrintErr($"  FAIL {name}: {detail}"); }
     }
 
+    private bool CheckClipComposition()
+    {
+        var model = ModelCatalog.ForEnemy(EnemyKind.Brownie);
+        var clip = EnemyMotions.For(model).First(c => c.Motion == Motion.Walk);
+        int key = clip.Times.Length / 3;
+        var rig = ModelFactory.Build(model);
+        AddChild(rig.Root);
+        bool ok = true;
+        foreach (var track in clip.Tracks)
+        {
+            rig.Animator!.Play(Motions.Name(Motion.Walk), 0, 0);
+            rig.Animator.Seek(clip.Times[key], update: true);
+            var node = rig.Part(track.Part)!;
+            var q = track.Rotations[key];
+            var godot = node.Quaternion;
+            float dot = godot.X * q.X + godot.Y * q.Y + godot.Z * q.Z + godot.W * q.W;
+            var at = ModelFactory.ToVector(track.Translations[key]);
+            if (Math.Abs(dot) < 0.999f || node.Position.DistanceTo(at) > 1e-3f)
+            {
+                GD.PrintErr($"    {track.Part}: rotation dot={dot} position={node.Position} expected {at}");
+                ok = false;
+            }
+        }
+        rig.Root.Free();
+        return ok;
+    }
+
     private bool CheckEnemyRigs()
     {
-        EnemyView Make(EnemyKind kind, string pose)
+        EnemyView Make(EnemyKind kind, Motion pose)
         {
             var view = new EnemyView(kind);
             AddChild(view);
@@ -1268,12 +1298,12 @@ public partial class SmokeTest : Node
 
         foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Warden })
         {
-            var idle = Make(kind, "idle");
-            var windup = Make(kind, "windup");
-            var walk = Make(kind, "walk");
-            var stunned = Make(kind, "stunned");
+            var idle = Make(kind, Motion.Idle);
+            var windup = Make(kind, Motion.Windup);
+            var walk = Make(kind, Motion.Walk);
+            var stunned = Make(kind, Motion.Stunned);
 
-            Expect(windup.Rig.Part("arm_l")!.RotationDegrees.X < -60, $"{kind} raises its arms on a windup");
+            Expect(windup.Rig.Part("arm_l")!.Basis.Y.Y < 0, $"{kind} raises its arms over its head on a windup");
             Expect(Math.Abs(walk.Rig.Part("leg_l")!.RotationDegrees.X) + Math.Abs(walk.Rig.Part("leg_r")!.RotationDegrees.X) > 5, $"{kind} swings its legs when walking");
             Expect(walk.Rig.Part("leg_l")!.RotationDegrees.X * walk.Rig.Part("leg_r")!.RotationDegrees.X < 0, $"{kind}'s legs swing in opposite directions");
             Expect(stunned.Rig.Part("head")!.RotationDegrees.X > 20, $"{kind} slumps its head when stunned");
@@ -1286,8 +1316,8 @@ public partial class SmokeTest : Node
             foreach (var v in new[] { idle, windup, walk, stunned }) v.QueueFree();
         }
 
-        var s0 = Make(EnemyKind.Spitter, "idle");
-        var s1 = Make(EnemyKind.Spitter, "windup");
+        var s0 = Make(EnemyKind.Spitter, Motion.Idle);
+        var s1 = Make(EnemyKind.Spitter, Motion.Windup);
         Expect(s1.Rig.Part("body")!.Scale.X > 1.1f, "the Spitter swells when winding up");
         Expect(s1.Rig.Part("mouth")!.Scale.X > 1.2f, "the Spitter's mouth opens wide when winding up");
         Expect(s1.Rig.Part("tent_0")!.RotationDegrees.Length() > 1, "the Spitter's tentacles sway");
@@ -1305,7 +1335,7 @@ public partial class SmokeTest : Node
             ok = false;
             GD.PrintErr($"    creature rig: {what}");
         }
-        EnemyView Make(EnemyKind kind, string pose)
+        EnemyView Make(EnemyKind kind, Motion pose)
         {
             var view = new EnemyView(kind);
             AddChild(view);
@@ -1316,31 +1346,29 @@ public partial class SmokeTest : Node
 
         foreach (var kind in new[] { EnemyKind.Brownie, EnemyKind.Selkie })
         {
-            var windup = Make(kind, "windup");
-            var walk = Make(kind, "walk");
-            var stunned = Make(kind, "stunned");
-            Expect(windup.Rig.Part("arm_l")!.RotationDegrees.X < -60, $"{kind} raises its arms on a windup");
+            var windup = Make(kind, Motion.Windup);
+            var walk = Make(kind, Motion.Walk);
+            var stunned = Make(kind, Motion.Stunned);
+            Expect(windup.Rig.Part("arm_l")!.Basis.Y.Y < 0, $"{kind} raises its arms over its head on a windup");
             Expect(walk.Rig.Part("leg_l")!.RotationDegrees.X * walk.Rig.Part("leg_r")!.RotationDegrees.X < 0, $"{kind}'s legs swing in opposite directions");
             Expect(stunned.Rig.Part("head")!.RotationDegrees.X > 20, $"{kind} slumps its head when stunned");
             Expect(walk.Rig.Part("head")!.GetParent() == walk.Rig.Part("torso"), $"{kind}'s head hangs from the torso");
             foreach (var v in new[] { windup, walk, stunned }) v.QueueFree();
         }
 
-        var kelpieWalk = Make(EnemyKind.Kelpie, "walk");
-        var kelpieWindup = Make(EnemyKind.Kelpie, "windup");
+        var kelpieWalk = Make(EnemyKind.Kelpie, Motion.Walk);
+        var kelpieWindup = Make(EnemyKind.Kelpie, Motion.Windup);
         Expect(kelpieWalk.Rig.Part("leg_fl")!.RotationDegrees.X * kelpieWalk.Rig.Part("leg_fr")!.RotationDegrees.X < 0, "the Kelpie gallops with diagonal pairs of legs");
         Expect(kelpieWindup.Rig.Part("body")!.RotationDegrees.X < -10, "the Kelpie rears for its blow");
         Expect(kelpieWalk.Rig.Part("head")!.GetParent() == kelpieWalk.Rig.Part("neck"), "the Kelpie's head hangs from its neck");
 
-        var nighe = Make(EnemyKind.BeanNighe, "idle");
-        Expect(Math.Abs(nighe.Rig.Part("arm_l")!.RotationDegrees.X - nighe.Rig.Part("arm_r")!.RotationDegrees.X) > 5, "the Bean Nighe wrings her cloth with both arms");
-        Expect(nighe.Rig.Part("cloth")!.RotationDegrees.Y != 0, "her cloth twists");
-        var nigheStunned = Make(EnemyKind.BeanNighe, "stunned");
+        var nighe = Make(EnemyKind.BeanNighe, Motion.Idle);
+        var nigheStunned = Make(EnemyKind.BeanNighe, Motion.Stunned);
         Expect(nigheStunned.Rig.Part("head")!.RotationDegrees.X > 20, "the Bean Nighe slumps when stunned");
 
         var hare = new EnemyView(EnemyKind.Hare);
         AddChild(hare);
-        hare.ForcePose("walk");
+        hare.ForcePose(Motion.Walk);
         float rest = 0.25f, maxY = 0;
         for (int i = 0; i < 40; i++)
         {

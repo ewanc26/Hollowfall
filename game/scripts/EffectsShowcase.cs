@@ -2,6 +2,7 @@ using Godot;
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Meshing;
+using Hollowfall.Core.Models;
 using Hollowfall.Core.Physics;
 using Hollowfall.Core.World;
 
@@ -64,7 +65,7 @@ public partial class EffectsShowcase : Node3D
         for (int i = 0; i < kinds.Length; i++)
         {
             var view = new EnemyView(kinds[i]) { Position = new Vector3(5.5f + i * 3f, 2f, 11.5f), Rotation = new Vector3(0, Mathf.Pi, 0) };
-            view.ForcePose("idle");
+            view.ForcePose(Motion.Idle);
             AddChild(view);
             _enemies.Add((view, kinds[i], i + 1));
         }

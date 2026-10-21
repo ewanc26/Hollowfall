@@ -140,7 +140,7 @@ public partial class CombatView : Node3D
     /// <summary>A killed enemy bursts into shards (<see cref="EffectsView"/>) as the body slumps, shrinks into the floor and disappears.</summary>
     private void Collapse(EnemyView view)
     {
-        view.ForcePose("stunned");
+        view.ForcePose(Motion.Stunned);
         var tween = CreateTween();
         tween.SetParallel();
         tween.TweenProperty(view, "scale", new Vector3(1.15f, 0.05f, 1.15f), 0.3).SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.In);
