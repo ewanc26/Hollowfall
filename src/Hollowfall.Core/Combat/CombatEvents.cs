@@ -59,5 +59,14 @@ public sealed record MeteorImpact(int Id, double Speed, double Damage, double Po
 /// <summary>A portal closed on an enemy. Severed enemies drop no blood. <see cref="Killed"/> false means it was staggered instead.</summary>
 public sealed record EnemySevered(int Id, EnemyKind Kind, Portals.PortalColor Portal, double Damage, bool Killed, Vec3 Point, double Points) : CombatEvent;
 
+/// <summary>The player fell into a pit. <see cref="First"/> is true the first time in the run, for a short hint. Recovery follows (see <see cref="PlayerRecovered"/>).</summary>
+public sealed record PlayerFell(Dungeon.GapHazard Hazard, double Damage, bool First) : CombatEvent;
+
+/// <summary>The player was put back on safe ground after a fall: the host moves the body to <see cref="Position"/> (feet) and stops its fall.</summary>
+public sealed record PlayerRecovered(Vec3 Position) : CombatEvent;
+
+/// <summary>The player stands at the lip of a gap for the first time in this run: the host shows how to cross it.</summary>
+public sealed record PitEdgeReached(Dungeon.LinkKind Kind) : CombatEvent;
+
 /// <summary>A portal was replaced or removed. Fired for every closure, whether or not anything was caught in it.</summary>
 public sealed record PortalClosed(Portals.PortalColor Color, Vec3 Position, Vec3 Normal, Vec3 Up) : CombatEvent;

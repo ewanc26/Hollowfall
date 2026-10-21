@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4208;
-    private const uint ExpectedGoldenChecksum = 1111065265;
+    private const uint ExpectedGoldenChecksum = 211259046; // changed on purpose with SimVersion 4 (the version is a byte in the header)
 
     [Fact]
     public void FileSizesStaySane()

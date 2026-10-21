@@ -435,4 +435,188 @@ public class MixedLinkTests
         }
         Assert.True(behindGaps > 5, $"only {behindGaps} notes lie behind a gap");
     }
+
+    // ---- falling in, and the first hints --------------------------------------------------------
+
+    private const double Dt = 1.0 / 60;
+
+    private static (VoxelWorld World, DungeonSite Site, int Floor, GapSpec Gap) PitCase(GapHazard hazard, LinkKind kind = LinkKind.PortalGap)
+    {
+        for (long seed = 1; seed <= 60; seed++)
+        {
+            var world = new VoxelWorld(seed);
+            for (int rx = -2; rx <= 1; rx++)
+                for (int rz = -2; rz <= 1; rz++)
+                    if (world.Generator.Dungeons!.GetSite(rx, rz) is { } site)
+                        for (int k = 0; k < site.FloorCount; k++)
+                            foreach (var gap in site.Floors[k].Gaps.Where(g => g.Kind == kind && g.Hazard == hazard))
+                                return (world, site, k, gap);
+        }
+        throw new InvalidOperationException($"no {kind} with {hazard} found");
+    }
+
+    private static PlayerView Standing(DungeonSite site, int floor, (int X, int Z) cell, bool airborne = false)
+    {
+        var feet = GapCrossing.FeetAt(site, floor, cell);
+        return new PlayerView(feet, feet + new Vec3(0, 1.62, 0), new Vec3(0, 0, -1), airborne, false);
+    }
+
+    private static PlayerView InPit(DungeonSite site, int floor, GapSpec gap)
+    {
+        var mid = gap.Span[gap.Span.Count / 2];
+        var feet = new Vec3(site.OriginX + mid.X + 0.5, DungeonSite.FloorY(floor) + 1, site.OriginZ + mid.Z + 0.5);
+        return new PlayerView(feet, feet + new Vec3(0, 1.62, 0), new Vec3(0, 0, -1), true, false);
+    }
+
+    private static List<CombatEvent> Run(CombatSim sim, PlayerView view, double seconds)
+    {
+        var events = new List<CombatEvent>();
+        for (int i = 0; i < (int)(seconds / Dt); i++)
+        {
+            sim.Tick(Dt, view, default);
+            events.AddRange(sim.DrainEvents());
+        }
+        return events;
+    }
+
+    /// <summary>Holds the player in a pit until the sim says it has put them back (the host would move the body then), up to a few seconds.</summary>
+    private static List<CombatEvent> Fall(CombatSim sim, PlayerView inPit)
+    {
+        var events = new List<CombatEvent>();
+        for (int i = 0; i < 60 * 4 && !events.OfType<PlayerRecovered>().Any(); i++)
+        {
+            sim.Tick(Dt, inPit, default);
+            events.AddRange(sim.DrainEvents());
+        }
+        return events;
+    }
+
+    [Theory]
+    [InlineData(GapHazard.Bare)]
+    [InlineData(GapHazard.Spikes)]
+    [InlineData(GapHazard.Water)]
+    public void FallingInCostsAModestAmountAndPutsYouBackOnYourSide(GapHazard hazard)
+    {
+        var (world, site, k, gap) = PitCase(hazard);
+        var sim = new CombatSim(world, site);
+        var safe = gap.Hall(true)[^4]; // a few cells back from the lip
+        Run(sim, Standing(site, k, safe), 0.2);
+        sim.DrainEvents();
+
+        var events = Fall(sim, InPit(site, k, gap));
+        var fell = Assert.Single(events.OfType<PlayerFell>());
+        Assert.Equal(hazard, fell.Hazard);
+        Assert.True(fell.First);
+        Assert.Equal(CombatSim.FallDamage(hazard), fell.Damage);
+        Assert.Equal(PlayerVitals.MaxHealth - fell.Damage, sim.Vitals.Health);
+
+        // Put back on a walkable cell of the side the player came from, and not at the lip.
+        var recovered = Assert.Single(events.OfType<PlayerRecovered>());
+        var cell = ((int)Math.Floor(recovered.Position.X) - site.OriginX, (int)Math.Floor(recovered.Position.Z) - site.OriginZ);
+        var layout = site.Floors[k];
+        Assert.True(FloorLayout.IsWalkable(layout.CellAt(cell.Item1, cell.Item2)));
+        Assert.True(gap.Within(gap.HallFrom, cell, 1), "recovered on the wrong side");
+        Assert.Equal(DungeonSite.FloorY(k) + 1 + layout.HeightAt(cell.Item1, cell.Item2), recovered.Position.Y, 3);
+        Assert.NotEqual(gap.EdgeFrom, cell);
+        // Water is slow, stone and spikes are quick.
+        Assert.Equal(hazard == GapHazard.Water, events.OfType<PlayerRecovered>().Count() == 1 && CombatSim.RecoverySeconds(hazard) > 1);
+    }
+
+    [Fact]
+    public void AFallNeverKillsAndOnlyTheFirstOneIsFlagged()
+    {
+        var (world, site, k, gap) = PitCase(GapHazard.Spikes);
+        var sim = new CombatSim(world, site);
+        sim.Vitals.Damage(97); // three health left
+        Run(sim, Standing(site, k, gap.Hall(true)[^4]), 0.2);
+        var first = Fall(sim, InPit(site, k, gap));
+        Assert.False(sim.Dead);
+        Assert.Equal(1, sim.Vitals.Health);
+        Assert.True(Assert.Single(first.OfType<PlayerFell>()).First);
+
+        Run(sim, Standing(site, k, gap.Hall(true)[^4]), 0.2);
+        var second = Fall(sim, InPit(site, k, gap));
+        Assert.False(sim.Dead);
+        Assert.False(Assert.Single(second.OfType<PlayerFell>()).First);
+        Assert.Single(second.OfType<PlayerRecovered>());
+    }
+
+    [Fact]
+    public void ClimbingOutBeforeTheTimerEndsCancelsTheRecovery()
+    {
+        var (world, site, k, gap) = PitCase(GapHazard.Water);
+        var sim = new CombatSim(world, site);
+        Run(sim, Standing(site, k, gap.Hall(true)[^4]), 0.2);
+        Run(sim, InPit(site, k, gap), 0.5);
+        var after = Run(sim, Standing(site, k, gap.EdgeTo), 2.5); // a portal carried them to the far lip
+        Assert.Empty(after.OfType<PlayerRecovered>());
+    }
+
+    [Fact]
+    public void WithNoSafePlaceRecordedThePlayerIsPutInThePitsOwnHallway()
+    {
+        var (world, site, k, gap) = PitCase(GapHazard.Bare);
+        var sim = new CombatSim(world, site);
+        var events = Fall(sim, InPit(site, k, gap));
+        var recovered = Assert.Single(events.OfType<PlayerRecovered>());
+        var cell = ((int)Math.Floor(recovered.Position.X) - site.OriginX, (int)Math.Floor(recovered.Position.Z) - site.OriginZ);
+        Assert.True(FloorLayout.IsWalkable(site.Floors[k].CellAt(cell.Item1, cell.Item2)));
+        Assert.True(gap.Within(gap.HallFrom, cell, 1) || gap.Within(gap.HallTo, cell, 1));
+    }
+
+    [Fact]
+    public void EveryPitHasAWalkableRecoveryPositionForEveryCellOfIt()
+    {
+        foreach (var (site, k, l) in AllFloors().Take(30))
+        {
+            var world = new VoxelWorld(site.RegionX * 31 + site.RegionZ + 1);
+            var sim = new CombatSim(world, site);
+            foreach (var gap in l.Gaps.Where(g => g.Kind == LinkKind.PortalGap))
+                foreach (var c in gap.Span)
+                {
+                    var feet = new Vec3(site.OriginX + c.X + 0.5, DungeonSite.FloorY(k) + 1, site.OriginZ + c.Z + 0.5);
+                    var events = Fall(sim, new PlayerView(feet, feet + new Vec3(0, 1.62, 0), new Vec3(0, 0, 1), true, false));
+                    var recovered = events.OfType<PlayerRecovered>().Single();
+                    var cell = ((int)Math.Floor(recovered.Position.X) - site.OriginX, (int)Math.Floor(recovered.Position.Z) - site.OriginZ);
+                    Assert.True(FloorLayout.IsWalkable(l.CellAt(cell.Item1, cell.Item2)), $"recovery {cell} is not walkable");
+                    Assert.False(sim.Dead);
+                    Run(sim, Standing(site, k, gap.Hall(true)[^4]), 0.7); // walk back to safety for the next one
+                }
+        }
+    }
+
+    [Fact]
+    public void TheFirstTimeYouStandAtAPitEdgeIsAnnouncedOnce()
+    {
+        var (world, site, k, gap) = PitCase(GapHazard.Bare);
+        var sim = new CombatSim(world, site);
+        Run(sim, Standing(site, k, gap.Hall(true)[^3]), 0.2);
+        Assert.Empty(sim.DrainEvents().OfType<PitEdgeReached>());
+        var at = Run(sim, Standing(site, k, gap.EdgeFrom), 0.3);
+        Assert.Equal(LinkKind.PortalGap, Assert.Single(at.OfType<PitEdgeReached>()).Kind);
+        Assert.Empty(Run(sim, Standing(site, k, gap.EdgeTo), 0.3).OfType<PitEdgeReached>()); // once per run, not per gap
+        sim.Respawn();
+        Assert.Empty(Run(sim, Standing(site, k, gap.EdgeFrom), 0.3).OfType<PitEdgeReached>());
+    }
+
+    [Fact]
+    public void EnemiesStopAtThePitEdgeAndNeverFallIn()
+    {
+        var (world, site, k, gap) = PitCase(GapHazard.Spikes);
+        var sim = new CombatSim(world, site);
+        var layout = site.Floors[k];
+        // On the far lip, across the pit from the player, with nothing between them but the drop.
+        var enemy = sim.SpawnEnemy(EnemyKind.Husk, GapCrossing.FeetAt(site, k, gap.EdgeTo), k);
+        var player = Standing(site, k, gap.HallFrom[^3]);
+        double lip = DungeonSite.FloorY(k) + 1 + LinkMix.Rise;
+        for (int i = 0; i < 60 * 12; i++)
+        {
+            sim.Tick(Dt, player, default);
+            var cell = ((int)Math.Floor(enemy.Feet.X) - site.OriginX, (int)Math.Floor(enemy.Feet.Z) - site.OriginZ);
+            Assert.False(layout.CellAt(cell.Item1, cell.Item2) is CellKind.Pit or CellKind.PitSpikes or CellKind.PitWater, $"the enemy walked into the pit at tick {i}");
+            Assert.True(enemy.Feet.Y > lip - 0.1, $"the enemy fell to y {enemy.Feet.Y:F2}");
+        }
+        // It ended up at the lip, as close to the player as it could get.
+        Assert.True(gap.Within(gap.HallTo, ((int)Math.Floor(enemy.Feet.X) - site.OriginX, (int)Math.Floor(enemy.Feet.Z) - site.OriginZ), 1));
+    }
 }
