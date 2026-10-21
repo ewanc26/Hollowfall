@@ -282,4 +282,27 @@ public class AssetTests
         Assert.Equal("ZR", BindingNames.Display(Binding.Axis("TriggerRight", 1), ControllerStyle.Nintendo));
         Assert.Equal("RT", BindingNames.Display(Binding.Axis("TriggerRight", 1)));
     }
+
+    [Fact]
+    public void CommittedStaticAssetsMatchTheGenerator()
+    {
+        foreach (var (path, bytes) in Hollowfall.Core.Assets.StaticAssets.All())
+        {
+            string full = Path.Combine(Root, path);
+            Assert.True(File.Exists(full), $"{path} is missing; run the asset generator");
+            Assert.True(File.ReadAllBytes(full).AsSpan().SequenceEqual(bytes), $"{path} is out of date; run the asset generator");
+        }
+    }
+
+    [Fact]
+    public void NoStrayFilesSitInTheAudioFolder()
+    {
+        var expected = Hollowfall.Core.Assets.StaticAssets.All()
+            .Select(f => Path.GetFileName(f.Path))
+            .Where(n => n.EndsWith(".wav"))
+            .ToHashSet();
+        var actual = Directory.EnumerateFiles(Path.Combine(Root, "game", "assets", "audio"), "*.wav").Select(Path.GetFileName).ToHashSet();
+        Assert.Empty(actual.Except(expected));
+        Assert.Empty(expected.Except(actual));
+    }
 }
