@@ -475,6 +475,7 @@ public class SeverPlumbingTests
     {
         string dir = AppContext.BaseDirectory;
         while (dir != null && !File.Exists(Path.Combine(dir, "README.md"))) dir = Path.GetDirectoryName(dir)!;
+        Assert.NotNull(dir);
         string readme = File.ReadAllText(Path.Combine(dir, "README.md"));
         Assert.Contains("Close portals", readme);
     }
