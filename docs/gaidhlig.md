@@ -138,7 +138,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 112.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 124.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -156,6 +156,18 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 112.
 | `pause.resume` | Resume | Lean air | Verified | FF WK | Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue |
 | `pause.respawn` | Respawn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.standing` | Standing | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pause.character` | Character | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.title` | CHARACTER | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.none` | No character yet. Defeat something to begin. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.level` | Level {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.nextLevel` | {0} of {1} experience to the next level | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.maxLevel` | Highest level reached | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.points` | Points to spend: {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.vigour` | Vigour {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.vigourHint` | +10 maximum health a point | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.might` | Might {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.mightHint` | +5 percent damage from guns and parries a point | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.nextRun` | Points take effect from your next run. A run keeps the stats it began with. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.journal` | Journal | Leabhar-latha | Verified | WK | leabhar-latha, diary or journal |
 | `pause.mainMenu` | Main menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `journal.title` | JOURNAL | LEABHAR-LATHA | Verified | WK | capitals of the entry above |

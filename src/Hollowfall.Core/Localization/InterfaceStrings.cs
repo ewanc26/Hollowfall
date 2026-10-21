@@ -50,6 +50,20 @@ public static class InterfaceStrings
             G("pause.resume", "Resume", "Lean air", ReviewStatus.Verified, "FF WK", "Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue"),
             T("pause.respawn", "Respawn"),
             T("pause.standing", "Standing"),
+            T("pause.character", "Character"),
+
+            // ---- the character (progression) ----
+            T("character.title", "CHARACTER"),
+            T("character.none", "No character yet. Defeat something to begin."),
+            T("character.level", "Level {0}"),
+            T("character.nextLevel", "{0} of {1} experience to the next level"),
+            T("character.maxLevel", "Highest level reached"),
+            T("character.points", "Points to spend: {0}"),
+            T("character.vigour", "Vigour {0}"),
+            T("character.vigourHint", "+10 maximum health a point"),
+            T("character.might", "Might {0}"),
+            T("character.mightHint", "+5 percent damage from guns and parries a point"),
+            T("character.nextRun", "Points take effect from your next run. A run keeps the stats it began with."),
             G("pause.journal", "Journal", "Leabhar-latha", ReviewStatus.Verified, "WK", "leabhar-latha, diary or journal"),
             T("pause.mainMenu", "Main menu"),
 
