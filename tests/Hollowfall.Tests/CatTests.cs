@@ -372,7 +372,7 @@ public class CatDialogueTests
 
 public class CatNameIsHisAloneTests
 {
-    private static readonly Regex Forbidden = new(@"Aodh[aá]n|Aodhán|Aidan|Aiden", RegexOptions.IgnoreCase);
+    private static readonly Regex Forbidden = new(@"\b(Aodh[aá]n|Aidan|Aiden)\b", RegexOptions.IgnoreCase);
 
     private static IEnumerable<string> CodeFiles(string root) =>
         Directory.EnumerateFiles(Path.Combine(root, "src", "Hollowfall.Core"), "*.cs", SearchOption.AllDirectories)

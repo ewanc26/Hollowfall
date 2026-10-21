@@ -116,7 +116,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 100.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 101.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -193,6 +193,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 100.
 | `settings.master` | Master volume | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.effects` | Effects volume | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.ambience` | Ambience volume | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `settings.music` | Music volume | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.viewDistance` | Render distance | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.chunks` | {0} chunks | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.prompts` | Controller prompts | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
