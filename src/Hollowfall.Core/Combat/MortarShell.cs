@@ -29,9 +29,10 @@ public static class MortarBlast
     public const double CenterDamage = 40;
     public const double EdgeDamage = 10;
 
-    /// <summary>Digs every breakable block whose centre is inside the sphere. Returns how many were removed.</summary>
+    /// <summary>Digs every 10 cm cube of breakable material whose centre is inside the sphere. Returns how many cubes were removed.</summary>
     public static int Carve(VoxelWorld world, Vec3 center)
     {
+        const double cube = 1.0 / BlockHole.Side;
         int reach = (int)Math.Ceiling(Radius);
         int cx = (int)Math.Floor(center.X), cy = (int)Math.Floor(center.Y), cz = (int)Math.Floor(center.Z);
         int removed = 0;
@@ -39,10 +40,15 @@ public static class MortarBlast
             for (int y = cy - reach; y <= cy + reach; y++)
                 for (int z = cz - reach; z <= cz + reach; z++)
                 {
-                    if ((new Vec3(x + 0.5, y + 0.5, z + 0.5) - center).Length > Radius) continue;
                     if (!BlockInfo.Breakable(world.GetBlock(x, y, z))) continue;
-                    world.SetBlock(x, y, z, BlockType.Air);
-                    removed++;
+                    for (int sz = 0; sz < BlockHole.Side; sz++)
+                        for (int sy = 0; sy < BlockHole.Side; sy++)
+                            for (int sx = 0; sx < BlockHole.Side; sx++)
+                            {
+                                var sub = new Vec3(x + (sx + 0.5) * cube, y + (sy + 0.5) * cube, z + (sz + 0.5) * cube);
+                                if ((sub - center).Length > Radius) continue;
+                                if (world.DigCube(x, y, z, sx, sy, sz)) removed++;
+                            }
                 }
         return removed;
     }
