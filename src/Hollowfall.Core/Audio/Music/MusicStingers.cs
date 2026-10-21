@@ -38,7 +38,6 @@ public static class MusicEvents
 public static class MusicStingers
 {
     public const double Peak = 0.6;
-    private static readonly double Beat = 60.0 / MusicTuning.Bpm;
 
     public static float[] Render(Stinger stinger, long seed)
     {
