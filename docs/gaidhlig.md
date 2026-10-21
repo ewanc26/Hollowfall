@@ -1,5 +1,118 @@
 # Gàidhlig in Hollowfall
 
+Hollowfall can be shown in **Gàidhlig** (Scottish Gaelic), in English, or in both. This page says what is translated, where each word came from, how sure we are, what is not translated, and how a Gaelic speaker can check and correct it.
+
+## Please read first: this needs a native speaker
+
+**All of the Gàidhlig here was put together by an AI model working from dictionaries, software translations and grammar pages. No native speaker has reviewed any of it.** An AI can produce Gaelic that looks right and is wrong in grammar, mutation, spelling, accents or idiom, so the rule followed was: use only what a source supports, prefer single words and short fixed phrases to sentences, and leave the English alone wherever nothing could be checked. Every string carries a status, and a string that is not backed up is not shown in Gàidhlig at all.
+
+**The game should not ship with Gàidhlig switched on as finished until a native speaker has gone through the tables below.** See "A request to a Gaelic speaker" at the end.
+
+### The three statuses
+
+| Status | Meaning |
+| --- | --- |
+| **Verified** | A source we could read says exactly this word or phrase, with this meaning. |
+| **Likely** | Put together from words and rules a source gives (for example a verb plus an adverb, or a word with a plural from a dictionary) but not quoted whole. Shown to players. |
+| **NeedsReview** | A string we are not willing to show until a speaker decides. It is **held back**: `Loc` shows the English instead (a reviewer can turn them on with `Loc.ShowNeedsReview`). |
+| *Untranslated* | No Gàidhlig at all (the Gàidhlig column is empty in the data): English is shown. These are the "needs a speaker" list. |
+
+The counts are printed by the test `ReviewStatusCountsArePrintedAndAddUp` (run `dotnet test --filter ReviewStatusCounts --logger "console;verbosity=detailed"`), and each table below states its own counts.
+
+## How the language setting works
+
+- Settings has a **Language** row at the top, naming each language in itself: `English`, `Gàidhlig`, `Gàidhlig agus Beurla`. Changing it rebuilds every screen at once and is saved with the other settings (`GameSettings.Language`; anything unknown in a saved file is English; Reset keeps your language).
+- **Gàidhlig** shows the Gàidhlig where there is some fit to show, and the English where there is not.
+- **Bilingual** (Gàidhlig agus Beurla) shows the Gàidhlig with the English in brackets for short single-line text (`Cluich (Play)`), and the English on a second line for longer text. English alone is shown where there is no Gàidhlig.
+- Text never depends on a count: numbers sit beside labels (`Iuchraichean 2`, not "two keys"), so no plural, numeral or mutation rules are needed.
+- Scottish Gaelic uses the **grave** accent only (à è ì ò ù, À È Ì Ò Ù). The acute accent belongs to Irish (Gaeilge) and must never appear in a Gàidhlig string; a test enforces it. In English we say "Scottish Gaelic"; in Gàidhlig the language is "Gàidhlig".
+
+## What is and is not translated
+
+**In Gàidhlig (when something is checked):** the menu words (Play, Settings, Quit, Resume, Journal, Back, Seed, Language), the Settings and Journal and Paused headings, the Movement heading, three action labels (move forward, move back, jump), the HUD key count, three hints (open, jump, menu) and the "read" and "speak" prompts, the death and key banners, two floor-card names, a short line shown with a death, the names of the creatures in `docs/mythology.md`, a Gàidhlig name for the dungeon shown under the title, and five short greetings from Eòghann.
+
+**Stays in English** (and why): the tagline; most settings labels and the controls help; most action labels; ranks and style bonuses; the floor-complete, boss, opening and ending text; every epigraph and every lore note (long free prose, where the risk of a plausible mistake is highest, so none was attempted); and everything Eòghann says apart from his short greetings. How much story text that is: the test output above prints the count of strings in `StoryBook`.
+
+**Held back (NeedsReview):** `hud.floor`, "Làr {0} / {1}" for a dungeon floor, because *làr* is the floor of a room or the ground and whether it suits a level of a dungeon needs a speaker.
+
+## Sources
+
+Each entry in the tables cites one or more of these by id. They were read between 20 and 21 October 2026.
+
+| Id | Source |
+| --- | --- |
+| WK | [Wiktionary](https://en.wiktionary.org/wiki/Category:Scottish_Gaelic_lemmas), the Scottish Gaelic sections: spelling, gender, meanings, mutated forms. Used for every noun, adjective and verb. |
+| FF | [Firefox in Gàidhlig](https://github.com/mozilla-l10n/firefox-l10n/tree/main/gd) (Mozilla l10n, `gd`): `menu-settings` is *Roghainnean*, `menu-quit` is *Fàg an-seo*, and *Mòran taing* is used in a message. |
+| LG | [LearnGaelic, twenty words: the weather](https://learngaelic.scot/fichead-facal/ff-aimsir.jsp): the pattern *Tha i ...* with *fuar*, cold, among others. |
+| DASG | [DASG](https://dasg.ac.uk), the Digital Archive of Scottish Gaelic: a recorded *Tha i ciùin an-diugh*. |
+| GW | [Scottish Gaelic Grammar Wiki](https://gaelicgrammar.org/~gaelic/mediawiki/index.php/Article) (after Fisher 2004): the article (masculine *an*, *am* before b f m p, *an t-* before a vowel; feminine *a'* and lenition) and "adjectives are lenited after feminine nouns". |
+| GDW | [Vicipeid na Gàidhlig](https://gd.wikipedia.org), the Gaelic Wikipedia: pages *Bean-nighe*, *Gruagach* and *Each-uisge*. |
+| TAD | [Tobar an Dualchais](https://www.tobarandualchais.co.uk/track/5824): a recording titled *Each-uisge ann an Loch Fada*. |
+| DRU | [Drupal Colossal Menu translation](https://ftp.drupal.org/files/translations/all/colossal_menu/colossal_menu-3.0.0.gd.po), `gd`: *Clàr-taice* for "Menu" (a software translation, not a dictionary). |
+
+Sources tried that did not work: Am Faclair Beag and the LearnGaelic dictionary could not be fetched by the tooling used (server errors), so Dwelly was not consulted directly. **A speaker should check the Am Faclair Beag entries first**, since that is the standard dictionary.
+
+## The Gàidhlig dungeon name
+
+Under the title in Gàidhlig and Bilingual modes each dungeon also has a Gàidhlig name, from `GaelicNames` (a separate flavour name chosen from the seed; the English name, the seed words like `amber-hollow-914` and every golden test are unchanged). It is made the way place names are: a **noun, then an adjective after it** (`Cnoc Dubh`, black hill), or a noun alone (`Dùn`). In Bilingual the English meaning follows in brackets (`Cnoc Dubh (Black Hill)`).
+
+- **No article** is used (no *an* / *am* / *a'* / *an t-*), which keeps all article rules out of the generator.
+- **Gender** of each noun is taken from Wiktionary: feminine uamh, beinn, clach; masculine cnoc, gleann, càrn, bothan, dùn, eas, sgùrr, allt, coire (the masculine "corrie" word). Wiktionary lists **loch** as feminine and **tobar** as masculine or feminine by dialect; the sources checked disagree with common usage or with each other, so these two are only ever used **alone**, never with an adjective.
+- **Lenition**: after a feminine noun the adjective is lenited (`Beinn Mhòr`, `Clach Ghlas`, `Uamh Fhada`, `Clach Dhubh`; GW). The lenited forms (dhubh, gheal, ghlas, fhada, mhòr, bheag; *ruadh* is unchanged in writing) are stored as data from Wiktionary's mutation tables, not computed. After a masculine noun the adjective is unchanged (`Cnoc Dubh`, `Gleann Mòr`).
+- **One pair is never made: Beinn + dubh.** Whether the *d* is lenited after a final *n* could not be confirmed in a source.
+- **Left out: seann** (old). It goes *before* a noun and has its own mutation effects (it appears in compounds such as *seann-nòs* on Wiktionary, with nothing on how it behaves), so it was not attempted.
+- Not used: any name with two adjectives, a genitive, a plural, or a personal name.
+
+Real names that have the same shape include Beinn Fhada, Beinn Dearg, Càrn Dearg and Loch Fada (the last in the Tobar an Dualchais title above), which is the reason for trusting the pattern; a speaker should still confirm the exact forms.
+
+## The Wulver's greetings
+
+Eòghann (the Wulver; see `docs/story.md`) says five short Gàidhlig lines in Gàidhlig and Bilingual modes, each with its English beneath in brackets: *Halò.* and *Fàilte.* on a first meeting, *Fàilte.* on a return, *Mòran taing.* when you leave the fish, *Tha i fuar an-diugh.* when you sit a while, and *Mar sin leat.* as you go. They are extra lines in his dialogue file placed before his usual ones; they are not choices. His name stays in that file only (a repository-wide test enforces it) and the guarded maker path is untouched.
+
+## The creatures
+
+`docs/mythology.md` lists the Gàidhlig names for the creatures the game borrows. The game does not show these on screen yet.
+
+## How to add a string
+
+1. Add a `LocEntry` to the right file in `src/Hollowfall.Core/Localization/` (`InterfaceStrings` for the interface, `StoryStrings` for story lines, cards, creatures and greetings). The key is `area.name`; placeholders are `{0}`, `{1}`.
+2. Write the **English** exactly as it should appear. Give no Gàidhlig (use the `T(...)` helper) unless you can cite a source for it.
+3. In the game scripts ask for it with `loc.Tr("area.name", args)` written with the key as a literal (a test finds every such call and checks the key exists).
+4. If you add Gàidhlig: write it with grave accents only, choose a status (Verified, Likely or NeedsReview), name the source ids and say in the note how you reached it.
+5. Regenerate the tables below: `HOLLOWFALL_WRITE_DOCS=1 dotnet test --filter GaelicDocsTests`, then commit the page. The test fails if the page and the data differ.
+
+New strings that arrive from other branches (a Standing screen, a Music slider, mixed-room captions) should be added the same way: English first, no Gàidhlig until it is sourced.
+
+## How to add a language
+
+Add a value to `Language`, a native name in `Languages.NativeName`, a column (or a second entry type) in the tables and a rule in `Loc.Compose`. Keep each language in its own tables and its own accent rules: **Irish (Gaeilge) uses acute accents (á é í ó ú) and must never be mixed into the Gàidhlig tables**, which the accent test enforces.
+
+## Review process
+
+1. A speaker reads the tables below (one per area, with key, English, Gàidhlig, status, source and a note) and marks each row correct, wrong (with the fix) or unsure.
+2. Corrections go into the data (one line each) with the status raised to Verified and the source noted (for example "reviewed by Name, 2026").
+3. Rows marked NeedsReview stay hidden until reviewed; untranslated rows can be filled in the same way.
+4. Nothing should be called finished until every Verified and Likely row has been through step 1.
+
+## Needs a speaker
+
+- **First:** the Likely rows that are one-word UI labels used as buttons, because the form (imperative, plural, or noun) matters: *Fàg* (Quit), *Air ais* (Back), *Leum*, *Fosgail*, *Bruidhinn*, *Leugh*, *Lean air*, *Air stad* (Paused), *Gluais air adhart / air ais*, *Iuchraichean {0}* and *Clàr-taice*.
+- *Làr* for a dungeon floor (held back), and whether *lobhta* or another word is better.
+- Which of Controls, Seed (*Sìol*), Random, Respawn, Main menu, Quit and the settings labels (sensitivity, dead zone, field of view, volume, render distance, prompts, invert) have an established Gàidhlig term in software and games; the English is shown until they do.
+- *brùnaidh* (brownie): not found in any source checked; *gruagach* is used (Likely) because the Gaelic Wikipedia describes a spirit of the cattle, but the brownie sense is reasoned, not quoted.
+- Whether *Tha i fuar an-diugh* is natural, and the wording of the greetings generally (Halò, Fàilte, Mòran taing, Mar sin leat).
+- The gender of *loch* and *tobar*, and whether Beinn + dubh lenites.
+- The two floor-card names, *An Sgòrnan* and *An Doras Deireannach*, and whether *Feuch a-rithist.* suits a death line.
+- Every untranslated story line (see the counts above), if translation of the story is wanted at all.
+
+## A request to a Gaelic speaker
+
+If you read Gàidhlig, please look over the tables below and tell us what is wrong, odd, stiff or unnatural: spelling, accents, mutation, word order, a better word, a regional preference, anything. You do not need to be a programmer: a list of the keys and what each should say is enough, in an issue or an email to the author. Corrections are welcome and will be credited if you wish. Thank you; the game takes Gaelic seriously and wants to get it right.
+
+## The tables
+
+Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated" rows are the ones with no Gàidhlig yet.
+
 <!-- BEGIN GENERATED TABLES -->
 
 ### Interface
