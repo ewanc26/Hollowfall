@@ -1,4 +1,5 @@
 using Hollowfall.Core.Audio;
+using Hollowfall.Core.Models;
 using Hollowfall.Core.Textures;
 
 namespace Hollowfall.Core.Assets;
@@ -13,8 +14,11 @@ public static class StaticAssets
     /// <summary>Folder paths under game/, as the game's resource paths use them.</summary>
     public const string AtlasPath = "assets/textures/block_atlas.png";
     public const string AudioFolder = "assets/audio";
+    public const string ModelFolder = "assets/models";
 
     public static string SoundFile(SoundId id) => $"{AudioFolder}/{Snake(id.ToString())}.wav";
+
+    public static string ModelPath(string modelId) => $"{ModelFolder}/{modelId}.glb";
 
     public static IReadOnlyList<(string Path, byte[] Bytes)> All()
     {
@@ -24,6 +28,8 @@ public static class StaticAssets
         };
         foreach (var id in Enum.GetValues<SoundId>())
             files.Add(("game/" + SoundFile(id), WavFile.Encode(Synth.Render(id), Synth.SampleRate)));
+        foreach (var model in ModelCatalog.All)
+            files.Add(("game/" + ModelPath(model.Id), GlbWriter.Encode(model)));
         return files;
     }
 
