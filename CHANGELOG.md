@@ -10,6 +10,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- Room mutators (issue #7, `Hollowfall.Core.Combat.RoomMutators`). About one room in three has a rule for its Husks and Spitters, chosen from the world seed and the room: **Frenzy** (faster, harder hitting), **Hardened** (40 percent more health) or **Weakened** (30 percent less). Bosses and the Folk, wanderers and vermin are never changed. The rules are not announced on screen yet. `RunReplay.SimVersion` is 5, so replays recorded before it are not verifiable.
 - A character that lasts across runs (`Hollowfall.Core.Progression`, issue #3, phase 2 of `docs/relations.md`). You earn experience for the Husks, Spitters and Wardens you defeat (creatures give none), reach levels up to 20, and get a stat point for each level after the first. The two stats, Vigour and Might, are saved in `progression.json` in the data folder (`HOLLOWFALL_PROGRESSION` moves it). Vigour sets the run's maximum health and Might scales the guns and parries; the stats are read when a run starts and recorded in its replay (format 3). There is no screen to spend points yet.
 
 - A **Daily** button next to Random on the title screen (issue #12). It sets the seed to `daily-` and today's date in UTC (`DailySeed`), so everyone who plays on the same day gets the same dungeon. Daily runs are not yet compared on a leaderboard or verified by replay.
