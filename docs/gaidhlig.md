@@ -29,11 +29,11 @@ The counts are printed by the test `ReviewStatusCountsArePrintedAndAddUp` (run `
 
 ## What is and is not translated
 
-**In Gàidhlig (when something is checked):** the menu words (Play, Settings, Quit, Resume, Journal, Back, Seed, Language), the Settings and Journal and Paused headings, the Movement heading, three action labels (move forward, move back, jump), the HUD key count, three hints (open, jump, menu) and the "read" and "speak" prompts, the death and key banners, two floor-card names, a short line shown with a death, the names of the creatures in `docs/mythology.md`, a Gàidhlig name for the dungeon shown under the title, and five short greetings from Eòghann.
+**In Gàidhlig (when something is checked):** the menu words (Play, Settings, Quit, Resume, Journal, Back, Seed, Language), the Settings and Journal headings, the Movement heading, three action labels (move forward, move back, jump), the HUD key count, three hints (open, jump, menu) and the "read" and "speak" prompts, the death and key banners, two floor-card names, a short line shown with a death, the names of the creatures in `docs/mythology.md`, a Gàidhlig name for the dungeon shown under the title, and five short greetings from Eòghann.
 
 **Stays in English** (and why): the tagline; most settings labels and the controls help; most action labels; ranks and style bonuses; the floor-complete, boss, opening and ending text; every epigraph and every lore note (long free prose, where the risk of a plausible mistake is highest, so none was attempted); and everything Eòghann says apart from his short greetings. How much story text that is: the test output above prints the count of strings in `StoryBook`.
 
-**Held back (NeedsReview):** `hud.floor`, "Làr {0} / {1}" for a dungeon floor, because *làr* is the floor of a room or the ground and whether it suits a level of a dungeon needs a speaker.
+**Held back (NeedsReview):** `hud.floor`, "Làr {0} / {1}" for a dungeon floor, because *làr* is the floor of a room or the ground and whether it suits a level of a dungeon needs a speaker; and `pause.title`, *Air stad*, because Firefox's Pause is the command *Cuir 'na stad* and a heading that names the state is only a guess.
 
 ## Sources
 
@@ -42,15 +42,14 @@ Each entry in the tables cites one or more of these by id. They were read betwee
 | Id | Source |
 | --- | --- |
 | WK | [Wiktionary](https://en.wiktionary.org/wiki/Category:Scottish_Gaelic_lemmas), the Scottish Gaelic sections: spelling, gender, meanings, mutated forms. Used for every noun, adjective and verb. |
-| FF | [Firefox in Gàidhlig](https://github.com/mozilla-l10n/firefox-l10n/tree/main/gd) (Mozilla l10n, `gd`): `menu-settings` is *Roghainnean*, `menu-quit` is *Fàg an-seo*, and *Mòran taing* is used in a message. |
-| LG | [LearnGaelic, twenty words: the weather](https://learngaelic.scot/fichead-facal/ff-aimsir.jsp): the pattern *Tha i ...* with *fuar*, cold, among others. |
-| DASG | [DASG](https://dasg.ac.uk), the Digital Archive of Scottish Gaelic: a recorded *Tha i ciùin an-diugh*. |
+| FF | [Firefox in Gàidhlig](https://github.com/mozilla-l10n/firefox-l10n/tree/main/gd) (Mozilla l10n, `gd`): `menu-settings` is *Roghainnean*, `menu-quit` is *Fàg an-seo*, resume (downloads) is *Lean air* (and pause is the command *Cuir 'na stad*), the language header is *Cànan*, *Aisig na bun-roghainnean* is Restore Defaults, and *Mòran taing* is used in a message. |
+| LG | [LearnGaelic, Little by Little, unit 7](https://learngaelic.net/littlebylittle/unit07/index.jsp): prints the weather sentences, including *Tha i fuar.* (It's cold.). |
 | GW | [Scottish Gaelic Grammar Wiki](https://gaelicgrammar.org/~gaelic/mediawiki/index.php/Article) (after Fisher 2004): the article (masculine *an*, *am* before b f m p, *an t-* before a vowel; feminine *a'* and lenition) and "adjectives are lenited after feminine nouns". |
 | GDW | [Vicipeid na Gàidhlig](https://gd.wikipedia.org), the Gaelic Wikipedia: pages *Bean-nighe*, *Gruagach* and *Each-uisge*. |
 | TAD | [Tobar an Dualchais](https://www.tobarandualchais.co.uk/track/5824): a recording titled *Each-uisge ann an Loch Fada*. |
 | DRU | [Drupal Colossal Menu translation](https://ftp.drupal.org/files/translations/all/colossal_menu/colossal_menu-3.0.0.gd.po), `gd`: *Clàr-taice* for "Menu" (a software translation, not a dictionary). |
 
-Sources tried that did not work: Am Faclair Beag and the LearnGaelic dictionary could not be fetched by the tooling used (server errors), so Dwelly was not consulted directly. **A speaker should check the Am Faclair Beag entries first**, since that is the standard dictionary.
+**How the sources were read.** Every page was read through a fetch tool that summarises a page for a question, not as raw text, so a summary could itself be wrong or mix entries up; a Verified row therefore means one summarised page said so, not that a person checked the dictionary. Am Faclair Beag and the LearnGaelic dictionary could not be fetched (server errors), so Dwelly was not consulted at all. **A speaker should check Am Faclair Beag first**, since that is the standard dictionary.
 
 ## The Gàidhlig dungeon name
 
@@ -67,7 +66,7 @@ Real names that have the same shape include Beinn Fhada, Beinn Dearg, Càrn Dear
 
 ## The Wulver's greetings
 
-Eòghann (the Wulver; see `docs/story.md`) says five short Gàidhlig lines in Gàidhlig and Bilingual modes, each with its English beneath in brackets: *Halò.* and *Fàilte.* on a first meeting, *Fàilte.* on a return, *Mòran taing.* when you leave the fish, *Tha i fuar an-diugh.* when you sit a while, and *Mar sin leat.* as you go. They are extra lines in his dialogue file placed before his usual ones; they are not choices. His name stays in that file only (a repository-wide test enforces it) and the guarded maker path is untouched.
+Eòghann (the Wulver; see `docs/story.md`) says five short Gàidhlig lines in Gàidhlig and Bilingual modes, each with its English beneath in brackets: *Halò.* and *Fàilte.* on a first meeting, *Fàilte.* on a return, *Mòran taing.* when you leave the fish, *Tha i fuar.* when you sit a while, and *Mar sin leat.* as you go. They are extra lines in his dialogue file placed before his usual ones; they are not choices. His name stays in that file only (a repository-wide test enforces it) and the guarded maker path is untouched.
 
 ## The creatures
 
@@ -96,11 +95,11 @@ Add a value to `Language`, a native name in `Languages.NativeName`, a column (or
 
 ## Needs a speaker
 
-- **First:** the Likely rows that are one-word UI labels used as buttons, because the form (imperative, plural, or noun) matters: *Fàg* (Quit), *Air ais* (Back), *Leum*, *Fosgail*, *Bruidhinn*, *Leugh*, *Lean air*, *Air stad* (Paused), *Gluais air adhart / air ais*, *Iuchraichean {0}* and *Clàr-taice*.
-- *Làr* for a dungeon floor (held back), and whether *lobhta* or another word is better.
+- **First:** the Likely rows that are one-word UI labels used as buttons, because the form (imperative, plural, or noun) matters: *Air ais* (Back), *Leum*, *Fosgail*, *Bruidhinn*, *Leugh*, *Gluais air adhart / air ais*, *Iuchraichean {0}*, *Clàr-taice* and *Aisig na bun-roghainnean* (for "Reset to defaults"). *Fàg an-seo* is Firefox's own wording for Quit, so it is Verified, but a speaker should say whether it suits a game's menu.
+- *Làr* for a dungeon floor (held back), and whether *lobhta* or another word is better; and the Paused heading *Air stad* (held back: Firefox's Pause is the command *Cuir 'na stad*).
 - Which of Controls, Seed (*Sìol*), Random, Respawn, Main menu, Quit and the settings labels (sensitivity, dead zone, field of view, volume, render distance, prompts, invert) have an established Gàidhlig term in software and games; the English is shown until they do.
 - *brùnaidh* (brownie): not found in any source checked; *gruagach* is used (Likely) because the Gaelic Wikipedia describes a spirit of the cattle, but the brownie sense is reasoned, not quoted.
-- Whether *Tha i fuar an-diugh* is natural, and the wording of the greetings generally (Halò, Fàilte, Mòran taing, Mar sin leat).
+- Whether the greetings suit Eòghann's voice (Halò, Fàilte, Mòran taing, Tha i fuar, Mar sin leat); each is a sentence or phrase a source prints, but a source is not a speaker.
 - The gender of *loch* and *tobar*, and whether Beinn + dubh lenites.
 - The two floor-card names, *An Sgòrnan* and *An Doras Deireannach*, and whether *Feuch a-rithist.* suits a death line.
 - Every untranslated story line (see the counts above), if translation of the story is wanted at all.
@@ -117,22 +116,22 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 8, Likely 15, NeedsReview 1, no Gàidhlig yet 101.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 100.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
 | `menu.play` | Play | Cluich | Verified | WK | cluich is the imperative of the verb cluich, to play |
 | `menu.settings` | Settings | Roghainnean | Verified | FF WK | Firefox's own gd word for Settings; roghainn, an option or choice |
 | `menu.controls` | Controls | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `menu.quit` | Quit | Fàg | Likely | FF WK | Firefox gd has 'Fàg an-seo'; fàg is leave/quit, transitive only, so a speaker should confirm the bare form |
+| `menu.quit` | Quit | Fàg an-seo | Verified | FF WK | Firefox gd's Quit on Windows and Linux (macOS has 'Fàg' plus the app's name); fàg is leave or quit |
 | `menu.back` | Back | Air ais | Likely | WK | air ais is the adverb 'back'; its use on a Back button is not confirmed |
 | `menu.reset` | Reset | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.tagline` | A procedural dungeon crawler.\nMove fast. Heal by hurting things. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.seed` | Seed | Sìol | Verified | WK | sìol, seed (first sense) |
 | `title.seedHint` | any text or number | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.random` | Random | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `pause.title` | PAUSED | AIR STAD | Likely | WK | stad, a stop or pause; 'air stad' (at a stop) is reasoned, not quoted |
-| `pause.resume` | Resume | Lean air | Verified | WK | lean air, continue |
+| `pause.title` | PAUSED | AIR STAD | NeedsReview | WK FF | held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state |
+| `pause.resume` | Resume | Lean air | Verified | FF WK | Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue |
 | `pause.respawn` | Respawn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.journal` | Journal | Leabhar-latha | Verified | WK | leabhar-latha, diary or journal |
 | `pause.mainMenu` | Main menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -144,7 +143,7 @@ Verified 8, Likely 15, NeedsReview 1, no Gàidhlig yet 101.
 | `controls.colAction` | Action | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.colKeys` | Keyboard / mouse | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.colPad` | Gamepad | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `controls.resetAll` | Reset to defaults | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `controls.resetAll` | Reset to defaults | Aisig na bun-roghainnean | Likely | FF | Firefox gd uses this for 'Restore Defaults'; whether it suits 'Reset to defaults' needs a speaker |
 | `controls.listenPad` | press a button or move a stick… | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.listenKey` | press a key or click… | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.binding` | Binding "{0}". Esc cancels. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -184,7 +183,7 @@ Verified 8, Likely 15, NeedsReview 1, no Gàidhlig yet 101.
 | `action.closePortals` | Close portals (sever) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.pause` | Pause menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.title` | SETTINGS | ROGHAINNEAN | Verified | FF | capitals of Firefox gd's 'Roghainnean' |
-| `settings.language` | Language | Cànan | Verified | WK | cànan, a language |
+| `settings.language` | Language | Cànan | Verified | FF WK | Firefox gd's 'Language' header is Cànan; cànan, a language |
 | `settings.mouseSensitivity` | Mouse sensitivity | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.padLookSpeed` | Gamepad look speed | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.deadzone` | Stick dead zone | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -283,7 +282,7 @@ Verified 4, Likely 1, NeedsReview 0, no Gàidhlig yet 1.
 
 ### Wulver greetings
 
-Verified 4, Likely 1, NeedsReview 0, no Gàidhlig yet 0.
+Verified 5, Likely 0, NeedsReview 0, no Gàidhlig yet 0.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -291,7 +290,7 @@ Verified 4, Likely 1, NeedsReview 0, no Gàidhlig yet 0.
 | `wulver.welcome` | Welcome. | Fàilte. | Verified | WK | fàilte, welcome |
 | `wulver.farewell` | Goodbye. | Mar sin leat. | Verified | WK | an informal farewell to one person |
 | `wulver.thanks` | Thank you. | Mòran taing. | Verified | WK FF | many thanks; Firefox gd also uses 'Mòran taing' |
-| `wulver.weather` | It is cold today. | Tha i fuar an-diugh. | Likely | LG DASG WK | 'Tha i' + a weather adjective is taught by LearnGaelic (fuar, cold); an-diugh, today; DASG records 'Tha i ciùin an-diugh'; the full sentence is put together, not quoted |
+| `wulver.weather` | It is cold. | Tha i fuar. | Verified | LG | LearnGaelic's Little by Little unit 7 prints 'Tha i fuar.' (It's cold.) |
 
 ### Place-name elements (Gaelic dungeon names)
 

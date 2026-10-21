@@ -30,8 +30,7 @@ public static class LocSources
     {
         ["WK"] = ("Wiktionary, Scottish Gaelic entries (spelling, gender, meanings, mutations)", "https://en.wiktionary.org/wiki/Category:Scottish_Gaelic_lemmas"),
         ["FF"] = ("Firefox in Gàidhlig (Mozilla l10n, gd): software wording such as Fàg and Roghainnean", "https://github.com/mozilla-l10n/firefox-l10n/tree/main/gd"),
-        ["LG"] = ("LearnGaelic, twenty words: the weather (the pattern 'Tha i ...')", "https://learngaelic.scot/fichead-facal/ff-aimsir.jsp"),
-        ["DASG"] = ("DASG, Digital Archive of Scottish Gaelic: 'Tha i ciùin an-diugh'", "https://dasg.ac.uk"),
+        ["LG"] = ("LearnGaelic, Little by Little, unit 7: the weather ('Tha i fuar.')", "https://learngaelic.net/littlebylittle/unit07/index.jsp"),
         ["GW"] = ("Scottish Gaelic Grammar Wiki (after Fisher 2004): the article and lenition after feminine nouns", "https://gaelicgrammar.org/~gaelic/mediawiki/index.php/Article"),
         ["GDW"] = ("Vicipeid na Gàidhlig, the Gaelic Wikipedia (Bean-nighe, Gruagach, Each-uisge)", "https://gd.wikipedia.org"),
         ["TAD"] = ("Tobar an Dualchais: recording titled 'Each-uisge ann an Loch Fada'", "https://www.tobarandualchais.co.uk/track/5824"),

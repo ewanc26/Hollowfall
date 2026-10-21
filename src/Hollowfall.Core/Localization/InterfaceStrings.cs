@@ -35,7 +35,7 @@ public static class InterfaceStrings
             G("menu.play", "Play", "Cluich", ReviewStatus.Verified, "WK", "cluich is the imperative of the verb cluich, to play"),
             G("menu.settings", "Settings", "Roghainnean", ReviewStatus.Verified, "FF WK", "Firefox's own gd word for Settings; roghainn, an option or choice"),
             T("menu.controls", "Controls"),
-            G("menu.quit", "Quit", "Fàg", ReviewStatus.Likely, "FF WK", "Firefox gd has 'Fàg an-seo'; fàg is leave/quit, transitive only, so a speaker should confirm the bare form"),
+            G("menu.quit", "Quit", "Fàg an-seo", ReviewStatus.Verified, "FF WK", "Firefox gd's Quit on Windows and Linux (macOS has 'Fàg' plus the app's name); fàg is leave or quit"),
             G("menu.back", "Back", "Air ais", ReviewStatus.Likely, "WK", "air ais is the adverb 'back'; its use on a Back button is not confirmed"),
             T("menu.reset", "Reset"),
 
@@ -46,8 +46,8 @@ public static class InterfaceStrings
             T("title.random", "Random"),
 
             // ---- pause ----
-            G("pause.title", "PAUSED", "AIR STAD", ReviewStatus.Likely, "WK", "stad, a stop or pause; 'air stad' (at a stop) is reasoned, not quoted"),
-            G("pause.resume", "Resume", "Lean air", ReviewStatus.Verified, "WK", "lean air, continue"),
+            G("pause.title", "PAUSED", "AIR STAD", ReviewStatus.NeedsReview, "WK FF", "held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state"),
+            G("pause.resume", "Resume", "Lean air", ReviewStatus.Verified, "FF WK", "Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue"),
             T("pause.respawn", "Respawn"),
             G("pause.journal", "Journal", "Leabhar-latha", ReviewStatus.Verified, "WK", "leabhar-latha, diary or journal"),
             T("pause.mainMenu", "Main menu"),
@@ -63,7 +63,7 @@ public static class InterfaceStrings
             T("controls.colAction", "Action"),
             T("controls.colKeys", "Keyboard / mouse"),
             T("controls.colPad", "Gamepad"),
-            T("controls.resetAll", "Reset to defaults"),
+            G("controls.resetAll", "Reset to defaults", "Aisig na bun-roghainnean", ReviewStatus.Likely, "FF", "Firefox gd uses this for 'Restore Defaults'; whether it suits 'Reset to defaults' needs a speaker"),
             T("controls.listenPad", "press a button or move a stick…"),
             T("controls.listenKey", "press a key or click…"),
             T("controls.binding", "Binding \"{0}\". Esc cancels."),
@@ -107,7 +107,7 @@ public static class InterfaceStrings
 
             // ---- settings ----
             G("settings.title", "SETTINGS", "ROGHAINNEAN", ReviewStatus.Verified, "FF", "capitals of Firefox gd's 'Roghainnean'"),
-            G("settings.language", "Language", "Cànan", ReviewStatus.Verified, "WK", "cànan, a language"),
+            G("settings.language", "Language", "Cànan", ReviewStatus.Verified, "FF WK", "Firefox gd's 'Language' header is Cànan; cànan, a language"),
             T("settings.mouseSensitivity", "Mouse sensitivity"),
             T("settings.padLookSpeed", "Gamepad look speed"),
             T("settings.deadzone", "Stick dead zone"),

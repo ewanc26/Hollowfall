@@ -134,6 +134,12 @@ public class LocTableTests(ITestOutputHelper output)
 
         Assert.NotEmpty(used);
         foreach (var key in used) Assert.True(LocTable.Has(key), $"the code asks for '{key}', which has no table entry");
+
+        // A key written any other way (in a ternary, a table or a variable) is still caught: any string literal that looks like a key.
+        var looksLikeAKey = new Regex(@"""((?:menu|title|pause|journal|controls|group|action|settings|hud|hint|prompt|banner|rank|card|story|name|wulver)\.[A-Za-z0-9.\-]+)""");
+        foreach (var file in RepoFiles.SourceFiles(Path.Combine("src", "Hollowfall.Core"), Path.Combine("game", "scripts")))
+            foreach (Match m in looksLikeAKey.Matches(File.ReadAllText(file)).Where(m => !Regex.IsMatch(m.Groups[1].Value, @"\.(json|png|svg|ogg|wav|tres|tscn|cs|md)$")))
+                Assert.True(LocTable.Has(m.Groups[1].Value), $"{Path.GetFileName(file)} has the literal '{m.Groups[1].Value}', which is not a table key");
     }
 
     [Fact]
@@ -439,6 +445,49 @@ public class WulverGaelicTests
         string g = gaelic.Approach(1, 10, 1)!;
         Assert.StartsWith("Halò. Fàilte.", g);
         Assert.EndsWith(WulverDialogue.GreetingFirst, g);
+    }
+
+    [Theory]
+    [InlineData(Language.Gaelic)]
+    [InlineData(Language.Bilingual)]
+    public void TheMakerGuardAndTheNameRuleHoldOnEveryPathInTheGaelicLanguagesToo(Language language)
+    {
+        int states = 0, withName = 0, withGaelic = 0;
+        foreach (var seed in new[] { "voxel", "ewan", "hollow" })
+            foreach (bool ending in new[] { false, true })
+                foreach (int visits in new[] { 0, 1, 3 })
+                    for (int mask = 0; mask < 8; mask++)
+                    {
+                        var flags = new[] { WulverDialogue.ClaimedMaker, WulverDialogue.MakerKey, WulverDialogue.MakerKnown }.Where((_, i) => (mask & (1 << i)) != 0);
+                        var start = new DialogueContext { Seed = 7, SeedText = seed, VisitCount = visits, FloorCount = 3, EndingReached = ending, Flags = new HashSet<string>(flags), Language = language };
+                        var seen = new HashSet<string>();
+                        var stack = new Stack<DialogueRunner>();
+                        stack.Push(new DialogueRunner(WulverDialogue.Graph, start));
+                        while (stack.Count > 0)
+                        {
+                            var r = stack.Pop();
+                            if (r.Finished) continue;
+                            if (!seen.Add($"{r.NodeId}|{string.Join(",", r.Context.Flags.Order())}|{r.Context.VisitCount}|{r.Context.GiftGiven}")) continue;
+                            states++;
+                            if (WulverGreetings.All.Any(e => r.Text.Contains(e.Gaelic!))) withGaelic++;
+                            Assert.DoesNotContain("Eoghann", r.Text);
+                            if (r.Text.Contains("Ewan", StringComparison.OrdinalIgnoreCase))
+                            {
+                                withName++;
+                                Assert.True(r.Context.Has(WulverDialogue.ClaimedMaker), $"{r.NodeId} names him without the claim");
+                                Assert.True(WulverDialogue.MakerCircumstance.Evaluate(r.Context), $"{r.NodeId} names him without a circumstance");
+                            }
+                            for (int i = 0; i < r.Choices.Count; i++)
+                            {
+                                var next = r.Fork();
+                                next.Advance(i);
+                                stack.Push(next);
+                            }
+                        }
+                    }
+        Assert.True(states > 500, $"explored only {states} states");
+        Assert.True(withName > 20, "the maker path must still be reachable");
+        Assert.True(withGaelic > 50, "his Gàidhlig lines must be heard");
     }
 
     [Fact]
