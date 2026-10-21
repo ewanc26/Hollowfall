@@ -4,6 +4,7 @@ using Hollowfall.Core.Storage;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Textures;
@@ -22,6 +23,7 @@ public partial class Main : Node3D
     private WorldView _view = null!;
     private PlayerController _player = null!;
     private Hud _hud = null!;
+    private Loc _loc = null!;
     private Menus _menus = null!;
     private ViewModels _weapons = null!;
     private PropsView? _props;
@@ -96,6 +98,7 @@ public partial class Main : Node3D
         int adopted = Data.AdoptLegacy(ProjectSettings.GlobalizePath("user://"));
         if (adopted > 0) GD.Print($"Hollowfall: copied {adopted} saved file(s) into {Data.Root}");
         Settings = GameSettings.Load(SettingsPath);
+        _loc = new Loc(Settings.Language);
         InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
         ApplyUiScale();
         GetWindow().SizeChanged += ApplyUiScale;
@@ -175,6 +178,7 @@ public partial class Main : Node3D
         {
             InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
             MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+            Loc = _loc,
         };
 
         // The Wulver: a hidden figure on a hill, found with a little exploring.
@@ -188,6 +192,7 @@ public partial class Main : Node3D
             {
                 InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
                 MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                Loc = _loc,
                 Facts = () => new WulverFacts(_deathCount, _killCount, _deepestFloor, site!.FloorCount, _story.NotesRead, Combat.Sim.Items.KeysHeld > 0, false),
             };
             GD.Print($"Hollowfall: the Wulver stands at ({wulverSpot.X:F1}, {wulverSpot.Y:F1}, {wulverSpot.Z:F1}), {wulverSpot.Distance:F0} blocks from the entrance");
@@ -215,10 +220,10 @@ public partial class Main : Node3D
         _weaponLayer.AddChild(_weapons);
         AddChild(_weaponLayer);
 
-        _hud = new Hud { Name = "Hud" };
+        _hud = new Hud { Name = "Hud", Loc = _loc };
         AddChild(_hud);
 
-        _menus = new Menus(Settings, SettingsPath) { Name = "Menus" };
+        _menus = new Menus(Settings, SettingsPath, _loc) { Name = "Menus" };
         _menus.SettingsChanged += ApplySettings;
         _menus.PromptStyleProvider = () => PromptStyle;
         _menus.MenuOpenChanged += open =>
@@ -280,6 +285,7 @@ public partial class Main : Node3D
     /// <summary>Applies changed settings and bindings to the running game.</summary>
     private void ApplySettings()
     {
+        _loc.Language = Settings.Language;
         InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
         _view.ViewRadius = Settings.ViewRadius;
         ApplyUiScale();
@@ -321,15 +327,15 @@ public partial class Main : Node3D
         (Binding?, string) Hint(GameAction a, string label) => (Settings.Bindings.Get(a, slot), label);
         return
         [
-            Hint(GameAction.FirePrimary, "revolver"),
-            Hint(GameAction.FireSecondary, "shotgun"),
-            Hint(GameAction.Parry, "parry"),
-            Hint(GameAction.PortalTeal, "teal portal"),
-            Hint(GameAction.PortalViolet, "violet portal"),
-            Hint(GameAction.ClosePortals, "sever"),
-            Hint(GameAction.Interact, "open"),
-            Hint(GameAction.Jump, "jump"),
-            Hint(GameAction.Pause, "menu"),
+            Hint(GameAction.FirePrimary, _loc.Tr("hint.revolver")),
+            Hint(GameAction.FireSecondary, _loc.Tr("hint.shotgun")),
+            Hint(GameAction.Parry, _loc.Tr("hint.parry")),
+            Hint(GameAction.PortalTeal, _loc.Tr("hint.tealPortal")),
+            Hint(GameAction.PortalViolet, _loc.Tr("hint.violetPortal")),
+            Hint(GameAction.ClosePortals, _loc.Tr("hint.sever")),
+            Hint(GameAction.Interact, _loc.Tr("hint.open")),
+            Hint(GameAction.Jump, _loc.Tr("hint.jump")),
+            Hint(GameAction.Pause, _loc.Tr("hint.menu")),
         ];
     }
 
@@ -632,42 +638,42 @@ public partial class Main : Node3D
         switch (e)
         {
             case PlayerDied:
-                _hud.ShowBanner($"YOU DIED\n{BindingNames.Display(Settings.Bindings.Get(GameAction.Respawn, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse))} to respawn", 3600);
+                _hud.ShowBanner(_loc.Tr("banner.died") + "\n" + _loc.Tr("banner.respawn", BindingNames.Display(Settings.Bindings.Get(GameAction.Respawn, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse))), 3600);
                 break;
             case EncounterStarted s:
-                _hud.ShowBanner($"{s.Enemies} enemies: kill them to open the doors", 2.5);
+                _hud.ShowBanner(_loc.Tr("banner.enemies", s.Enemies), 2.5);
                 break;
             case EncounterCleared:
-                _hud.ShowBanner("CLEAR", 1.5);
+                _hud.ShowBanner(_loc.Tr("banner.clear"), 1.5);
                 break;
             case FloorCompleted f:
                 {
                     _replay?.OnFloorCompleted(f);
                     var (isBest, previous) = _records.Submit(_seedName, f.Floor, f.Result, f.Seconds);
                     if (isBest) _records.TrySave(RecordsPath);
-                    string note = isBest ? (previous == null ? "first clear" : $"NEW BEST  (was {previous.Value.Grade})") : $"best {_records.Best(_seedName, f.Floor)!.Value.Grade}";
+                    string note = isBest ? (previous == null ? _loc.Tr("banner.firstClear") : _loc.Tr("banner.newBest", previous.Value.Grade)) : _loc.Tr("banner.best", _records.Best(_seedName, f.Floor)!.Value.Grade);
                     int secs = (int)f.Seconds;
-                    _hud.ShowBanner($"FLOOR {f.Floor + 1} COMPLETE  {f.Result.Overall}  {secs / 60}:{secs % 60:D2}\ntime {f.Result.Time}  kills {f.Result.Kills}  style {f.Result.Style}\n{note}", 6);
+                    _hud.ShowBanner(_loc.Tr("banner.floorDone", f.Floor + 1, f.Result.Overall, $"{secs / 60}:{secs % 60:D2}") + "\n" + _loc.Tr("banner.floorStats", f.Result.Time, f.Result.Kills, f.Result.Style) + "\n" + note, 6);
                 }
                 break;
             case KeyCollected:
-                _hud.ShowBanner("KEY", 1.2);
+                _hud.ShowBanner(_loc.Tr("banner.key"), 1.2);
                 break;
             case ChestOpened o:
                 _hud.ShowBanner(
                     o.Loot is { } loot
-                        ? $"{(o.WasLocked ? "LOCKED CHEST" : "CHEST")}  {LootTable.Announce(loot, o.Applied)}"
-                        : o.WasLocked ? $"LOCKED CHEST OPENED  +{o.Healed:F0} health" : $"CHEST  +{o.Healed:F0} health",
+                        ? $"{_loc.Tr(o.WasLocked ? "banner.lockedChest" : "banner.chest")}  {LootTable.Announce(loot, o.Applied)}"
+                        : o.WasLocked ? _loc.Tr("banner.lockedChestHealed", $"{o.Healed:F0}") : _loc.Tr("banner.chestHealed", $"{o.Healed:F0}"),
                     2.2);
                 break;
             case ChestLocked:
-                _hud.ShowBanner("locked: find the key on this floor", 1.8);
+                _hud.ShowBanner(_loc.Tr("banner.locked"), 1.8);
                 break;
             case TrapSprung t:
-                _hud.ShowBanner($"SPIKES  -{t.Damage:F0}", 0.8);
+                _hud.ShowBanner(_loc.Tr("banner.spikes", $"{t.Damage:F0}"), 0.8);
                 break;
             case PortalPlaced { Success: false } failed:
-                _hud.ShowBanner($"can't place a portal there ({failed.Failure})", 1.2);
+                _hud.ShowBanner(_loc.Tr("banner.noPortal", failed.Failure), 1.2);
                 break;
         }
     }

@@ -2,6 +2,7 @@ using Godot;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Localization;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Portals;
 
@@ -14,6 +15,9 @@ namespace Hollowfall.Game;
 public partial class Hud : CanvasLayer
 {
     private const float BarWidth = 320;
+
+    /// <summary>The words the HUD shows; set by the game so a language change reaches the labels at once.</summary>
+    public Loc Loc { get; set; } = new();
 
     private ColorRect _healthFill = null!, _hardFill = null!, _styleFill = null!, _styleBack = null!, _flash = null!;
     private Label _info = null!, _style = null!, _awards = null!, _banner = null!, _hitMarker = null!, _health = null!;
@@ -216,10 +220,10 @@ public partial class Hud : CanvasLayer
     {
         _floorPanel.Visible = floor >= 0;
         if (floor < 0) return;
-        _floorStairs.Text = $"Floor {floor + 1} / {floors}";
+        _floorStairs.Text = Loc.Tr("hud.floor", floor + 1, floors);
         _floorKills.Text = $"{kills} / {enemies}";
         _floorTime.Text = $"{Clock(elapsed)}  /  {Clock(par)}";
-        _floorKeys.Text = keys == 1 ? "1 key" : $"{keys} keys";
+        _floorKeys.Text = Loc.Tr("hud.keys", keys);
         _floorKeys.GetParent<Control>().Visible = keys > 0;
         _floorTime.AddThemeColorOverride("font_color", elapsed <= par ? Colors.White : new Color(1f, 0.55f, 0.45f));
     }
@@ -298,7 +302,7 @@ public partial class Hud : CanvasLayer
                 break;
             case MeteorImpact meteor:
                 Flash(new Color(1f, 0.55f, 0.15f, 0.4f), 0.3);
-                ShowBanner(meteor.LongFall ? "METEOR x2" : "METEOR", 0.9);
+                ShowBanner(Loc.Tr(meteor.LongFall ? "banner.meteor2" : "banner.meteor"), 0.9);
                 break;
             case EnemyHit hit:
                 _hitTime = 0.12;
@@ -306,9 +310,9 @@ public partial class Hud : CanvasLayer
                 break;
             case FloorCompleted done:
                 _resultText.Text =
-                    $"FLOOR {done.Floor + 1} COMPLETE\n\nRANK  {done.Result.Overall}\n" +
-                    $"Time {done.Result.Time}    Kills {done.Result.Kills}    Style {done.Result.Style}" +
-                    (done.Result.Restarts > 0 ? $"\nRestarts {done.Result.Restarts}  (−{done.Result.Restarts} points)" : "");
+                    Loc.Tr("hud.result.title", done.Floor + 1) + "\n\n" + Loc.Tr("hud.result.rank", done.Result.Overall) + "\n" +
+                    Loc.Tr("hud.result.stats", done.Result.Time, done.Result.Kills, done.Result.Style) +
+                    (done.Result.Restarts > 0 ? "\n" + Loc.Tr("hud.result.restarts", done.Result.Restarts) : "");
                 _result.Visible = true;
                 _resultTime = 7;
                 break;
@@ -328,7 +332,7 @@ public partial class Hud : CanvasLayer
         _health.Text = $"{Math.Ceiling(v.Health):F0}";
 
         var style = sim.Style;
-        _style.Text = style.Rank == StyleRank.None ? "" : style.Rank.ToString().ToUpperInvariant();
+        _style.Text = style.Rank == StyleRank.None ? "" : Loc.Tr(InterfaceStrings.RankKey(style.Rank));
         _style.AddThemeColorOverride("font_color", RankColour(style.Rank));
         _styleFill.Color = RankColour(style.Rank);
         _styleFill.Size = new Vector2((float)(BarWidth * (style.Rank == StyleRank.None ? style.Points / 150.0 : style.RankProgress)), 8);

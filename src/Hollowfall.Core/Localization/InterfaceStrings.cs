@@ -117,6 +117,7 @@ public static class InterfaceStrings
             T("settings.master", "Master volume"),
             T("settings.effects", "Effects volume"),
             T("settings.ambience", "Ambience volume"),
+            T("settings.music", "Music volume"),
             T("settings.viewDistance", "Render distance"),
             T("settings.chunks", "{0} chunks"),
             T("settings.prompts", "Controller prompts"),

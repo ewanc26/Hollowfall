@@ -165,6 +165,7 @@ public partial class SmokeTest : Node
             await CheckCombatAsync(main);
             await CheckMusicAsync(main);
             await CheckInputAndMenusAsync(main);
+            await CheckLanguageAsync(main);
             await CheckStoryAsync(main);
             CheckWulver(main);
             CheckWulverKeyRoute(main);
