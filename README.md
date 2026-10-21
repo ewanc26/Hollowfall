@@ -121,6 +121,9 @@ to see a floor plan.
 ## Gaps
 
 Rooms are not all joined by corridors. Every room has at least one **gap**: two walled hallways with a door at the room, three steps up to a lip, and a pit you cannot cross on foot. Fire the teal portal at the far hallway, the violet one at the wall beside you, and step through. The pit is bare stone, spikes or water; a fall costs a little health (never the last point) and puts you back at the edge, so it never traps you. A few deeper links are shaft gaps: aim up into a tunnel above a sealed block. Corridors and secret doors remain, and the dungeon is always finishable (tests prove it with the real portal placement and walking physics). See `docs/game-loop.md`.
+## Folk and standing
+
+Not everything in the dungeon is hostile. Brownies, selkies, kelpies, a Bean Nighe and the odd hare share the dungeon with the Hollow's Husks, Spitters and Wardens, and each group has its own opinion of you. Hurt or kill one in front of its kin and they turn on you; treat them well and a brownie warms a hearth, a selkie fights at your side. The pause menu's **Standing** screen shows where you stand with each faction (Hated to Revered), a toast says when it changes, and a small coloured pip over a creature you have noticed shows how to read it. Standing is saved per seed in `relations.json` (`HOLLOWFALL_RELATIONS` overrides the path). See [docs/relations.md](docs/relations.md).
 
 ## Story
 

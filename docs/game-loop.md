@@ -148,6 +148,15 @@ Rooms are joined by a mix of link types (`LinkKind`, chosen per link from the se
 **Proof.** `GapCrossing.Plan` finds a way over each gap with the real `PortalSystem.Place` and the real `PortalWalker` and body, and `DungeonReach` proves every room, the exit stairs and the boss are reached by walking plus those hops. The tests run both over seeds 1 to 30 and several regions.
 
 **Falling in.** The sim never lets a pit trap you: it takes a little health (never the last point), then after a moment puts you back at the last safe grounded cell on your own side (`PlayerFell`, `PlayerRecovered`). Enemies stop at the lip. The first time you stand at a lip the game says how to cross, with your real portal bindings.
+## Relationships
+
+Phase 1 of the move toward an RPG. Not everything in the dungeon wants you dead. Full design, tables and constants: [relations.md](relations.md).
+
+- **Factions.** The Hollow (Husks, Spitters, Wardens) is always an enemy. The Folk (Brownies, Selkies, Kelpies), Wanderers (the Bean Nighe) and Vermin (hares) each have a standing with you, -100 to 100, in seven tiers (Hated, Hostile, Wary, Neutral, Friendly, Trusted, Revered) with hysteresis so the tier does not flicker, and a slow drift back to neutral.
+- **Acts ripple.** Killing a Husk warms the Folk a little (they fear the Hollow); killing a brownie in front of Folk turns them against you and leaves the Hollow unmoved. Merely hurting someone never earns anyone's approval.
+- **Dispositions.** Every creature is Passive, Skittish, Neutral, Territorial, Curious, Aggressive or Allied, worked out from its faction's regard for you, its nature, a seeded personality and what it remembers. Witnesses within 14 blocks with a clear view take a kill to heart, and those who panic tell the ones beside them. Provoked creatures warn before they strike (and attacks can be parried like any other); anger fades.
+- **What it does to the loop.** The Hollow behaves exactly as before. Creatures are never part of an encounter, so a room holding only creatures does not lock and clearing counts only the monsters. Hurting a pacifist earns no style. A Bean Nighe near you is an omen: the next encounter room holds an extra wave. A Friendly brownie leaves a warm hearth once; a Selkie you have won over fights at your side.
+- **Seen on screen.** The pause menu's **Standing** screen lists each faction with its tier and a bar and the latest changes; a toast announces a change of tier; a faint pip over a creature you have noticed says how to read it (green friendly, yellow wary, red hostile, blue allied). Standing is saved per seed in `relations.json`.
 
 ## Principles
 

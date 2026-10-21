@@ -362,8 +362,8 @@ public class RelationSimTests
         Assert.Contains(a.Events, e => e is WitnessAlerted);
         Assert.Equal(hollowBefore, rep.Value(Faction.Spitters), 6);
         Assert.True(selkies.Any(s => s.Mind!.Memory.Anger > 0), "friends of the brownie saw it die");
-        Assert.True(brownies[1].Mind!.Memory.Anger > 0.3 && brownies[1].Mind.Provoked, "its own kin are provoked");
-        Assert.Equal(Disposition.Skittish, brownies[1].Mind.Disposition);
+        Assert.True(brownies[1].Mind!.Memory.Anger > 0.3 && brownies[1].Mind!.Provoked, "its own kin are provoked");
+        Assert.Equal(Disposition.Skittish, brownies[1].Mind!.Disposition);
 
         a.Kill(brownies[1]);
         a.Kill(brownies[2]);

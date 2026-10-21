@@ -183,6 +183,23 @@ encounter: a room holding only passive creatures does not lock, and clearing an 
 The pause menu has a **Standing** screen: each faction with its tier and a bar, and the most recent changes. A toast appears when a tier
 changes ("The Folk now regard you as Wary" - here, "The Brownies now regard you as Wary"). A small pip above a creature in view, once
 you have noticed it, shows how to read it: green friendly, yellow wary, red hostile, blue allied. The Hollow's own show no pip.
+`StandingBoard` (Core) decides the rows, the toast text, the recent-change lines and the pip colours; the game only draws them.
+Several toasts that arrive together (a kill moves several factions) stack instead of replacing each other. The toast also announces
+an omen and a brownie's boon. For screenshots, `HOLLOWFALL_MENU=standing` opens the screen and `HOLLOWFALL_DEMO=folk` lines the
+creatures up in the first room.
+
+### Models, animation and sound
+
+| Creature | Model (triangles under a 260 budget) | Animation | Voice (on being provoked) |
+|---|---|---|---|
+| Brownie | Hooded, big-eared, apron | Scurrying walk, arms up when frightened | `BrownieHiss` |
+| Selkie | Sealskin cloak, flippers, long hair, sea-teal eyes | Walk; arms rise before a blow | `SelkieCry` |
+| Kelpie | Dark water-horse with a weed mane and tail | Gallop in diagonal pairs; rears (body and forelegs) before it lunges | `KelpieWhinny` |
+| Bean Nighe | Stooped, green gown, hood, pale cloth | Wrings the cloth with both arms, sways | `NigheWail` (also `OmenToll` for the omen) |
+| Hare | Fur, long ears | Hops; ears back when it runs | `HareScream` |
+
+Also: `StandingUp`/`StandingDown` on a tier change, `BoonChime` for a boon or an offering, `AllyJoin` when a creature becomes an ally.
+The cistern pool is a model too (`cistern_pool`), laid once per pool at a water-folk creature's home.
 
 ## Later phases
 
