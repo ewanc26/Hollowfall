@@ -76,7 +76,7 @@ public class TasPlaytestTests
         run.Play([new TasInput(Jump: true), .. TasRun.Wait(10), new TasInput(Slam: true), .. TasRun.Wait(120)]);
 
         Assert.Equal(BlockType.Air, a.World.GetBlock(bx, by, bz));
-        Assert.Equal(BlockType.Air, a.World.GetBlock(bx + 1, by, bz + 1));
+        Assert.False(BlockHole.IsSolid(BlockType.BrickFloor, a.World.HoleAt(bx + 1, by, bz + 1), 0, 5, 0));
         Assert.True(run.Body.Y < a.Y - 0.5, $"the player should fall through the hole, ended at y={run.Body.Y:F2}");
         Assert.True(a.Sim.Style.TotalScore > scoreBefore);
     }

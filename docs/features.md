@@ -128,7 +128,7 @@ The world is voxels, so the world should be breakable, in a few controlled ways.
 **Rules.** A new action, *Slam* (default C on the keyboard and L3, the left stick click, on a gamepad), pressed while airborne, drives
 you straight down at 30 blocks per second. On landing it shockwaves a 3.5 block radius for 30 damage and awards **Slam** (60)
 or **Air Slam** (160 from over 8 blocks). Floors on arena rooms are made of `BrickFloor`; the first slam cracks the tile
-(`CrackedFloor`), the second within 3 seconds breaks a 3 x 3 hole. Slam only breaks floor where there is a floor below it,
+(`CrackedFloor`), the second within 3 seconds breaks a round hole about three blocks across, cut in 10 cm cubes. Slam only breaks floor where there is a floor below it,
 never over a stair shaft, and never on plates. Dropping through a hole skips the rest of the room above and awards **Hollowfall**
 (150 points) if you land in another arena.
 
