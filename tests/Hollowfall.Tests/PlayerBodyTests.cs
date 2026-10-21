@@ -182,31 +182,42 @@ public class PlayerBodyTests
 
     private static void WalkToBoss(VoxelWorld world, DungeonSite site)
     {
-        var start = new Navigation.Cell(site.EntranceX + DungeonSite.PlazaRadius, site.SurfaceY + 1, site.EntranceZ);
+        var start = new Spot(site.EntranceX + DungeonSite.PlazaRadius, site.SurfaceY + 1, site.EntranceZ);
         var boss = site.Floors[^1].BossRoom!;
         var (bx, by, bz) = BossSpot(site, boss);
-        bool InBounds(int x, int z) => x >= site.OriginX && x < site.OriginX + FloorLayout.Size && z >= site.OriginZ && z < site.OriginZ + FloorLayout.Size;
 
-        var path = Navigation.FindPath(world.GetBlock, start, new(bx, by, bz), InBounds);
-        Assert.NotNull(path);
+        // Walks, and over each gap the portal hop that GapCrossing proved with the real portals and body.
+        var route = DungeonReach.Route(site, start, new Spot(bx, by, bz));
+        Assert.NotNull(route);
 
         var body = new PlayerBody(start.X + 0.5, start.Y, start.Z + 0.5);
-        int waypoint = 1, stuck = 0;
+        int waypoint = 0, stuck = 0;
         double lastProgress = double.MaxValue;
-        for (int tick = 0; tick < 60 * 900 && waypoint < path!.Count; tick++)
+        for (int tick = 0; tick < 60 * 900 && waypoint < route!.Count; tick++)
         {
-            var target = path[waypoint];
+            var step = route[waypoint];
+            if (step.Via is { } hop)
+            {
+                // Standing where the hop starts: the crossing itself is checked in MixedLinkTests, so arrive where it ends.
+                body.Teleport(hop.Plan.Arrival.X, hop.Plan.Arrival.Y, hop.Plan.Arrival.Z, 0, 0, 0);
+                waypoint++;
+                stuck = 0;
+                lastProgress = double.MaxValue;
+                continue;
+            }
+
+            var target = step.To;
             double dx = target.X + 0.5 - body.X, dz = target.Z + 0.5 - body.Z;
             double dist = Math.Sqrt(dx * dx + dz * dz);
             if (dist < 0.12 && Math.Abs(body.Y - target.Y) < 0.6) { waypoint++; stuck = 0; lastProgress = double.MaxValue; continue; }
 
             body.Step(1.0 / 60, dx, dz, jump: false, world.GetBlock);
 
-            stuck = dist < lastProgress - 1e-4 ? 0 : stuck + 1;
+            stuck = dist < lastProgress - 1e-4 || Math.Abs(body.Y - target.Y) >= 0.6 && !body.OnGround ? 0 : stuck + 1;
             lastProgress = Math.Min(lastProgress, dist);
-            Assert.True(stuck < 120, $"stuck at waypoint {waypoint}/{path.Count} ({target}) body ({body.X:F2},{body.Y:F2},{body.Z:F2})");
+            Assert.True(stuck < 120, $"stuck at waypoint {waypoint}/{route.Count} ({target}) body ({body.X:F2},{body.Y:F2},{body.Z:F2})");
         }
-        Assert.Equal(path!.Count, waypoint);
+        Assert.Equal(route!.Count, waypoint);
         Assert.True(Math.Abs(body.Y - by) < 0.6, $"ended at y={body.Y}, expected near {by}");
     }
 

@@ -88,9 +88,10 @@ public class FloorLayoutTests
     [Fact]
     public void EveryRoomIsReachableWithoutSecretDoors()
     {
+        // Walking and crossing gaps. That a gap can really be crossed is proved in MixedLinkTests, with the real portals.
         foreach (var l in ManyLayouts())
         {
-            var reach = Flood(l, l.EntranceX, l.EntranceZ, FloorLayout.IsWalkable);
+            var reach = LayoutWalk.Reach(l, l.EntranceX, l.EntranceZ, crossGaps: true);
             foreach (var r in l.Rooms)
                 Assert.True(reach.Contains((r.CenterX, r.CenterZ)), $"room {r.Id} ({r.Shape}) unreachable");
         }

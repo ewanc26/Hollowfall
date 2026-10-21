@@ -132,6 +132,16 @@ public static partial class BlockTextures
                     var c = Ashen(Gray(StairsTone(x, y, out bool edge)), x, y);
                     return Out(edge && Hash(84, x, y / 4) < 0.28f ? new Rgb(1f, 0.46f, 0.12f) : c);
                 }
+
+            // ---- gap pits ----
+            case Tile.Spikes:
+                {
+                    // A 4 by 4 field of iron spikes seen from above: each a little pyramid with a bright tip, lit from the top left.
+                    int cx = x % 4, cy = y % 4;
+                    bool tip = cx is 1 or 2 && cy is 1 or 2;
+                    float v = tip ? 0.98f : cx == 0 || cy == 0 ? 0.42f : 0.68f;
+                    return Out(Gray(v + Tone(120, x, y, 2, 0.03f)).Mul(0.95f, 0.95f, 1f));
+                }
         }
         return Grey(0.8f);
     }

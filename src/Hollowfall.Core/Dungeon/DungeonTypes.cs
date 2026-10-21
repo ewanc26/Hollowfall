@@ -16,6 +16,16 @@ public enum CellKind : byte
     Door,
     SecretDoor,
     Pillar,
+
+    // Added with the mixed room links. Only ever append: stored layouts and tests compare these by value.
+    /// <summary>A pit between two gap hallways: bare stone at the bottom.</summary>
+    Pit,
+
+    /// <summary>A pit with spikes on the floor.</summary>
+    PitSpikes,
+
+    /// <summary>A pit filled with water.</summary>
+    PitWater,
 }
 
 public enum RoomShape
@@ -37,8 +47,37 @@ public enum RoomRole
     Safe,
 }
 
+/// <summary>How two rooms are joined (see <see cref="LinkMix"/>).</summary>
+public enum LinkKind : byte
+{
+    /// <summary>A walkable 3-wide corridor with doors.</summary>
+    Corridor,
+
+    /// <summary>Two hallways facing across a pit the player cannot cross on foot: fire a portal over it.</summary>
+    PortalGap,
+
+    /// <summary>A hallway ending in a sheer wall with a tunnel high above it, reached with a portal.</summary>
+    ShaftGap,
+
+    /// <summary>A corridor hidden behind a secret door.</summary>
+    SecretDoor,
+}
+
+/// <summary>What waits at the bottom of a pit.</summary>
+public enum GapHazard : byte
+{
+    /// <summary>Bare stone: a fall costs a little health.</summary>
+    Bare,
+
+    /// <summary>Spikes: a fall costs more.</summary>
+    Spikes,
+
+    /// <summary>Water: no damage, but the climb out takes a while.</summary>
+    Water,
+}
+
 /// <summary>A link between two rooms. Secret links are extra loops hidden behind secret doors.</summary>
-public readonly record struct RoomLink(int A, int B, bool Secret);
+public readonly record struct RoomLink(int A, int B, bool Secret, LinkKind Kind = LinkKind.Corridor);
 
 public readonly record struct Blob(int X, int Z, int Rx, int Rz)
 {

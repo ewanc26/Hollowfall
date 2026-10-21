@@ -93,6 +93,10 @@ public sealed class DungeonSite
     public (int X, int Y, int Z) ToWorld(int floor, int localX, int localZ) =>
         (OriginX + localX, FloorY(floor) + 1, OriginZ + localZ);
 
+    /// <summary>The world cell a body standing on a layout cell has its feet in, which is higher on a gap hallway or a tunnel.</summary>
+    public (int X, int Y, int Z) ToWorldStanding(int floor, int localX, int localZ) =>
+        (OriginX + localX, FloorY(floor) + 1 + _floors[floor].HeightAt(localX, localZ), OriginZ + localZ);
+
     /// <summary>The block the dungeon puts at a world position, or null to leave the terrain as it is.</summary>
     public BlockType? BlockAt(int wx, int y, int wz)
     {
@@ -125,7 +129,14 @@ public sealed class DungeonSite
             case CellKind.Rock:
                 return floor.IsWallCell(lx, lz) ? BlockType.StoneBrick : null;
             case CellKind.Floor:
+                // Gap hallways and shaft tunnels stand on a solid platform up to their height.
+                return yo <= floor.HeightAt(lx, lz) ? BlockType.BrickFloor : yo == 6 ? BlockType.StoneBrick : BlockType.Air;
+            case CellKind.Pit:
                 return yo == 0 ? BlockType.BrickFloor : yo == 6 ? BlockType.StoneBrick : BlockType.Air;
+            case CellKind.PitSpikes:
+                return yo == 0 ? BlockType.Spikes : yo == 6 ? BlockType.StoneBrick : BlockType.Air;
+            case CellKind.PitWater:
+                return yo == 0 ? BlockType.BrickFloor : yo == 6 ? BlockType.StoneBrick : yo <= 2 ? BlockType.Water : BlockType.Air;
             case CellKind.Pillar:
                 return yo == 0 ? BlockType.BrickFloor : yo == 6 ? BlockType.StoneBrick : BlockType.Pillar;
             case CellKind.Door:
