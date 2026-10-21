@@ -143,9 +143,11 @@ falling through counts as a floor change. **Effort:** medium.
 
 **Pitch.** A third weapon that trades damage for terrain.
 
-**Rules.** Slow arcing shell (1.4 second cooldown). On impact it removes blocks in a sphere of radius 2.5 (only `Breakable`
-blocks: brick, dirt, sand, stone; never bedrock, plates, gates or door frames) and deals 40 at the centre falling to 10 at the
-edge. Removed blocks leave six physical **debris** voxels that roll for a second and vanish. It can open a wall to a secret,
+**Rules.** Slow arcing shell (1.4 second cooldown). On impact it digs a sphere of radius 2.5 out of the world in 10 cm cubes. Each 1 m block is a 10 x 10 x 10 grid of cubes, so craters have
+partly dug walls; a block is only removed once every cube in it is gone. Only `Breakable` blocks are dug (brick, dirt, sand,
+stone; never bedrock, plates, gates or door frames). It deals 40 at the centre falling to 10 at the edge. Dug holes are drawn
+per cube, but collision still treats a block as solid until it is fully dug, so the player stands on a crater's rim.
+Debris voxels are not built yet. It can open a wall to a secret,
 drop a ceiling slab onto a group, or carve a line of sight for a portal.
 
 **Why it is ours.** It makes the portal gun and the world talk: carve a wall, place a portal on the fresh surface (Rift plates

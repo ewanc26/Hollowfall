@@ -81,7 +81,7 @@ public partial class WorldView : Node3D
         Interlocked.Increment(ref _jobs);
         Task.Run(() =>
         {
-            try { _finished.Enqueue((key, ChunkMesher.Build(key.x, key.z, World.GetBlock))); }
+            try { _finished.Enqueue((key, ChunkMesher.Build(key.x, key.z, World.GetBlock, World.HoleAt))); }
             finally { Interlocked.Decrement(ref _jobs); }
         });
     }

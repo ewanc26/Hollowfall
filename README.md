@@ -57,7 +57,7 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. The game 
 | Teal / violet portal | Q / E | LB / RB |
 | Close portals (sever anything standing in them) | C | D-pad down |
 | Slam (drop straight down from the air; cracks, then breaks, brick floor) | X | D-pad up |
-| Block mortar (arcing shell that digs a sphere of brick, earth and stone) | T | D-pad left |
+| Block mortar (arcing shell that digs a sphere of brick, earth and stone, in 10 cm cubes) | T | D-pad left |
 | Open chests (a key for locked ones), read notes, speak to what you find | F | Left stick click |
 | Respawn | R | Y |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
