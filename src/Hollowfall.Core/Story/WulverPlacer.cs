@@ -1,5 +1,6 @@
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Terrain;
+using Hollowfall.Core.Village;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Core.Story;
@@ -222,6 +223,14 @@ public static class WulverPlacer
             for (int rz = DungeonMap.RegionOfChunk((cz - 8) >> 4); rz <= DungeonMap.RegionOfChunk((cz + 8) >> 4); rz++)
                 if (gen.Dungeons?.GetSite(rx, rz) is { } s && cx >= s.OriginX - 8 && cx < s.OriginX + FloorLayout.Size + 8 && cz >= s.OriginZ - 8 && cz < s.OriginZ + FloorLayout.Size + 8)
                     return false;
+
+        // And out of every village yard, so he never stands among the folk.
+        const int VillageMargin = 8;
+        for (int vx = -3; vx <= 3; vx++)
+            for (int vz = -3; vz <= 3; vz++)
+                foreach (var v in gen.Villages.Overlapping((cx >> 4) + vx, (cz >> 4) + vz))
+                    if (Math.Abs(cx - v.CenterX) <= VillagePlan.Yard + VillageMargin && Math.Abs(cz - v.CenterZ) <= VillagePlan.Yard + VillageMargin)
+                        return false;
         return true;
     }
 }

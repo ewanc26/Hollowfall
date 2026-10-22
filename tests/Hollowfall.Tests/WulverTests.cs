@@ -4,6 +4,7 @@ using Hollowfall.Core.Combat;
 using Hollowfall.Core.Models;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
+using Hollowfall.Core.Village;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Tests;
@@ -22,6 +23,22 @@ public class WulverPlacerTests
         var b = WulverPlacer.Place(new VoxelWorld(seed));
         Assert.Equal(a, b);
     }
+
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void HeNeverStandsInAVillageYard(long seed)
+    {
+        var world = new VoxelWorld(seed);
+        var spot = WulverPlacer.Place(world);
+        Assert.NotNull(spot);
+        var s = spot.Value;
+        for (int cx = FloorDiv(s.BlockX, VillagePlanner.CellSize) - 1; cx <= FloorDiv(s.BlockX, VillagePlanner.CellSize) + 1; cx++)
+            for (int cz = FloorDiv(s.BlockZ, VillagePlanner.CellSize) - 1; cz <= FloorDiv(s.BlockZ, VillagePlanner.CellSize) + 1; cz++)
+                if (world.Generator.Villages.PlanFor(cx, cz) is { } plan)
+                    Assert.False(Math.Abs(s.BlockX - plan.CenterX) <= VillagePlan.Yard && Math.Abs(s.BlockZ - plan.CenterZ) <= VillagePlan.Yard);
+    }
+
+    private static int FloorDiv(int a, int b) => (int)Math.Floor(a / (double)b);
 
     [Theory]
     [MemberData(nameof(Seeds))]
