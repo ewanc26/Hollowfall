@@ -37,20 +37,35 @@ public class BedTests
     [Fact]
     public void EachSurfaceBiomeHasItsOwnBed()
     {
-        var beds = Enum.GetValues<Biome>().Select(b => Beds.For(b, null)).ToList();
+        var beds = Enum.GetValues<Biome>().Select(Beds.Surface).ToList();
         Assert.Equal(Enum.GetValues<Biome>().Length, beds.Distinct().Count());
     }
 
     [Fact]
     public void EachDungeonThemeHasItsOwnBed()
     {
-        var beds = Enum.GetValues<DungeonTheme>().Select(t => Beds.For(Biome.Plains, t)).ToList();
+        var beds = Enum.GetValues<DungeonTheme>().Select(Beds.Dungeon).ToList();
         Assert.Equal(Enum.GetValues<DungeonTheme>().Length, beds.Distinct().Count());
     }
 
     [Fact]
-    public void UndergroundTakesTheDungeonBedOverTheSurface() =>
-        Assert.Equal(Beds.For(Biome.Desert, DungeonTheme.Mossy), Beds.For(Biome.Forest, DungeonTheme.Mossy));
+    public void ASingleBedPlaysAtFullLevel()
+    {
+        var mix = Beds.Automix([Beds.Dungeon(DungeonTheme.Mossy), Beds.Dungeon(DungeonTheme.Mossy)]);
+        Assert.Equal(1.0, mix[SoundId.BedDungeonMossy], 9);
+        Assert.Single(mix);
+    }
+
+    [Fact]
+    public void AnAutomixKeepsItsPowerWhateverTheMakeup()
+    {
+        var mix = Beds.Automix([SoundId.BedForest, SoundId.BedForest, SoundId.BedForest, SoundId.BedRiver]);
+        Assert.Equal(1.0, mix.Values.Sum(g => g * g), 9);
+        Assert.True(mix[SoundId.BedForest] > mix[SoundId.BedRiver]);
+    }
+
+    [Fact]
+    public void AnEmptySurroundingMixesNothing() => Assert.Empty(Beds.Automix([]));
 
     public static IEnumerable<object[]> BedIds() => Beds.All.Select(id => new object[] { id });
 }
