@@ -59,6 +59,7 @@ public static class SoundMap
         SoundId.CatMeow => 0.55,
         SoundId.CreamSip => 0.6,
         SoundId.CharmWear => 0.5,
+        _ when Beds.IsBed(id) => 0.5,
         _ when Footsteps.IsStepSound(id) => 0.4,
         SoundId.PortalCross or SoundId.Hit => 0.6,
         _ => 0.75,
