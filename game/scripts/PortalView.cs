@@ -81,8 +81,16 @@ public partial class PortalView : Node3D
     public PortalView(Portal portal)
     {
         Portal = portal;
-        _colour = portal.Color == PortalColor.Teal ? new Color(0.1f, 0.83f, 0.77f) : new Color(0.64f, 0.29f, 1f);
+        _colour = ColourOf(portal.Color);
     }
+
+    /// <summary>Teal and violet are the placed pair; grey-gold marks the fixed rift openings.</summary>
+    public static Color ColourOf(PortalColor color) => color switch
+    {
+        PortalColor.Teal => new Color(0.1f, 0.83f, 0.77f),
+        PortalColor.Violet => new Color(0.64f, 0.29f, 1f),
+        _ => new Color(0.78f, 0.72f, 0.52f),
+    };
 
     /// <summary>The portal's colour, for UI that refers to it.</summary>
     public Color Colour => _colour;
