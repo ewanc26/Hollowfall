@@ -39,6 +39,12 @@ public enum BlockType : byte
 
     /// <summary>Straw roof of a village cottage (appended: block values never shift).</summary>
     Thatch,
+
+    /// <summary>A rift plate: the only surface a portal sticks to on the deep floors (appended: block values never shift).</summary>
+    RiftPlate,
+
+    /// <summary>Walls of the deep floors: glassy and solid, and no portal sticks to them (appended: block values never shift).</summary>
+    Obsidian,
 }
 
 public static class BlockInfo
@@ -57,8 +63,13 @@ public static class BlockInfo
         b is BlockType.Stone or BlockType.StoneBrick or BlockType.BrickFloor or BlockType.CrackedFloor or BlockType.Dirt
             or BlockType.Grass or BlockType.Sand;
 
-    /// <summary>Surfaces a portal can be placed on: plain solid walls, floors and ceilings.</summary>
-    public static bool Portalable(BlockType b) =>
-        IsSolid(b) && b is not (BlockType.Bedrock or BlockType.Gate or BlockType.SecretDoor or BlockType.Stairs or BlockType.Pillar
-            or BlockType.Leaves or BlockType.Cactus or BlockType.Snow or BlockType.Log or BlockType.Spikes);
+    /// <summary>
+    /// Surfaces a portal can be placed on: plain solid walls, floors and ceilings. On the deep floors only rift plates
+    /// take a portal (<paramref name="platesOnly"/>).
+    /// </summary>
+    public static bool Portalable(BlockType b, bool platesOnly = false) =>
+        platesOnly ? b == BlockType.RiftPlate
+            : b == BlockType.RiftPlate
+              || IsSolid(b) && b is not (BlockType.Bedrock or BlockType.Gate or BlockType.SecretDoor or BlockType.Stairs or BlockType.Pillar
+                  or BlockType.Leaves or BlockType.Cactus or BlockType.Snow or BlockType.Log or BlockType.Spikes or BlockType.Obsidian);
 }
