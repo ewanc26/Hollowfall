@@ -33,21 +33,23 @@ stance never changes whatever the standing says, so the existing monsters stay e
 | Kelpies | Folk | Hostile | no | -50 (Hostile) |
 | Wanderers (the Wulver, the Bean Nighe) | Wanderers | Neutral | no | 0 |
 | Vermin (hares) | Vermin | Neutral | no | 0 |
+| Villagers (the crofters of the glen) | Folk | Neutral | no | 0 |
 
 ### How the factions regard each other
 
 Row looks at column. A = Ally, F = Friendly, N = Neutral, W = Wary, H = Hostile, E = Enemy. Every faction is its own Ally, Ally is
 always mutual, and no pair disagrees by more than three steps (tests check all of it).
 
-| | Delver | Husks | Spitters | Wardens | Brownies | Selkies | Kelpies | Wanderers | Vermin |
-|---|---|---|---|---|---|---|---|---|---|
-| Delver | A | E | E | E | N | N | H | N | N |
-| Husks, Spitters, Wardens, Cù-sìth | E | A | A | A | H | H | N | W | N |
-| Brownies | N | E | E | E | A | F | W | N | F |
-| Selkies | N | E | E | E | F | A | W | F | N |
-| Kelpies | H | N | N | N | W | W | A | N | W |
-| Wanderers | N | H | H | H | N | N | W | A | N |
-| Vermin | N | W | W | W | N | N | W | N | A |
+| | Delver | Husks | Spitters | Wardens | Brownies | Selkies | Kelpies | Wanderers | Vermin | Villagers |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Delver | A | E | E | E | N | N | H | N | N | N |
+| Husks, Spitters, Wardens, Cù-sìth | E | A | A | A | H | H | N | W | N | H |
+| Brownies | N | E | E | E | A | F | W | N | F | F |
+| Selkies | N | E | E | E | F | A | W | F | N | N |
+| Kelpies | H | N | N | N | W | W | A | N | W | N |
+| Wanderers | N | H | H | H | N | N | W | A | N | N |
+| Vermin | N | W | W | W | N | N | W | N | A | N |
+| Villagers | N | E | E | E | F | N | W | N | N | A |
 
 The matrix decides how a witness feels about a victim (see below) and who an allied creature will help against. The Folk fear the Hollow
 and the Hollow hunts them.
@@ -160,6 +162,10 @@ monsters, loot, keys and traps are exactly where they were. `Spawn.Variant` hold
 
 Creatures are spawned when the player first reaches their floor and only when the relationship system is on. They are never part of an
 encounter: a room holding only passive creatures does not lock, and clearing an encounter counts only the aggressive monsters.
+
+**Villages** are on the surface, not in the Hollow. Each village (see `src/Hollowfall.Core/Village/`) has one Villager standing on the road
+outside each cottage's door. They appear once the player comes within two chunks of the village, stay until the run restarts, and are
+never part of an encounter. The Wulver never stands within a village yard (or 8 blocks beyond it).
 
 ## Tuning constants
 

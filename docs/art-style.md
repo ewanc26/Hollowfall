@@ -20,6 +20,7 @@ A model is a set of named parts, each with a pivot at its joint. Geometry is pos
 | Husk, Warden | `torso`, `head`, `arm_l`, `arm_r`, `leg_l`, `leg_r` | head and arms hang from the torso; legs from the model |
 | Spitter | `body`, `mouth`, `tent_0` to `tent_3` | none |
 | Cù-sìth | `body`, `head`, `tail`, `leg_fl`, `leg_fr`, `leg_bl`, `leg_br` | head and tail from the body; legs from the body |
+| Villager | `torso`, `head`, `arm_l`, `arm_r`, `leg_l`, `leg_r` | head and arms from the torso; legs from the model; a glowing lantern on `arm_r` |
 | Revolver | `body`, `cylinder`, `hammer`, `gem` | none |
 | Shotgun | `body`, `gem` | none |
 | Spike trap | `plate`, `spikes` | none |
