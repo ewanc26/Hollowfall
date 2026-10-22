@@ -11,7 +11,8 @@ public readonly record struct VillagerSense(Perception P, Traits T, double Anger
 /// </summary>
 public static class VillagerNet
 {
-    public const int Inputs = 13, Hidden = 8, Outcomes = 4;
+    public const double ClosingRange = 7;
+    public const int Inputs = 14, Hidden = 12, Outcomes = 4;
 
     public static readonly Intent[] Choices = [Intent.Idle, Intent.Flee, Intent.Warn, Intent.Attack];
 
@@ -34,6 +35,7 @@ public static class VillagerNet
             s.Previous == Intent.Flee ? 1 : 0,
             s.Previous == Intent.Warn ? 1 : 0,
             s.Previous == Intent.Attack ? 1 : 0,
+            p.Sees && p.Distance < ClosingRange && p.ApproachSpeed > Brain.FastApproach ? 1 : 0,
         ];
     }
 
