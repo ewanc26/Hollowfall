@@ -38,6 +38,11 @@ public sealed partial class FloorLayout
         var far = walls.MaxBy(c => Math.Abs(c.X - first.X) + Math.Abs(c.Z - first.Z));
         PlateWall(first.X, first.Z, 1, 3);
         PlateWall(far.X, far.Z, 1, 3);
+        if (walls.Count > 2)
+        {
+            var high = walls[^1] == far ? walls[^2] : walls[^1];
+            PlateWall(high.X, high.Z, DungeonSite.FloorSpacing - 3, DungeonSite.FloorSpacing - 2);
+        }
     }
 
     /// <summary>The walls beside a gap hallway. A hallway is three cells wide, so its walls are two cells out either side.</summary>
