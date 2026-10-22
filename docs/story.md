@@ -131,6 +131,12 @@ Everything he says is in one file, `Story/Dialogue/CatDialogue.cs`, run by the s
 
 A strict test keeps his name out of every file in Core and the game scripts except his own dialogue file, and out of every document except this one and `gaeilge.md`.
 
+## The crofters
+
+The folk of each village stand at their doors once you come near (`CombatSim.PopulateVillages`, villagers on the surface floor). Stand beside one, within about 2.5 blocks, and press Interact to talk. Their words are in `Story/Dialogue/VillagerDialogue.cs`, run by the same dialogue engine, with **9 nodes and 20 choices**. Every node offers a way out, and the tree is tested.
+
+How they receive you depends on the Villagers' standing (the reputation tier): the hostile (Hated or Hostile) keep to their step; the trusted (Trusted or Revered) ask you in; everyone else gets the first-visit greeting, or "back again" on later visits. The glen remembers what you asked about and how often you have spoken to it: one flag list and a visit count per seed, saved in `story.json` under `villagers`. Their speech is plain English until a speaker has reviewed it.
+
 ## How it is built
 
 - **Deterministic from the seed.** The dungeon name, the last Warden, the opener and boss lines, each floor's card and note thread, and where the notes lie are all pure functions of the seed (and the floor count), built from `SeededRandom` only.
