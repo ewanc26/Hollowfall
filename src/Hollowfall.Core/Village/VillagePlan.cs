@@ -56,6 +56,9 @@ public sealed record VillagePlan(int CenterX, int CenterZ, int Ground, IReadOnly
 
     public bool IsRoad(int x, int z) => Roads.Contains((x, z));
 
+    /// <summary>Where each cottage's folk stand: on the road outside their door, one per house.</summary>
+    public IEnumerable<(int X, int Z)> Residents => Houses.Select(h => h.Doorstep);
+
     public House? HouseAt(int x, int z)
     {
         foreach (var h in Houses)
