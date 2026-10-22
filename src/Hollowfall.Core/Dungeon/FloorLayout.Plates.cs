@@ -16,31 +16,30 @@ public sealed partial class FloorLayout
         foreach (var gap in _gaps) PlateGap(gap);
     }
 
-    /// <summary>Two plateable walls on the room's edge, as far apart as the edge allows, so a portal in one crosses the room to the other.</summary>
+    /// <summary>Two plateable walls touching the room's own floor, as far apart as they can be, so a portal in one crosses the room to the other.</summary>
     private void PlateRoom(Room room)
     {
         var b = room.Bounds;
         if (b.W < 5 || b.H < 5) return;
-        var edge = new List<(int X, int Z)>();
-        for (int x = b.X; x < b.Right; x++)
-        {
-            edge.Add((x, b.Z - 1));
-            edge.Add((x, b.Bottom));
-        }
+        var touching = new List<(int X, int Z)>();
         for (int z = b.Z; z < b.Bottom; z++)
-        {
-            edge.Add((b.X - 1, z));
-            edge.Add((b.Right, z));
-        }
-        var walls = Walls(edge);
-        if (walls.Count < 2) return;
-        var first = walls[0];
-        var far = walls.MaxBy(c => Math.Abs(c.X - first.X) + Math.Abs(c.Z - first.Z));
+            for (int x = b.X; x < b.Right; x++)
+            {
+                if (!room.Contains(x, z)) continue;
+                foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+                {
+                    var c = (X: x + dx, Z: z + dz);
+                    if (CellAt(c.X, c.Z) == CellKind.Rock && IsWallCell(c.X, c.Z) && !touching.Contains(c)) touching.Add(c);
+                }
+            }
+        if (touching.Count < 2) return;
+        var first = touching[0];
+        var far = touching.MaxBy(c => Math.Abs(c.X - first.X) + Math.Abs(c.Z - first.Z));
         PlateWall(first.X, first.Z, 1, 3);
         PlateWall(far.X, far.Z, 1, 3);
-        if (walls.Count > 2)
+        if (touching.Count > 2)
         {
-            var high = walls[^1] == far ? walls[^2] : walls[^1];
+            var high = touching.Where(c => c != far && c != first).MaxBy(c => Math.Abs(c.X - first.X) + Math.Abs(c.Z - first.Z));
             PlateWall(high.X, high.Z, DungeonSite.FloorSpacing - 3, DungeonSite.FloorSpacing - 2);
         }
     }
