@@ -91,6 +91,8 @@ twenty steps away on foot and two through a door, and enemy shortcuts (already i
 **Tests:** layouts with rift links are still fully connected without them, links join distant rooms, replays stay
 deterministic. **Effort:** medium.
 
+**Status: built** (`FloorLayout.Doors.cs`, `DungeonSite.RiftPassages`, `PortalSystem.SetFixed`/`Rifts`, `CombatView` rift views). Doors are not in the room graph links, so the boss route and reachability never depend on them; the Sever cut is applied on the close action only when it takes a placed portal. **Tests:** `RiftDoorTests`, and the rift cases in `SeverSimTests`.
+
 ### 2.4a Gaps (built)
 
 The generated half of 2.4: rooms are joined by corridors, portal gaps (hallways across a pit) and rare shaft gaps, and every room is guaranteed a gap. See `docs/game-loop.md` (Room links and gaps), `LinkMix`, `GapCrossing` and `DungeonReach`.
