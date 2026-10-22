@@ -64,7 +64,7 @@ thresholds, the window expiring, the damage formula, no self-damage, speed loss.
 
 **Rules.** From floor 2, walls become `Obsidian` (not portalable). The layout places a pair of `RiftPlate` blocks on the edge of each
 arena (two plateable walls as far apart as the room allows) and a pair beside every gap hallway and pit, so each gap can be
-crossed. Plates on a high wall or ceiling are not placed yet. `BlockInfo.Portalable` becomes depth-aware:
+crossed, and one plate high on a wall of each arena. `BlockInfo.Portalable` becomes depth-aware:
 floor 0 and 1 allow everything (so the mechanic is learned freely), later floors allow only plates. Plates survive carving
 (feature 3.3).
 
