@@ -38,6 +38,13 @@ public sealed class CombatSim
     public const double HollowfallWindowSeconds = 8;
     public const double ArrivalDelaySeconds = 0.5;
 
+    /// <summary>The Warden's gate is open for this long, then shut for as long again, from phase two on.</summary>
+    public const double WardenGateSeconds = 6;
+    public const double WardenPhaseTwoAt = 0.6;
+    public const double WardenPhaseThreeAt = 0.3;
+    public const double PortalSwapSeconds = 8;
+    private const double WardenGateRetrySeconds = 0.5;
+
     private sealed class Encounter
     {
         public int Floor;
@@ -72,6 +79,9 @@ public sealed class CombatSim
     private int _pendingFall = -1;
     private double _arrivalAt = -1;
     private bool _falling;
+    private int _wardenPhase;
+    private double _gateTimer;
+    private double _swapTimer;
     private readonly List<Encounter> _encounters = [];
     private readonly FloorProgress[] _floors;
     private readonly List<Enemy> _enemies = [];
@@ -299,6 +309,7 @@ public sealed class CombatSim
         if (actions.FireMortar) FireMortar(view);
         if (actions.UseCream) UseCream();
 
+        UpdateWarden(dt);
         foreach (var e in _enemies.ToList()) UpdateEnemy(e, dt, view);
         UpdateProjectiles(dt, view);
         UpdateShells(dt, view);
@@ -608,6 +619,9 @@ public sealed class CombatSim
         _parryWindow = _parryCooldown = 0;
         _meteor.Reset();
         _collapse = null;
+        _wardenPhase = 0;
+        _gateTimer = 0;
+        _swapTimer = 0;
         _pendingFall = -1;
         _falling = false;
         _arrivalAt = -1;
@@ -734,6 +748,11 @@ public sealed class CombatSim
 
     private void FirePortal(PortalColor color, PlayerView view)
     {
+        if (Portals.WardenLive)
+        {
+            _events.Add(new PortalPlaced(color, false, view.Eye, new Vec3(0, 0, 0), new Vec3(0, 1, 0), PlaceFailure.Disabled));
+            return;
+        }
         var replaced = Portals.Get(color);
         int floor = _site.FloorIndexAt(view.Feet.X, view.Feet.Y + 0.1, view.Feet.Z);
         var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks, platesOnly: floor >= DungeonSite.RiftPlateFloor);
@@ -1232,21 +1251,93 @@ public sealed class CombatSim
             var aim = view.Eye + new Vec3(0, -0.4, 0);
             for (int i = 0; i < spec.Volley; i++)
             {
+                double spread = i - (spec.Volley - 1) / 2.0;
+                var from = origin;
                 var dir = (aim - origin).Normalized();
-                if (spec.Volley > 1)
+                var through = spec.Kind == EnemyKind.Warden ? LaunchThroughWarden(origin, spread, view.Eye) : null;
+                if (through is { } launch)
                 {
-                    double yaw = (i - (spec.Volley - 1) / 2.0) * 0.22;
+                    (from, dir) = launch;
+                }
+                else if (spec.Volley > 1)
+                {
+                    double yaw = spread * 0.22;
                     double c = Math.Cos(yaw), s = Math.Sin(yaw);
                     dir = new Vec3(dir.X * c - dir.Z * s, dir.Y, dir.X * s + dir.Z * c).Normalized();
                 }
-                var p = new Projectile(_nextId++, origin, dir * ProjectileSpeed, spec.ProjectileDamage);
+                var p = new Projectile(_nextId++, from, dir * ProjectileSpeed, spec.ProjectileDamage);
                 _projectiles.Add(p);
-                _events.Add(new ProjectileFired(p.Id, origin));
+                _events.Add(new ProjectileFired(p.Id, from));
             }
         }
 
         e.State = EnemyState.Recover;
         e.Timer = spec.CooldownSeconds;
+    }
+
+    private (Vec3 Start, Vec3 Direction)? LaunchThroughWarden(Vec3 origin, double spread, Vec3 eye)
+    {
+        foreach (var (entry, start, direction) in Portals.WardenLaunches(eye, spread))
+        {
+            if (RayCast.HasLineOfSight(Blocks, origin, entry.Frame.Center + entry.Frame.Normal * 0.5)) return (start, direction);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Opens the Warden's pair when phase two starts and every <see cref="WardenGateSeconds"/> after, shutting it in
+    /// between. Phase three swaps the player's two portals on a timer.
+    /// </summary>
+    private void UpdateWarden(double dt)
+    {
+        var warden = _enemies.FirstOrDefault(e => e.Kind == EnemyKind.Warden && !e.Dead);
+        if (warden == null)
+        {
+            Portals.CloseWarden();
+            _wardenPhase = 0;
+            _gateTimer = 0;
+            return;
+        }
+
+        double fraction = warden.Health / warden.Spec.Health;
+        int phase = fraction <= WardenPhaseThreeAt ? 3 : fraction <= WardenPhaseTwoAt ? 2 : 1;
+        if (phase != _wardenPhase)
+        {
+            _wardenPhase = phase;
+            if (phase == 3) _swapTimer = PortalSwapSeconds;
+        }
+        if (phase < 2) return;
+
+        _gateTimer -= dt;
+        if (_gateTimer <= 0)
+        {
+            if (Portals.WardenLive)
+            {
+                Portals.CloseWarden();
+                _gateTimer = WardenGateSeconds;
+            }
+            else
+            {
+                _gateTimer = OpenWardenGate(warden) ? WardenGateSeconds : WardenGateRetrySeconds;
+            }
+        }
+
+        if (phase == 3)
+        {
+            _swapTimer -= dt;
+            if (_swapTimer <= 0)
+            {
+                Portals.SwapPlaced();
+                _swapTimer = PortalSwapSeconds;
+            }
+        }
+    }
+
+    private bool OpenWardenGate(Enemy warden)
+    {
+        var eye = warden.Feet + new Vec3(0, 1.4, 0);
+        var aims = new[] { (eye, new Vec3(1, 0, 0)), (eye, new Vec3(-1, 0, 0)), (eye, new Vec3(0, 0, 1)), (eye, new Vec3(0, 0, -1)) };
+        return Portals.OpenWarden(aims, b => BlockInfo.IsSolid(b) && b is not (BlockType.Bedrock or BlockType.Gate or BlockType.SecretDoor or BlockType.Stairs), Blocks);
     }
 
     private void HurtPlayer(double damage)
