@@ -24,6 +24,7 @@ public partial class CombatView : Node3D
     private readonly HashSet<(int, int, int)> _pools = [];
     private Vector3 _playerPosition;
     private readonly Dictionary<PortalColor, PortalView> _portals = [];
+    private readonly Dictionary<Portal, PortalView> _riftViews = [];
     private readonly List<Tracer> _tracers = [];
     private WorldView _world = null!;
     private EffectsView _effects = null!;
@@ -57,6 +58,7 @@ public partial class CombatView : Node3D
         foreach (var e in events) Handle(e);
         foreach (var (cx, cz) in Sim.TakeDirtyChunks()) _world.MarkDirty(cx, cz);
 
+        RefreshRifts();
         SyncEnemies(delta);
         SyncProjectiles(delta);
     }
@@ -85,6 +87,8 @@ public partial class CombatView : Node3D
         var rects = new List<Rect2>();
         foreach (var pv in _portals.Values)
             if (Sim.Portals.Linked && pv.ScreenRect(viewer) is { } rect) rects.Add(rect);
+        foreach (var pv in _riftViews.Values)
+            if (pv.ScreenRect(viewer) is { } rect) rects.Add(rect);
         return rects;
     }
 
@@ -92,6 +96,7 @@ public partial class CombatView : Node3D
     public void UpdatePortalViews(Camera3D viewer)
     {
         foreach (var pv in _portals.Values) pv.UpdateView(Sim.Portals.Other(pv.Portal), viewer);
+        foreach (var pv in _riftViews.Values) pv.UpdateView(Sim.Portals.Other(pv.Portal), viewer);
     }
 
     private void Handle(CombatEvent e)
@@ -134,6 +139,24 @@ public partial class CombatView : Node3D
             var view = new PortalView(portal) { Name = $"Portal_{color}" };
             AddChild(view);
             _portals[color] = view;
+        }
+    }
+
+    /// <summary>Makes a view for each rift opening on the current floor and drops the ones of floors left behind.</summary>
+    private void RefreshRifts()
+    {
+        var current = Sim.Portals.Rifts.ToHashSet();
+        foreach (var portal in _riftViews.Keys.Where(p => !current.Contains(p)).ToList())
+        {
+            _riftViews[portal].QueueFree();
+            _riftViews.Remove(portal);
+        }
+        foreach (var portal in current)
+        {
+            if (_riftViews.ContainsKey(portal)) continue;
+            var view = new PortalView(portal) { Name = "Rift" };
+            AddChild(view);
+            _riftViews[portal] = view;
         }
     }
 

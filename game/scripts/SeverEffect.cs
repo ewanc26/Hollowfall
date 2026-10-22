@@ -41,7 +41,7 @@ public partial class SeverEffect : Node3D
         _portal = portal;
     }
 
-    public static Color ColourOf(PortalColor c) => c == PortalColor.Teal ? new Color(0.1f, 0.83f, 0.77f) : new Color(0.64f, 0.29f, 1f);
+    public static Color ColourOf(PortalColor c) => PortalView.ColourOf(c);
 
     /// <summary>The portal closing: a slash across the opening, then the opening snapping shut.</summary>
     public static SeverEffect ForPortal(PortalClosed e)
