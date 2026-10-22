@@ -711,17 +711,26 @@ public sealed class CombatSim
     }
 
     /// <summary>Closes both portals, severing whatever stands in either opening.</summary>
-    public bool ClosePortals() => ClosePortal(PortalColor.Teal) | ClosePortal(PortalColor.Violet);
+    /// <summary>Closes both portals. Rift openings cannot be closed, but a close that takes a placed portal also cuts whoever stands in them.</summary>
+    public bool ClosePortals()
+    {
+        bool closed = ClosePortal(PortalColor.Teal) | ClosePortal(PortalColor.Violet);
+        if (!closed) return false;
+        foreach (var rift in Portals.Rifts) SeverRules.Apply(rift, _enemies, Style, _events.Add, KillSevered);
+        return true;
+    }
 
     private void Close(Portal old)
     {
         _events.Add(new PortalClosed(old.Color, old.Frame.Center, old.Frame.Normal, old.Frame.Up));
-        SeverRules.Apply(old, _enemies, Style, _events.Add, e =>
-        {
-            if (!IsCreature(e)) _floors[e.Floor].Kills++;
-            Relations?.PlayerHurt(e, e.Spec.Health, true, _enemies, Time);
-            OnDeath(e);
-        });
+        SeverRules.Apply(old, _enemies, Style, _events.Add, KillSevered);
+    }
+
+    private void KillSevered(Enemy e)
+    {
+        if (!IsCreature(e)) _floors[e.Floor].Kills++;
+        Relations?.PlayerHurt(e, e.Spec.Health, true, _enemies, Time);
+        OnDeath(e);
     }
 
     private Vec3 Spread(Vec3 forward, double radians)
