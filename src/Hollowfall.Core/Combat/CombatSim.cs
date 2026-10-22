@@ -67,6 +67,9 @@ public sealed class CombatSim
     private readonly List<Encounter> _encounters = [];
     private readonly FloorProgress[] _floors;
     private readonly List<Enemy> _enemies = [];
+    private const int SurfaceFloor = -1, VillageReach = 2;
+    private readonly HashSet<(int X, int Z)> _villagesPopulated = [];
+    private (int X, int Z)? _villageChunk;
     private readonly List<Projectile> _projectiles = [];
     private readonly List<MortarShell> _shells = [];
     private readonly List<CombatEvent> _events = [];
@@ -235,6 +238,7 @@ public sealed class CombatSim
     public void Tick(double dt, PlayerView view, PlayerActions actions)
     {
         Time += dt;
+        PopulateVillages(view);
         Style.Tick(dt);
         Style.NotifyMoving(view.Airborne || view.Sliding);
         Vitals.Tick(dt, Style.HardDamageSpeed);
@@ -282,6 +286,23 @@ public sealed class CombatSim
         UpdateShells(dt, view);
         CheckEncounterClears();
         _enemies.RemoveAll(e => e.Dead);
+    }
+
+    /// <summary>The folk of each village stand at their doors once the player comes near it; they stay until the run restarts.</summary>
+    private void PopulateVillages(PlayerView view)
+    {
+        if (Relations == null) return;
+        int cx = (int)Math.Floor(view.Feet.X / Chunk.Size), cz = (int)Math.Floor(view.Feet.Z / Chunk.Size);
+        if (_villageChunk == (cx, cz)) return;
+        _villageChunk = (cx, cz);
+        for (int dx = -VillageReach; dx <= VillageReach; dx++)
+            for (int dz = -VillageReach; dz <= VillageReach; dz++)
+                foreach (var plan in _world.Generator.Villages.Overlapping(cx + dx, cz + dz))
+                {
+                    if (!_villagesPopulated.Add((plan.CenterX, plan.CenterZ))) continue;
+                    foreach (var (x, z) in plan.Residents)
+                        SpawnEnemy(EnemyKind.Villager, new Vec3(x + 0.5, plan.Ground + 1, z + 0.5), SurfaceFloor);
+                }
     }
 
     /// <summary>Adds an enemy outside any encounter, for tests, debugging and scripted fights.</summary>
@@ -528,6 +549,8 @@ public sealed class CombatSim
             enc.Enemies.Clear();
         }
         _enemies.Clear();
+        _villagesPopulated.Clear();
+        _villageChunk = null;
         _projectiles.Clear();
         _shells.Clear();
         if (Relations != null)
@@ -1124,6 +1147,7 @@ public sealed class CombatSim
     /// <summary>Enemies stop at the edge of a pit instead of walking into it: the part of a step that would take them over is dropped.</summary>
     private (double Dx, double Dz) KeepOffPits(Enemy e, double dx, double dz)
     {
+        if (e.Floor == SurfaceFloor) return (dx, dz);
         var layout = _site.Floors[e.Floor];
         double reach = e.Spec.HalfWidth + 0.4;
         CellKind At(double x, double z) => layout.CellAt((int)Math.Floor(x) - _site.OriginX, (int)Math.Floor(z) - _site.OriginZ);
