@@ -40,24 +40,36 @@ public static class Beds
 
     public static bool IsBed(SoundId id) => Scenes.ContainsKey(id);
 
-    /// <summary>The bed for the place the player is standing in: the dungeon theme underground, otherwise the surface biome.</summary>
-    public static SoundId For(Biome biome, DungeonTheme? dungeon) => dungeon switch
+    /// <summary>The bed of a surface biome.</summary>
+    public static SoundId Surface(Biome biome) => biome switch
+    {
+        Biome.Ocean => SoundId.BedOcean,
+        Biome.Beach => SoundId.BedBeach,
+        Biome.Plains => SoundId.BedPlains,
+        Biome.Forest => SoundId.BedForest,
+        Biome.Desert => SoundId.BedDesert,
+        Biome.Mountains => SoundId.BedMountains,
+        Biome.River => SoundId.BedRiver,
+        _ => throw new ArgumentOutOfRangeException(nameof(biome)),
+    };
+
+    /// <summary>The bed of a dungeon floor's theme.</summary>
+    public static SoundId Dungeon(DungeonTheme theme) => theme switch
     {
         DungeonTheme.Plain => SoundId.BedDungeonPlain,
         DungeonTheme.Mossy => SoundId.BedDungeonMossy,
         DungeonTheme.Ashen => SoundId.BedDungeonAshen,
-        _ => biome switch
-        {
-            Biome.Ocean => SoundId.BedOcean,
-            Biome.Beach => SoundId.BedBeach,
-            Biome.Plains => SoundId.BedPlains,
-            Biome.Forest => SoundId.BedForest,
-            Biome.Desert => SoundId.BedDesert,
-            Biome.Mountains => SoundId.BedMountains,
-            Biome.River => SoundId.BedRiver,
-            _ => throw new ArgumentOutOfRangeException(nameof(biome)),
-        },
+        _ => throw new ArgumentOutOfRangeException(nameof(theme)),
     };
+
+    /// <summary>
+    /// The levels of the beds that play together: each bed's share of the places around the listener, as an equal-power gain
+    /// (the squares of the gains sum to one, so the mix keeps its loudness as its makeup changes).
+    /// </summary>
+    public static IReadOnlyDictionary<SoundId, double> Automix(IReadOnlyList<SoundId> around) =>
+        around.Count == 0
+            ? new Dictionary<SoundId, double>()
+            : around.GroupBy(id => id).ToDictionary(g => g.Key, g => Math.Sqrt((double)g.Count() / around.Count));
 
     public static float[] Render(SoundId id)
     {

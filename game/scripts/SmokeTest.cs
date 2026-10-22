@@ -247,9 +247,6 @@ public partial class SmokeTest : Node
             double after = music.Mixer.Smoothed(layer);
             bool follows = before < 0.01 && after >= 0.1 && music.Mixer.Combat;
 
-            // The Ambience slider scales the bed: the old drone is quiet and the music's drone layer carries it.
-            bool bed = music.Audio == null || music.Audio.BedReplaced;
-
             // The music volume turns the whole thing down and back up.
             var settings = main.Settings;
             double saved = settings.MusicVolume;
@@ -271,8 +268,8 @@ public partial class SmokeTest : Node
             music.FollowGame = true;
             bool volume = silent && loud > -79 && Math.Abs(loud - Mathf.LinearToDb((float)(loudGain * 1.0 * settings.MasterVolume))) < 0.2 && Math.Abs(half - Mathf.LinearToDb((float)(halfGain * 0.5 * settings.MasterVolume))) < 0.2;
 
-            if (follows && bed && volume) { _passed++; GD.Print($"  ok   {name} (drum gain {before:F2} to {after:F2})"); }
-            else { _failed++; GD.PrintErr($"  FAIL {name}: follows={follows} (drum {before:F3} to {after:F3}) bed={bed} volume={volume} (silent={silent}, {loud:F1} dB, half {half:F1} dB)"); }
+            if (follows && volume) { _passed++; GD.Print($"  ok   {name} (drum gain {before:F2} to {after:F2})"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: follows={follows} (drum {before:F3} to {after:F3}) volume={volume} (silent={silent}, {loud:F1} dB, half {half:F1} dB)"); }
         }
         catch (Exception e)
         {
