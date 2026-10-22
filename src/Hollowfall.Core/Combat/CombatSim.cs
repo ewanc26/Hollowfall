@@ -36,6 +36,7 @@ public sealed class CombatSim
     public const double SlamShockwaveDamage = 30;
     public const double AirSlamHeight = 8;
     public const double HollowfallWindowSeconds = 8;
+    public const double ArrivalDelaySeconds = 0.5;
 
     private sealed class Encounter
     {
@@ -55,6 +56,7 @@ public sealed class CombatSim
         public double StartStyle;
         public int Kills;
         public int Restarts;
+        public double Paused;
         public int Enemies;
         public FloorTargets Targets;
     }
@@ -64,6 +66,12 @@ public sealed class CombatSim
     private readonly SeededRandom _rng;
     private readonly SlamBreach _breach = new();
     private double _hollowfallUntil = -1;
+    private CollapseSequence? _collapse;
+    private readonly HashSet<int> _collapsedFloors = [];
+    private readonly List<(int X, int Y, int Z)> _collapsedCells = [];
+    private int _pendingFall = -1;
+    private double _arrivalAt = -1;
+    private bool _falling;
     private readonly List<Encounter> _encounters = [];
     private readonly FloorProgress[] _floors;
     private readonly List<Enemy> _enemies = [];
@@ -248,7 +256,16 @@ public sealed class CombatSim
 
         if (Vitals.Dead) return;
 
+        _falling = _pendingFall >= 0 && view.Airborne && view.Feet.Y < DungeonSite.FloorY(_pendingFall) + 0.9
+            && (CurrentFloor == _pendingFall || CurrentFloor == _pendingFall + 1);
+        if (_falling) _floors[_pendingFall].Paused += dt;
         TrackFloor(view);
+        if (_pendingFall >= 0 && CurrentFloor == _pendingFall + 1 && !view.Airborne)
+        {
+            _pendingFall = -1;
+            _arrivalAt = Time + ArrivalDelaySeconds;
+        }
+        if (_collapse != null && _collapse.Tick(dt, _world, (x, y, z) => MarkEdited(x, z, 0))) _collapse = null;
         TrackPits(dt, view);
         if (CurrentFloor >= 0) Map.Reveal(CurrentFloor, view.Feet.X, view.Feet.Z);
         _items.Tick(dt, view, actions.Interact);
@@ -378,8 +395,8 @@ public sealed class CombatSim
         if (p.Completed || !p.Started) return;
         p.Completed = true;
         p.FinishTime = Time;
-        var result = FloorRanking.Score(p.Targets, Time - p.StartTime, p.Kills, Style.TotalScore - p.StartStyle, p.Restarts);
-        _events.Add(new FloorCompleted(floor, result, Time - p.StartTime));
+        var result = FloorRanking.Score(p.Targets, Time - p.StartTime - p.Paused, p.Kills, Style.TotalScore - p.StartStyle, p.Restarts);
+        _events.Add(new FloorCompleted(floor, result, Time - p.StartTime - p.Paused));
     }
 
     // ---- pits ---------------------------------------------------------------------------------
@@ -482,7 +499,7 @@ public sealed class CombatSim
         var layout = _site.Floors[CurrentFloor];
         int lx = (int)Math.Floor(view.Feet.X) - _site.OriginX, lz = (int)Math.Floor(view.Feet.Z) - _site.OriginZ;
         int room = layout.RoomIdAt(lx, lz);
-        if (room < 0) return;
+        if (room < 0 || Time < _arrivalAt) return;
 
         foreach (var enc in _encounters)
             if (enc.Floor == CurrentFloor && enc.RoomId == room && !enc.Triggered && !enc.Cleared)
@@ -534,7 +551,22 @@ public sealed class CombatSim
 
             // Killing the boss on the last floor ends the dungeon.
             if (enc.Floor == _site.FloorCount - 1 && _site.Floors[enc.Floor].BossRoom?.Id == enc.RoomId) CompleteFloor(enc.Floor);
+
+            bool bossCleared = _site.Floors[enc.Floor].BossRoom?.Id == enc.RoomId;
+            if (enc.Floor < _site.FloorCount - 1 && !_collapsedFloors.Contains(enc.Floor)
+                && (bossCleared || _encounters.Where(e => e.Floor == enc.Floor).All(e => e.Cleared)))
+                StartCollapse(enc);
         }
+    }
+
+    /// <summary>The floor under a cleared boss room or last arena gives way (docs/features.md 3.3).</summary>
+    private void StartCollapse(Encounter enc)
+    {
+        var room = _site.Floors[enc.Floor].Rooms.First(r => r.Id == enc.RoomId);
+        _collapse = CollapseSequence.Plan(_world, enc.Floor, _site.OriginX + room.CenterX, _site.OriginZ + room.CenterZ);
+        _collapsedFloors.Add(enc.Floor);
+        _collapsedCells.AddRange(_collapse.Cells);
+        _pendingFall = enc.Floor;
     }
 
     /// <summary>
@@ -575,6 +607,16 @@ public sealed class CombatSim
         _pitGrace = 0;
         _parryWindow = _parryCooldown = 0;
         _meteor.Reset();
+        _collapse = null;
+        _pendingFall = -1;
+        _falling = false;
+        _arrivalAt = -1;
+        foreach (var (x, y, z) in _collapsedCells)
+        {
+            _world.SetBlock(x, y, z, _site.BlockAt(x, y, z) ?? BlockType.Air);
+            MarkEdited(x, z, 0);
+        }
+        _collapsedCells.Clear();
     }
 
     // ---- weapons ----------------------------------------------------------------------------
@@ -989,6 +1031,7 @@ public sealed class CombatSim
     {
         // A Bean Nighe who can no longer wring out her cloth warns of nothing.
         if (Relations != null && e.Mind is { Species.Kind: EnemyKind.BeanNighe }) Relations.OmenArmed = false;
+        if (_falling) Style.Award(StyleBonus.Freefall);
     }
 
     /// <summary>Interact beside a Brownie or villager while its folk think well of you: it repays you once with a warm hearth or a jar of cream.</summary>

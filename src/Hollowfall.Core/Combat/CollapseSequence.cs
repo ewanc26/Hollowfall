@@ -48,6 +48,9 @@ public sealed class CollapseSequence
 
     public int RingsFired => _fired;
 
+    /// <summary>Every cell planned, in ring order.</summary>
+    public IEnumerable<(int X, int Y, int Z)> Cells => _rings.SelectMany(r => r);
+
     /// <summary>Advances the collapse by <paramref name="dt"/> seconds. Returns true once every ring has fallen away.</summary>
     public bool Tick(double dt, VoxelWorld world, Action<int, int, int>? edited = null)
     {
