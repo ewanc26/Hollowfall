@@ -24,7 +24,7 @@ public sealed class RunReplay
     /// The simulation rules the run was recorded under. Bump this whenever <c>CombatSim</c> behaviour changes in a way that alters a
     /// replay's outcome; older files still load (a ghost only needs the recorded positions) but are flagged as unverifiable.
     /// </summary>
-    public const int SimVersion = 7;
+    public const int SimVersion = 8;
 
     public const int TicksPerSecond = 60;
     public const double Dt = 1.0 / TicksPerSecond;
