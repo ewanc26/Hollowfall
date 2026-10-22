@@ -53,6 +53,25 @@ public class RiftPlateTests
     }
 
     [Fact]
+    public void AnArenaWithRoomForItHasAPlateHighOnAWall()
+    {
+        int high = 0, arenas = 0;
+        foreach (var site in DeepSites())
+            for (int k = DungeonSite.RiftPlateFloor; k < site.Floors.Count; k++)
+                foreach (var room in site.Floors[k].Rooms)
+                {
+                    var b = room.Bounds;
+                    if (b.W < 5 || b.H < 5) continue;
+                    arenas++;
+                    var edge = Enumerable.Range(b.X - 1, b.W + 2).SelectMany(x => new[] { (x, b.Z - 1), (x, b.Bottom) })
+                        .Concat(Enumerable.Range(b.Z, b.H).SelectMany(z => new[] { (b.X - 1, z), (b.Right, z) }));
+                    if (edge.Any(c => Plated(site, k, c.Item1, c.Item2, DungeonSite.FloorSpacing - 3) || Plated(site, k, c.Item1, c.Item2, DungeonSite.FloorSpacing - 2)))
+                        high++;
+                }
+        Assert.True(high * 2 > arenas, $"only {high} of {arenas} arenas have a high plate");
+    }
+
+    [Fact]
     public void EveryGapHallwayHasPlatesBesideIt()
     {
         foreach (var site in DeepSites())
