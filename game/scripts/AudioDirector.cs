@@ -175,7 +175,7 @@ public partial class AudioDirector : Node
     /// </summary>
     public void SetLoopLevel(SoundId id, double level)
     {
-        if (!IsInsideTree() || !Synth.Loops(id) || id == SoundId.Ambience) return;
+        if (!IsInsideTree() || !Synth.Loops(id)) return;
         if (!_loops.TryGetValue(id, out var loop))
         {
             var player = new AudioStreamPlayer { Stream = _streams[id], VolumeDb = -80 };
