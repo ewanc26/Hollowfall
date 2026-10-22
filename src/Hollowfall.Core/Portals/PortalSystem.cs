@@ -28,15 +28,51 @@ public sealed class PortalSystem
     /// <summary>Slowest a body may leave a portal, so stepping in gently never leaves it stuck inside.</summary>
     public const double MinExitSpeed = 3.0;
 
+    private readonly List<(Portal A, Portal B)> _fixed = [];
+
     public Portal? Teal { get; private set; }
     public Portal? Violet { get; private set; }
 
     /// <summary>Both portals exist, so they work.</summary>
     public bool Linked => Teal != null && Violet != null;
 
+    /// <summary>Every open face a body or ray can pass through: the placed pair once linked, then the fixed rift openings.</summary>
+    public IEnumerable<Portal> Openings
+    {
+        get
+        {
+            if (Linked)
+            {
+                yield return Teal!;
+                yield return Violet!;
+            }
+            foreach (var (a, b) in _fixed)
+            {
+                yield return a;
+                yield return b;
+            }
+        }
+    }
+
     public Portal? Get(PortalColor color) => color == PortalColor.Teal ? Teal : Violet;
 
-    public Portal? Other(Portal p) => p.Color == PortalColor.Teal ? Violet : Teal;
+    public Portal? Other(Portal p)
+    {
+        if (p.Color != PortalColor.Rift) return p.Color == PortalColor.Teal ? Violet : Teal;
+        foreach (var (a, b) in _fixed)
+        {
+            if (a == p) return b;
+            if (b == p) return a;
+        }
+        return null;
+    }
+
+    /// <summary>Replaces the rift openings for the floor the body is on. They survive <see cref="Clear"/>.</summary>
+    public void SetFixed(IEnumerable<(Portal A, Portal B)> pairs)
+    {
+        _fixed.Clear();
+        _fixed.AddRange(pairs);
+    }
 
     public void Clear()
     {
@@ -113,6 +149,10 @@ public sealed class PortalSystem
         return true;
     }
 
+    /// <summary>A fixed opening on a wall: its two blocks are at <paramref name="wx"/>, <paramref name="wy"/> and one above, facing <paramref name="normal"/>.</summary>
+    public static Portal Fixed(int wx, int wy, int wz, (int X, int Y, int Z) normal) =>
+        Build(PortalColor.Rift, (wx, wy, wz), (wx, wy + 1, wz), normal, (0, 1, 0), new Vec3(normal.X, normal.Y, normal.Z));
+
     private static Portal Build(PortalColor color, (int X, int Y, int Z) c0, (int X, int Y, int Z) c1, (int X, int Y, int Z) n,
         (int X, int Y, int Z) along, Vec3 normal)
     {
@@ -130,10 +170,9 @@ public sealed class PortalSystem
     /// <summary>The world as a walking body should see it: the blocks behind a portal's opening are empty, so you can step in.</summary>
     public Func<int, int, int, BlockType> WithHoles(Func<int, int, int, BlockType> blockAt)
     {
-        if (!Linked) return blockAt;
-        var teal = Teal!;
-        var violet = Violet!;
-        return (x, y, z) => teal.IsHole(x, y, z) || violet.IsHole(x, y, z) ? BlockType.Air : blockAt(x, y, z);
+        var openings = Openings.ToArray();
+        if (openings.Length == 0) return blockAt;
+        return (x, y, z) => openings.Any(p => p.IsHole(x, y, z)) ? BlockType.Air : blockAt(x, y, z);
     }
 
     /// <summary>
@@ -143,8 +182,7 @@ public sealed class PortalSystem
     /// </summary>
     public Crossing? TryCross(Vec3 previous, Vec3 current, Vec3 velocity, Vec3 forward)
     {
-        if (!Linked) return null;
-        foreach (var entered in new[] { Teal!, Violet! })
+        foreach (var entered in Openings.ToArray())
         {
             var exited = Other(entered)!;
             var (_, _, c0) = entered.Frame.ToLocal(previous);
@@ -185,17 +223,16 @@ public sealed class PortalSystem
             Portal? hitPortal = null;
             double hitAt = wall;
 
-            if (Linked)
-                foreach (var p in new[] { Teal!, Violet! })
-                {
-                    var (_, _, c0) = p.Frame.ToLocal(o);
-                    double facing = d.Dot(p.Frame.Normal);
-                    if (c0 <= 0 || facing >= 0) continue;
-                    double t = c0 / -facing;
-                    if (t >= hitAt || !p.Covers(o + d * t)) continue;
-                    hitAt = t;
-                    hitPortal = p;
-                }
+            foreach (var p in Openings)
+            {
+                var (_, _, c0) = p.Frame.ToLocal(o);
+                double facing = d.Dot(p.Frame.Normal);
+                if (c0 <= 0 || facing >= 0) continue;
+                double t = c0 / -facing;
+                if (t >= hitAt || !p.Covers(o + d * t)) continue;
+                hitAt = t;
+                hitPortal = p;
+            }
 
             segments.Add((o, d, hitAt));
             if (hitPortal == null) break;
