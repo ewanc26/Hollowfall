@@ -167,8 +167,8 @@ public static class GlbWriter
             var max = new[] { float.MinValue, float.MinValue, float.MinValue };
             for (int i = 0; i < positions.Length; i++)
             {
-                min[i % 3] = Math.Min(min[i % 3], positions[i]);
-                max[i % 3] = Math.Max(max[i % 3], positions[i]);
+                min[i % 3] = Math.Min(min[i % 3], Quantise(positions[i]));
+                max[i % 3] = Math.Max(max[i % 3], Quantise(positions[i]));
             }
 
             var attributes = new JsonObject
@@ -211,9 +211,13 @@ public static class GlbWriter
         private static byte[] Floats(float[] values)
         {
             var bytes = new byte[values.Length * 4];
-            for (int i = 0; i < values.Length; i++) BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(i * 4), values[i]);
+            for (int i = 0; i < values.Length; i++) BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(i * 4), Quantise(values[i]));
             return bytes;
         }
+
+        // Baked poses come from Math.Sin and Math.Pow, which differ in the last bit between platforms.
+        // Snapping to a 1/65536 grid keeps the committed files byte-identical everywhere.
+        private static float Quantise(float v) => MathF.Round(v * 65536f) / 65536f;
 
         private static byte[] Unsigned(int[] values)
         {
