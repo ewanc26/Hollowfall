@@ -79,12 +79,12 @@ public partial class ModelShowcase : Node3D
         _camera.Position = new Vector3(0, 1.7f, 7.2f);
         _camera.LookAt(new Vector3(0, 1.1f, 0), Vector3.Up);
         int i = 0;
-        foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Spitter, EnemyKind.Warden })
+        foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Spitter, EnemyKind.Warden, EnemyKind.CuSith, EnemyKind.Villager })
         {
             var view = new EnemyView(kind);
             view.ForcePose(Motion.Idle);
             _posed.Add(view);
-            Place(view, new Vector3(-3.4f + i * 3.4f, 0, 0), kind.ToString(), spin: 0.5);
+            Place(view, new Vector3(-4.8f + i * 2.4f, 0, 0), kind.ToString(), spin: 0.5);
             i++;
         }
     }
