@@ -113,9 +113,10 @@ maps the Wulver's greeting sound to his motif. The ending stinger is sent by `Ma
 * **Music volume** (`GameSettings.MusicVolume`, 0 to 1, default 0.6, clamped, saved with the other settings through
   `DataHome`) scales the whole music and the stingers, on top of the master volume. At 0 the music is off and the old looping
   drone comes back.
-* **Ambience volume** scales the music's drone layer by up to 2 (1 at its default of 50 percent), because once the music is
-  ready its drone layer is the bed: `AudioDirector.BedReplaced` fades the old looping drone out so the two never double. The
-  old drone is only the fallback while the music is rendering, if rendering fails, or when the music volume is 0.
+* **Ambience volume** scales the music's drone layer by up to 2 (1 at its default of 50 percent) and the places' beds. The beds
+  are separate from the music, so both can sound together: each place has its own looping bed (the surface biomes, and each
+  dungeon theme underground), and where the listener stands near several places, their beds play together in an automix whose
+  levels keep the mix's loudness steady (`Beds.MixAt` in `Hollowfall.Core`).
 * Master volume scales everything.
 
 ## The Godot side
