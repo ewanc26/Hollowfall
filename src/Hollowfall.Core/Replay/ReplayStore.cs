@@ -47,6 +47,10 @@ public sealed class ReplayStore(string directory)
         }
     }
 
+    /// <summary>The stored best of every floor of a seed, in floor order.</summary>
+    public IEnumerable<RunReplay> LoadAll(string seed) =>
+        Enumerable.Range(0, RunReplay.MaxFloors).Select(floor => Load(seed, floor)).OfType<RunReplay>();
+
     /// <summary>Saves the run if nothing better is stored for its seed and floor. Returns whether it was written.</summary>
     public bool TrySaveIfBest(RunReplay replay)
     {
