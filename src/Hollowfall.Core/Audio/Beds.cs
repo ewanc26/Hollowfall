@@ -71,6 +71,27 @@ public static class Beds
             ? new Dictionary<SoundId, double>()
             : around.GroupBy(id => id).ToDictionary(g => g.Key, g => Math.Sqrt((double)g.Count() / around.Count));
 
+    private const int RingSamples = 12;
+    private const int RingRadius = 16;
+
+    /// <summary>
+    /// The mix for a listener at (<paramref name="x"/>, <paramref name="z"/>): underground (a floor of 0 or more) it is the floor's
+    /// theme; on the surface it is the biomes at the listener and on a ring round it.
+    /// </summary>
+    public static IReadOnlyDictionary<SoundId, double> MixAt(TerrainGenerator terrain, double x, double z, int floor)
+    {
+        if (floor >= 0) return Automix([Dungeon(DungeonThemes.ForFloor(floor))]);
+        int cx = (int)Math.Floor(x), cz = (int)Math.Floor(z);
+        var around = new List<SoundId>(RingSamples + 1) { Surface(terrain.SampleColumn(cx, cz).Biome) };
+        for (int k = 0; k < RingSamples; k++)
+        {
+            double angle = Math.Tau * k / RingSamples;
+            int px = cx + (int)Math.Round(RingRadius * Math.Cos(angle)), pz = cz + (int)Math.Round(RingRadius * Math.Sin(angle));
+            around.Add(Surface(terrain.SampleColumn(px, pz).Biome));
+        }
+        return Automix(around);
+    }
+
     public static float[] Render(SoundId id)
     {
         var s = Scenes[id];
