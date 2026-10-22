@@ -45,6 +45,7 @@ public partial class Main : Node3D
     private WulverDirector? _wulver;
     private WulverView? _wulverView;
     private CatDirector? _cat;
+    private VillagerDirector? _villagers;
     private CatView? _catView;
     private int _deathCount, _killCount, _deepestFloor = -1;
     private double _playSeconds;
@@ -254,6 +255,16 @@ public partial class Main : Node3D
                 MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
             };
             GD.Print($"Hollowfall: something warm rests on floor {catSpot.Pit.Floor} at ({catSpot.X:F1}, {catSpot.Y:F1}, {catSpot.Z:F1})");
+        }
+
+        if (Combat != null)
+        {
+            var conversation = new VillagerConversation(World.Seed, _seedName, storyProgress.VillagerFlags(_seedName), storyProgress.VillagerVisits(_seedName));
+            _villagers = new VillagerDirector(conversation, _storyUi, storyProgress, _seedName, StoryPath, () => Combat?.Sim.Relations?.Reputation.Tier(Faction.Villagers) ?? ReputationTier.Neutral)
+            {
+                InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+            };
         }
 
         // The weapons in your hands, drawn under the HUD.
@@ -485,6 +496,7 @@ public partial class Main : Node3D
             if (_wulver != null) actions = _wulver.Filter(actions, view.Feet, !dead);
             if (_demo is { } cd && cd.StartsWith("cat")) RunCatDemo(cd);
             if (_cat != null) actions = _cat.Filter(actions, view.Feet, !dead);
+            if (_villagers != null) actions = _villagers.Filter(actions, view.Feet, !dead, Combat.Sim.Enemies);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "gap") (view, actions) = RunGapDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
