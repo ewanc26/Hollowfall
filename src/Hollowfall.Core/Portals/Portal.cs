@@ -6,6 +6,9 @@ public enum PortalColor
 {
     Teal,
     Violet,
+
+    /// <summary>A fixed opening set into a dungeon wall. It cannot be placed or removed, only passed through.</summary>
+    Rift,
 }
 
 /// <summary>
