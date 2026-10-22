@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4212;
-    private const uint ExpectedGoldenChecksum = 3043636307; // changed on purpose: the header now carries the run's creams and worn charm (format 4)
+    private const uint ExpectedGoldenChecksum = 2997968840; // changed on purpose: the sim version byte went up to 11 for the floor collapse
 
     [Fact]
     public void FileSizesStaySane()
