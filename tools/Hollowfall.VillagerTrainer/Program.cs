@@ -16,8 +16,8 @@ if (!File.Exists(Path.Combine(root, "Hollowfall.sln")) || !File.Exists(output))
 
 const int Inputs = VillagerNet.Inputs, Hidden = VillagerNet.Hidden, Outcomes = VillagerNet.Outcomes;
 var rng = new SeededRandom(2026, 0, 0, 77);
-var samples = Enumerable.Range(0, 16000).Select(_ => Sample(rng)).ToList();
-var (train, test) = (samples.Take(12000).ToList(), samples.Skip(12000).ToList());
+var samples = Enumerable.Range(0, 48000).Select(_ => Sample(rng)).ToList();
+var (train, test) = (samples.Take(36000).ToList(), samples.Skip(36000).ToList());
 
 var w1 = Init(Hidden * Inputs, Inputs, Hidden, rng);
 var b1 = new double[Hidden];
@@ -25,7 +25,7 @@ var w2 = Init(Outcomes * Hidden, Hidden, Outcomes, rng);
 var b2 = new double[Outcomes];
 
 const double LearningRate = 0.05;
-const int Epochs = 160, Batch = 32;
+const int Epochs = 420, Batch = 32;
 for (int epoch = 0; epoch < Epochs; epoch++)
 {
     double rate = LearningRate * (epoch < Epochs / 2 ? 1 : 0.3);
@@ -126,7 +126,7 @@ Intent Rules(VillagerSense s)
     if (scared) return Intent.Flee;
     if (p.HostileDistance < 6) return Intent.Flee;
     if (p.Sees && p.Distance < 4) return Intent.Flee;
-    if (p.Sees && p.Distance < 7 && p.ApproachSpeed > Brain.FastApproach) return Intent.Flee;
+    if (p.Sees && p.Distance < VillagerNet.ClosingRange && p.ApproachSpeed > Brain.FastApproach) return Intent.Flee;
     if (s.Previous == Intent.Flee && p.Distance < 9) return Intent.Flee;
     return Intent.Idle;
 }
