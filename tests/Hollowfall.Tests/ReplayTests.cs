@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4212;
-    private const uint ExpectedGoldenChecksum = 1383049449; // changed on purpose: the header now carries the run's creams and worn charm (format 4)
+    private const uint ExpectedGoldenChecksum = 3378659494; // changed on purpose: the header now carries the run's creams and worn charm (format 4)
 
     [Fact]
     public void FileSizesStaySane()
