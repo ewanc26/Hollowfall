@@ -117,8 +117,9 @@ public static class GapCrossing
         landing = arrival = feet;
         var blocks = Blocks(site);
         var portals = new PortalSystem();
-        if (!portals.Place(PortalColor.Teal, eye, farAim, dir, blocks).Placed) return Reject("far portal not placed");
-        var nearPlaced = portals.Place(PortalColor.Violet, eye, nearAim, dir, blocks);
+        bool platesOnly = floor >= DungeonSite.RiftPlateFloor;
+        if (!portals.Place(PortalColor.Teal, eye, farAim, dir, blocks, platesOnly).Placed) return Reject("far portal not placed");
+        var nearPlaced = portals.Place(PortalColor.Violet, eye, nearAim, dir, blocks, platesOnly);
         if (!nearPlaced.Placed) return Reject("near portal not placed");
         var nearPortal = nearPlaced.Portal!;
         var farPortal = portals.Teal!;

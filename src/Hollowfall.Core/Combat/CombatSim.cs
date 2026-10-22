@@ -692,7 +692,8 @@ public sealed class CombatSim
     private void FirePortal(PortalColor color, PlayerView view)
     {
         var replaced = Portals.Get(color);
-        var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks);
+        int floor = _site.FloorIndexAt(view.Feet.X, view.Feet.Y + 0.1, view.Feet.Z);
+        var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks, platesOnly: floor >= DungeonSite.RiftPlateFloor);
         var p = result.Portal;
         if (result.Placed && replaced != null) Close(replaced);
         _events.Add(new PortalPlaced(color, result.Placed,
