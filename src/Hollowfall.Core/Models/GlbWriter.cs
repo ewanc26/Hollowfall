@@ -215,9 +215,13 @@ public static class GlbWriter
             return bytes;
         }
 
-        // Baked poses come from Math.Sin and Math.Pow, which differ in the last bit between platforms.
-        // Snapping to a 1/65536 grid keeps the committed files byte-identical everywhere.
-        private static float Quantise(float v) => MathF.Round(v * 65536f) / 65536f;
+        // Trig and Pow differ in the last bit between platforms. Snapping to a 1/65536 grid, with
+        // no negative zero, keeps the committed files byte-identical everywhere.
+        private static float Quantise(float v)
+        {
+            float snapped = MathF.Round(v * 65536f) / 65536f;
+            return snapped == 0 ? 0f : snapped;
+        }
 
         private static byte[] Unsigned(int[] values)
         {
