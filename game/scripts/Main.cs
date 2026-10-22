@@ -321,7 +321,7 @@ public partial class Main : Node3D
             if (skipTitle) CallDeferred(MethodName.ShowIntro);
         }
 
-        // For screenshots and videos: HOLLOWFALL_MENU=title|pause|controls|settings opens that screen straight away.
+        // For screenshots and videos: HOLLOWFALL_MENU=title|pause|controls|settings|journal|standing|bag opens that screen straight away.
         if (System.Environment.GetEnvironmentVariable("HOLLOWFALL_MENU") is { } menu)
             _menus.CallDeferred(Menus.MethodName.OpenFrom, (int)MenuScreen.Pause, (int)(menu switch
             {
@@ -330,6 +330,7 @@ public partial class Main : Node3D
                 "settings" => MenuScreen.Settings,
                 "journal" => MenuScreen.Journal,
                 "standing" => MenuScreen.Standing,
+                "bag" => MenuScreen.Bag,
                 _ => MenuScreen.Pause,
             }));
 
