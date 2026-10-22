@@ -56,11 +56,11 @@ public sealed class PortalSystem
     /// be portalable and both cells in front of it open. On a floor or ceiling its long side points the way
     /// <paramref name="facing"/> points, so you can step in the direction you are looking.
     /// </summary>
-    public PlaceResult Place(PortalColor color, Vec3 origin, Vec3 direction, Vec3 facing, Func<int, int, int, BlockType> blockAt)
+    public PlaceResult Place(PortalColor color, Vec3 origin, Vec3 direction, Vec3 facing, Func<int, int, int, BlockType> blockAt, bool platesOnly = false)
     {
         if (RayCast.FirstSolidFace(blockAt, origin, direction, MaxPlaceDistance) is not { } hit)
             return new(false, null, PlaceFailure.NothingInRange);
-        if (!BlockInfo.Portalable(blockAt(hit.X, hit.Y, hit.Z)))
+        if (!BlockInfo.Portalable(blockAt(hit.X, hit.Y, hit.Z), platesOnly))
             return new(false, null, PlaceFailure.NotPortalable);
 
         var d = direction.Normalized();
@@ -87,7 +87,7 @@ public sealed class PortalSystem
         {
             var c0 = (X: hit.X + along.X * shift, Y: hit.Y + along.Y * shift, Z: hit.Z + along.Z * shift);
             var c1 = (X: c0.X + along.X, Y: c0.Y + along.Y, Z: c0.Z + along.Z);
-            if (!Fits(c0, c1, hit, blockAt)) continue;
+            if (!Fits(c0, c1, hit, blockAt, platesOnly)) continue;
 
             var portal = Build(color, c0, c1, (hit.NormalX, hit.NormalY, hit.NormalZ), along, normal);
             var partner = Other(portal);
@@ -103,11 +103,11 @@ public sealed class PortalSystem
         return new(false, null, failure);
     }
 
-    private static bool Fits((int X, int Y, int Z) c0, (int X, int Y, int Z) c1, FaceHit hit, Func<int, int, int, BlockType> blockAt)
+    private static bool Fits((int X, int Y, int Z) c0, (int X, int Y, int Z) c1, FaceHit hit, Func<int, int, int, BlockType> blockAt, bool platesOnly)
     {
         foreach (var c in new[] { c0, c1 })
         {
-            if (!BlockInfo.Portalable(blockAt(c.X, c.Y, c.Z))) return false;
+            if (!BlockInfo.Portalable(blockAt(c.X, c.Y, c.Z), platesOnly)) return false;
             if (BlockInfo.IsSolid(blockAt(c.X + hit.NormalX, c.Y + hit.NormalY, c.Z + hit.NormalZ))) return false;
         }
         return true;

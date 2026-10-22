@@ -68,6 +68,10 @@ public enum Tile
     // Village cottages (appended).
     Plank,
     Thatch,
+
+    // Rift plates and deep-floor obsidian (appended).
+    RiftPlate,
+    Obsidian,
 }
 
 /// <summary>
@@ -137,6 +141,8 @@ public static partial class BlockTextures
         BlockType.Spikes => Tile.Spikes,
         BlockType.Plank => Tile.Plank,
         BlockType.Thatch => Tile.Thatch,
+        BlockType.RiftPlate => Tile.RiftPlate,
+        BlockType.Obsidian => Tile.Obsidian,
         _ => Tile.Stone,
     };
 
