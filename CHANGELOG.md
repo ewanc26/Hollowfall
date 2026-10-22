@@ -6,6 +6,7 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Changed
 
+- Rift plates (issue #8): from floor 2 down, rock walls are Obsidian and a portal takes only on a `RiftPlate` block. The layout places plates on the edge of each arena and beside every gap hallway, so each gap stays crossable; floors 0 and 1 are unchanged. Dungeon layouts and the replay format change, and `RunReplay.SimVersion` is 7, so replays recorded before it are not verifiable.
 - The gap captions, fall banners, the omen and boon toasts and the standing toast now come from the interface string table, so they go through the language setting like everything else. English reads exactly as before; Gàidhlig shows English for them until a speaker has checked the lines (issue #2).
 
 ### Added
