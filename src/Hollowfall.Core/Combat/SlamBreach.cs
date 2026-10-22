@@ -63,7 +63,7 @@ public sealed class SlamBreach
 
     private static bool IsBrick(BlockType b) => b is BlockType.BrickFloor or BlockType.CrackedFloor;
 
-    private static bool ShaftOpen(VoxelWorld world, int x, int y, int z)
+    internal static bool ShaftOpen(VoxelWorld world, int x, int y, int z)
     {
         for (int dx = -HoleRadius; dx <= HoleRadius; dx++)
             for (int dz = -HoleRadius; dz <= HoleRadius; dz++)
