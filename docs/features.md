@@ -113,6 +113,8 @@ reflect-and-redirect rules that already exist.
 crossing. **Tests:** projectile from the boss's gate reaches the player, a reflected shot through the boss's gate damages him,
 your portals are disabled in the window and restored after. **Effort:** large (needs the boss to exist first).
 
+**Status: built** (`PortalSystem.OpenWarden`/`WardenLaunches`/`SwapPlaced`, `CombatSim.UpdateWarden`, gate views in `CombatView`). Phase two starts at 60% health and opens his gate for 6 seconds, shut for 6, repeating. Phase three starts at 30% and swaps your two portals every 8 seconds. **Tests:** `WardenPortalTests`. A reflected shot through his gate uses the ordinary crossing path, but has no test of its own yet.
+
 ### 2.6 Portal-aware sound and a readable pair
 
 Small, and unusual enough to matter. Sound sources are heard from the closer of the direct path and the path through a portal,
@@ -175,6 +177,7 @@ mesh-based shooter can, and gives each floor a distinct ending.
 **Tests:** rings remove the expected blocks in order, the player ends on the next floor, no softlocks if the player stands on
 the stairs, floor timer pauses. **Effort:** large.
 
+**Status: built in core** (`CollapseSequence`, the collapse wiring in `CombatSim`, the Freefall bonus). Host visuals are not verified: the collapse relies on existing chunk re-meshing and has no dedicated effect yet. **Tests:** `CollapseTests`, `CollapseSimTests`.
 ### 3.4 The bag, the cream and the thorn charm (built)
 
 **Pitch.** Something to carry, so a friendly brownie's gift is worth keeping.
