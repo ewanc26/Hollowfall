@@ -188,6 +188,25 @@ public class WardenPortalTests
     }
 
     [Fact]
+    public void HisGateWaitsWhileYouStandInOneOfYourPortals()
+    {
+        var (sim, view, _, world) = Duel(0.5);
+        sim.Portals.Place(PortalColor.Teal, view.Eye, new Vec3(0, 0, 1), new Vec3(0, 0, 1), world.GetBlock);
+        sim.Portals.Place(PortalColor.Violet, view.Eye, new Vec3(0, 0, -1), new Vec3(0, 0, 1), world.GetBlock);
+        var hole = sim.Portals.Teal!.HoleCells[0];
+        var inside = new PlayerView(new Vec3(hole.X + 0.5, hole.Y, hole.Z + 0.5), new Vec3(hole.X + 0.5, hole.Y + 1.62, hole.Z + 0.5), new Vec3(0, 0, -1), false, false);
+
+        for (int i = 0; i < 60 * 3; i++)
+        {
+            Step(sim, inside, default);
+            Assert.False(sim.Portals.WardenLive);
+        }
+
+        for (int i = 0; i < 60; i++) Step(sim, view, default);
+        Assert.True(sim.Portals.WardenLive);
+    }
+
+    [Fact]
     public void AReflectedShotThroughHisGateComesBackAndHurtsHim()
     {
         var (sim, view, warden, _) = Duel(0.5);
@@ -212,6 +231,29 @@ public class WardenPortalTests
 
     private static PlayerView Aim(PlayerView v, Vec3 at) =>
         v with { Forward = (at - v.Eye).Normalized() };
+
+    [Fact]
+    public void HisSwapWaitsWhileYouStandInOneOfYourPortals()
+    {
+        var (sim, view, _, world) = Duel(0.2);
+        sim.Portals.Place(PortalColor.Teal, view.Eye, new Vec3(0, 0, 1), new Vec3(0, 0, 1), world.GetBlock);
+        sim.Portals.Place(PortalColor.Violet, view.Eye, new Vec3(0, 0, -1), new Vec3(0, 0, 1), world.GetBlock);
+        var teal = sim.Portals.Teal!.Frame.Center;
+        var hole = sim.Portals.Teal!.HoleCells[0];
+        var inside = new PlayerView(new Vec3(hole.X + 0.5, hole.Y, hole.Z + 0.5), new Vec3(hole.X + 0.5, hole.Y + 1.62, hole.Z + 0.5), new Vec3(0, 0, -1), false, false);
+
+        for (int i = 0; i < (int)((CombatSim.PortalSwapSeconds + 2) / Dt); i++) Step(sim, inside, default);
+        Assert.Equal(teal, sim.Portals.Teal!.Frame.Center);
+
+        bool swapped = false;
+        for (int i = 0; i < 60 && !swapped; i++)
+        {
+            Step(sim, view, default);
+            swapped = sim.Portals.Teal!.Frame.Center != teal;
+        }
+        Assert.True(swapped, "the swap did not happen once the player stepped out");
+        Assert.NotEqual(teal, sim.Portals.Teal!.Frame.Center);
+    }
 
     [Fact]
     public void AVolleyThroughHisGateReachesYou()

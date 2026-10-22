@@ -309,7 +309,7 @@ public sealed class CombatSim
         if (actions.FireMortar) FireMortar(view);
         if (actions.UseCream) UseCream();
 
-        UpdateWarden(dt);
+        UpdateWarden(dt, view);
         foreach (var e in _enemies.ToList()) UpdateEnemy(e, dt, view);
         UpdateProjectiles(dt, view);
         UpdateShells(dt, view);
@@ -1288,7 +1288,7 @@ public sealed class CombatSim
     /// Opens the Warden's pair when phase two starts and every <see cref="WardenGateSeconds"/> after, shutting it in
     /// between. Phase three swaps the player's two portals on a timer.
     /// </summary>
-    private void UpdateWarden(double dt)
+    private void UpdateWarden(double dt, PlayerView view)
     {
         var warden = _enemies.FirstOrDefault(e => e.Kind == EnemyKind.Warden && !e.Dead);
         if (warden == null)
@@ -1316,6 +1316,10 @@ public sealed class CombatSim
                 Portals.CloseWarden();
                 _gateTimer = WardenGateSeconds;
             }
+            else if (PlayerInsidePlacedHole(view))
+            {
+                _gateTimer = WardenGateRetrySeconds;
+            }
             else
             {
                 _gateTimer = OpenWardenGate(warden) ? WardenGateSeconds : WardenGateRetrySeconds;
@@ -1327,10 +1331,31 @@ public sealed class CombatSim
             _swapTimer -= dt;
             if (_swapTimer <= 0)
             {
-                Portals.SwapPlaced();
-                _swapTimer = PortalSwapSeconds;
+                if (PlayerInsidePlacedHole(view))
+                {
+                    _swapTimer = WardenGateRetrySeconds;
+                }
+                else
+                {
+                    Portals.SwapPlaced();
+                    _swapTimer = PortalSwapSeconds;
+                }
             }
         }
+    }
+
+    /// <summary>Holes that turn back into stone, or swap places, would bury a body standing in them.</summary>
+    private bool PlayerInsidePlacedHole(PlayerView view)
+    {
+        var body = Box.AroundFeet(view.Feet, Physics.PlayerBody.HalfWidth, Physics.PlayerBody.Height);
+        foreach (var placed in new[] { Portals.Teal, Portals.Violet })
+        {
+            if (placed == null) continue;
+            foreach (var (x, y, z) in placed.HoleCells)
+                if (body.Min.X < x + 1 && body.Max.X > x && body.Min.Y < y + 1 && body.Max.Y > y && body.Min.Z < z + 1 && body.Max.Z > z)
+                    return true;
+        }
+        return false;
     }
 
     private bool OpenWardenGate(Enemy warden)
