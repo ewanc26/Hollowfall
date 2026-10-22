@@ -391,6 +391,23 @@ public class ReplayTests
     }
 
     [Fact]
+    public void LoadAllReturnsTheStoredFloorsOfOneSeedInOrder()
+    {
+        var dir = TempDir();
+        try
+        {
+            var store = new ReplayStore(dir);
+            Assert.True(store.TrySaveIfBest(Tiny("deep", 2, OverallGrade.B, 9, 120)));
+            Assert.True(store.TrySaveIfBest(Tiny("deep", 0, OverallGrade.C, 6, 90)));
+            Assert.True(store.TrySaveIfBest(Tiny("other", 1, OverallGrade.D, 1, 200)));
+
+            Assert.Equal([0, 2], store.LoadAll("deep").Select(r => r.Floor));
+            Assert.Empty(store.LoadAll("unseen"));
+        }
+        finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
+    }
+
+    [Fact]
     public void TheStoreIgnoresDamagedWrongAndOversizedFiles()
     {
         var dir = TempDir();

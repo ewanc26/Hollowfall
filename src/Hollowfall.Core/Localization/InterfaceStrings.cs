@@ -45,6 +45,9 @@ public static class InterfaceStrings
             T("title.seedHint", "any text or number"),
             T("title.random", "Random"),
             T("title.daily", "Daily"),
+            T("title.board", "Verified today"),
+            T("title.boardNone", "No verified run yet today."),
+            T("title.boardRow", "Floor {0}: grade {1}, {2} points, {3} s"),
 
             // ---- pause ----
             G("pause.title", "PAUSED", "AIR STAD", ReviewStatus.NeedsReview, "WK FF", "held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state"),

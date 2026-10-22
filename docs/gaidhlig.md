@@ -140,7 +140,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 143.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 146.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -155,6 +155,9 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 143.
 | `title.seedHint` | any text or number | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.random` | Random | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.daily` | Daily | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `title.board` | Verified today | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `title.boardNone` | No verified run yet today. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `title.boardRow` | Floor {0}: grade {1}, {2} points, {3} s | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.title` | PAUSED | AIR STAD | NeedsReview | WK FF | held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state |
 | `pause.resume` | Resume | Lean air | Verified | FF WK | Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue |
 | `pause.respawn` | Respawn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
