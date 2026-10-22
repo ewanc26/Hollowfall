@@ -1,5 +1,8 @@
 using Godot;
+using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Replay;
 using Hollowfall.Core.Terrain;
+using Hollowfall.Core.World;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Localization;
 using Hollowfall.Core.Progression;
@@ -378,6 +381,35 @@ public partial class Menus : CanvasLayer
         var daily = MakeButton(_loc.Tr("title.daily"), () => seedEdit.Text = DailySeed.Today(DateTime.UtcNow));
         seedRow.AddChild(daily);
         col.AddChild(seedRow);
+
+        // Today's board for a daily seed: the best run of each floor that re-simulates to the result it claims.
+        var boardTitle = new Label { Text = _loc.Tr("title.board"), Visible = false };
+        var boardText = new Label { Visible = false };
+        col.AddChild(boardTitle);
+        col.AddChild(boardText);
+        string boardSeed = "";
+        void ShowBoard()
+        {
+            string seed = SeedWords.Clean(seedEdit.Text);
+            bool daily = DailyBoard.IsDaily(seed);
+            boardTitle.Visible = boardText.Visible = daily;
+            if (!daily || seed == boardSeed) return;
+            boardSeed = seed;
+            boardText.Text = "";
+            var store = ReplayStore.Beside(Main.RecordsPath);
+            long worldSeed = TerrainGenerator.SeedFromString(seed);
+            Task.Run(() =>
+            {
+                var world = new VoxelWorld(worldSeed);
+                var entries = DailyBoard.Build(store.LoadAll(seed), r => ReplayRunner.Verify(r, world, out _));
+                string text = entries.Count == 0
+                    ? _loc.Tr("title.boardNone")
+                    : string.Join("\n", entries.Select(e => _loc.Tr("title.boardRow", e.Floor + 1, e.Result.Grade, e.Result.Points, e.Result.Seconds.ToString("0.0"))));
+                Callable.From(() => { if (GodotObject.IsInstanceValid(boardText) && boardSeed == seed) boardText.Text = text; }).CallDeferred();
+            });
+        }
+        seedEdit.TextChanged += _ => ShowBoard();
+        ShowBoard();
 
         col.AddChild(MakeButton(_loc.Tr("menu.play"), () =>
         {
