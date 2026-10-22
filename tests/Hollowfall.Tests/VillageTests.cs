@@ -1,3 +1,5 @@
+using Hollowfall.Core.Combat;
+using Hollowfall.Core.Relations;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.Village;
 using Hollowfall.Core.World;
@@ -77,6 +79,47 @@ public class VillageTests
                 Assert.True(plan.IsRoad(h.Doorstep.X, h.Doorstep.Z));
             Assert.All(plan.Roads, r => Assert.Null(plan.HouseAt(r.X, r.Z)));
         }
+    }
+
+    [Fact]
+    public void EachCottageHasOneResidentStandingOnItsRoad()
+    {
+        foreach (var (_, plan) in VillagesAcrossSeeds())
+        {
+            var residents = plan.Residents.ToList();
+            Assert.Equal(plan.Houses.Count, residents.Count);
+            foreach (var (x, z) in residents)
+            {
+                Assert.True(plan.IsRoad(x, z));
+                Assert.True(plan.InYard(x, z));
+                Assert.Null(plan.HouseAt(x, z));
+            }
+        }
+    }
+
+    [Fact]
+    public void VillagersStandAtTheirDoorsOnceThePlayerComesNear()
+    {
+        for (long seed = 1; seed <= 40; seed++)
+        {
+            var world = new VoxelWorld(seed);
+            var plan = VillagesAcrossSeeds().Where(v => v.Terrain.Seed == seed).Select(v => v.Plan).FirstOrDefault();
+            var site = Enumerable.Range(-2, 5).SelectMany(rx => Enumerable.Range(-2, 5).Select(rz => world.Generator.Dungeons!.GetSite(rx, rz))).FirstOrDefault(s => s is not null);
+            if (plan is null || site is null) continue;
+
+            var sim = new CombatSim(world, site);
+            sim.EnableRelations();
+            var feet = new Vec3(plan.CenterX + 0.5, plan.Ground + 1, plan.CenterZ + 0.5);
+            var view = new PlayerView(feet, feet + new Vec3(0, 1.6, 0), new Vec3(1, 0, 0), false, false);
+            sim.Tick(1.0 / 60, view, default);
+            sim.Tick(1.0 / 60, view, default);
+
+            var villagers = sim.Enemies.Where(e => e.Kind == EnemyKind.Villager && e.Floor == -1).ToList();
+            Assert.True(villagers.Count >= plan.Houses.Count);
+            Assert.Contains(villagers, v => Math.Abs(v.Feet.X - (plan.Residents.First().X + 0.5)) < 1e-9 && Math.Abs(v.Feet.Z - (plan.Residents.First().Z + 0.5)) < 1e-9);
+            return;
+        }
+        Assert.Fail("no seed with a village and a dungeon site");
     }
 
     [Fact]
