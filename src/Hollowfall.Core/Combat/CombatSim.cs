@@ -326,6 +326,7 @@ public sealed class CombatSim
         int from = CurrentFloor;
         if (CurrentFloor >= 0 && floor > CurrentFloor) CompleteFloor(CurrentFloor);
         CurrentFloor = floor;
+        Portals.SetFixed(_site.RiftPassages(floor));
         PopulateFloor(floor);
 
         var p = _floors[floor];
@@ -1080,21 +1081,18 @@ public sealed class CombatSim
         // behind the portal's face, which carries the enemy through the portal and out beside them.
         var goal = view.Feet;
         bool viaPortal = false;
-        if (Portals.Linked)
+        double direct = e.Feet.DistanceTo(view.Feet);
+        foreach (var entrance in Portals.Openings.ToArray())
         {
-            double direct = e.Feet.DistanceTo(view.Feet);
-            foreach (var entrance in new[] { Portals.Teal!, Portals.Violet! })
+            var exit = Portals.Other(entrance)!;
+            var mirrored = PortalTransform.Point(exit, entrance, view.Feet);
+            double via = e.Feet.DistanceTo(mirrored);
+            var face = entrance.Frame.Center + entrance.Frame.Normal * 0.5;
+            if (via + 1.5 < direct && RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.0, 0), face))
             {
-                var exit = Portals.Other(entrance)!;
-                var mirrored = PortalTransform.Point(exit, entrance, view.Feet);
-                double via = e.Feet.DistanceTo(mirrored);
-                var face = entrance.Frame.Center + entrance.Frame.Normal * 0.5;
-                if (via + 1.5 < direct && RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.0, 0), face))
-                {
-                    goal = mirrored;
-                    direct = via + 1.5;
-                    viaPortal = true;
-                }
+                goal = mirrored;
+                direct = via + 1.5;
+                viaPortal = true;
             }
         }
 

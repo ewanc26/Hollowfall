@@ -1,3 +1,4 @@
+using Hollowfall.Core.Portals;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Core.Dungeon;
@@ -78,6 +79,13 @@ public sealed class DungeonSite
     }
 
     public static int FloorY(int floor) => FirstFloorY - FloorSpacing * floor;
+
+    /// <summary>The rift doors of a floor as world portal pairs, to be passed through while the body is on that floor.</summary>
+    public IReadOnlyList<(Portal A, Portal B)> RiftPassages(int floor) =>
+        _floors[floor].RiftDoors.Select(d => (Opening(floor, d.A), Opening(floor, d.B))).ToList();
+
+    private Portal Opening(int floor, RiftDoor d) =>
+        PortalSystem.Fixed(OriginX + d.X, FloorY(floor) + 1, OriginZ + d.Z, (d.NormalX, 0, d.NormalZ));
 
     public int LowestY => FloorY(FloorCount - 1);
 
