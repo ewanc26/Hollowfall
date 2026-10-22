@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4212;
-    private const uint ExpectedGoldenChecksum = 2997968840; // changed on purpose: the sim version byte went up to 11 for the floor collapse
+    private const uint ExpectedGoldenChecksum = 3947776862; // changed on purpose: the sim version byte went up to 12 for the Warden's portals
 
     [Fact]
     public void FileSizesStaySane()
