@@ -67,7 +67,8 @@ public sealed class CombatSim
     private readonly List<Encounter> _encounters = [];
     private readonly FloorProgress[] _floors;
     private readonly List<Enemy> _enemies = [];
-    private const int SurfaceFloor = -1, VillageReach = 2;
+    public const int SurfaceFloor = -1;
+    private const int VillageReach = 2;
     private readonly HashSet<(int X, int Z)> _villagesPopulated = [];
     private (int X, int Z)? _villageChunk;
     private readonly List<Projectile> _projectiles = [];
