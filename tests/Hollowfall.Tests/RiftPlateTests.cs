@@ -45,15 +45,14 @@ public class RiftPlateTests
                     var b = room.Bounds;
                     if (b.W < 5 || b.H < 5) continue;
                     arenas++;
-                    var edge = Enumerable.Range(b.X - 1, b.W + 2).SelectMany(x => new[] { (x, b.Z - 1), (x, b.Bottom) })
-                        .Concat(Enumerable.Range(b.Z, b.H).SelectMany(z => new[] { (b.X - 1, z), (b.Right, z) }))
+                    var edge = TouchingWalls(site, k, room)
                         .Where(c => Plated(site, k, c.Item1, c.Item2)).ToList();
                     Assert.True(edge.Count >= 2, $"floor {k}: the room at {room.CenterX},{room.CenterZ} has {edge.Count} plates on its edge");
                 }
         Assert.True(arenas > 50, $"only {arenas} arenas");
     }
 
-    [Fact(Skip = "Known bug: some deep arenas have edge plates only on the far side of a gap hallway, unreachable on foot. Remove the Skip when fixed.")]
+    [Fact]
     public void EveryDeepArenaHasAPlateAPlayerCanStandBeside()
     {
         int arenas = 0;
@@ -75,11 +74,10 @@ public class RiftPlateTests
                         .First(c => Navigation.CanStand(BlockAt, c.X, c.Y, c.Z));
 
                     int onFoot = 0;
-                    foreach (var (px, pz) in Enumerable.Range(b.X - 1, b.W + 2).SelectMany(x => new[] { (x, b.Z - 1), (x, b.Bottom) })
-                        .Concat(Enumerable.Range(b.Z, b.H).SelectMany(z => new[] { (b.X - 1, z), (b.Right, z) })))
+                    foreach (var (px, pz) in TouchingWalls(site, k, room))
                     {
                         if (!Plated(site, k, px, pz)) continue;
-                        int fx = Math.Clamp(px, b.X, b.Right - 1), fz = Math.Clamp(pz, b.Z, b.Bottom - 1);
+                        var (fx, fz) = FrontOf(room, (px, pz));
                         var front = Enumerable.Range(fx - 2, 5).SelectMany(cx => Enumerable.Range(fz - 2, 5).Select(cz => (cx, cz)))
                             .Where(c => InRoom(site.OriginX + c.cx, site.OriginZ + c.cz))
                             .OrderBy(c => Math.Abs(c.cx - fx) + Math.Abs(c.cz - fz))
@@ -87,7 +85,7 @@ public class RiftPlateTests
                             .FirstOrDefault(c => c is { } s && Navigation.CanStand(BlockAt, s.X, s.Y, s.Z));
                         if (front is { } f && Navigation.FindPath(BlockAt, start, f, InRoom) is not null) onFoot++;
                     }
-                    Assert.True(onFoot >= 1, $"floor {k}: no plate of the room at {room.CenterX},{room.CenterZ} can be reached on foot");
+                    Assert.True(onFoot >= 2, $"floor {k}: only {onFoot} plates of the room at {room.CenterX},{room.CenterZ} can be reached on foot");
                 }
         Assert.True(arenas > 50, $"only {arenas} arenas");
     }
@@ -103,8 +101,7 @@ public class RiftPlateTests
                     var b = room.Bounds;
                     if (b.W < 5 || b.H < 5) continue;
                     arenas++;
-                    var edge = Enumerable.Range(b.X - 1, b.W + 2).SelectMany(x => new[] { (x, b.Z - 1), (x, b.Bottom) })
-                        .Concat(Enumerable.Range(b.Z, b.H).SelectMany(z => new[] { (b.X - 1, z), (b.Right, z) }));
+                    var edge = TouchingWalls(site, k, room);
                     if (edge.Any(c => Plated(site, k, c.Item1, c.Item2, DungeonSite.FloorSpacing - 3) || Plated(site, k, c.Item1, c.Item2, DungeonSite.FloorSpacing - 2)))
                         high++;
                 }
@@ -136,6 +133,31 @@ public class RiftPlateTests
                     if (g.Dungeons!.GetSite(rx, rz) is { } s)
                         yield return s;
         }
+    }
+
+    private static List<(int X, int Z)> TouchingWalls(DungeonSite site, int floor, Room room)
+    {
+        var layout = site.Floors[floor];
+        var b = room.Bounds;
+        var walls = new List<(int X, int Z)>();
+        for (int z = b.Z; z < b.Bottom; z++)
+            for (int x = b.X; x < b.Right; x++)
+            {
+                if (!room.Contains(x, z)) continue;
+                foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+                {
+                    var c = (X: x + dx, Z: z + dz);
+                    if (layout.CellAt(c.X, c.Z) == CellKind.Rock && layout.IsWallCell(c.X, c.Z) && !walls.Contains(c)) walls.Add(c);
+                }
+            }
+        return walls;
+    }
+
+    private static (int X, int Z) FrontOf(Room room, (int X, int Z) wall)
+    {
+        foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+            if (room.Contains(wall.X + dx, wall.Z + dz)) return (wall.X + dx, wall.Z + dz);
+        return wall;
     }
 
     private static bool Plated(DungeonSite site, int floor, int x, int z, int row = 2) =>
