@@ -33,7 +33,6 @@ public partial class MusicDirector : Node
     public long Seed { get; set; }
 
     /// <summary>The audio director whose old drone this replaces once the music is ready.</summary>
-    public AudioDirector? Audio { get; set; }
 
     /// <summary>What the music should follow: the host sets it every frame.</summary>
     public MusicState State { get; set; } = new();
@@ -174,7 +173,6 @@ public partial class MusicDirector : Node
         _mixer.Update(State, delta);
         double level = Level;
         double drone = Settings.AmbienceVolume * MusicTuning.DroneBoost; // the Ambience slider scales the drone layer: 1 at its default
-        if (Audio != null) Audio.BedReplaced = level > 0.001;
         for (int c = 0; c < Contexts.Length; c++)
             for (int l = 0; l < Layers.Length; l++)
             {

@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Audio;
 using Hollowfall.Core.Audio.Music;
 using Hollowfall.Core.Storage;
 using Hollowfall.Core.Combat;
@@ -151,7 +152,7 @@ public partial class Main : Node3D
 
         _audio = new AudioDirector { Name = "Audio", Settings = Settings };
         AddChild(_audio);
-        _music = new MusicDirector { Name = "Music", Settings = Settings, Seed = World.Seed, Audio = _audio };
+        _music = new MusicDirector { Name = "Music", Settings = Settings, Seed = World.Seed };
         AddChild(_music);
         _uiSound = id => _audio.Play(id);
         Menus.UiSound += _uiSound;
@@ -843,6 +844,26 @@ public partial class Main : Node3D
         }
     }
 
+    private const int BedSamples = 12;
+    private const int BedRadius = 16;
+
+    /// <summary>The beds to mix now: the floor's theme underground, otherwise the biomes around the player.</summary>
+    private IReadOnlyDictionary<SoundId, double> BedMixNow()
+    {
+        if (Combat is { } combat && combat.Sim.CurrentFloor >= 0)
+            return Beds.Automix([Beds.Dungeon(DungeonThemes.ForFloor(combat.Sim.CurrentFloor))]);
+        var b = _player.Body;
+        int cx = (int)Math.Floor(b.X), cz = (int)Math.Floor(b.Z);
+        var around = new List<SoundId>(BedSamples + 1) { Beds.Surface(World.Generator.SampleColumn(cx, cz).Biome) };
+        for (int k = 0; k < BedSamples; k++)
+        {
+            double angle = Math.Tau * k / BedSamples;
+            int x = cx + (int)Math.Round(BedRadius * Math.Cos(angle)), z = cz + (int)Math.Round(BedRadius * Math.Sin(angle));
+            around.Add(Beds.Surface(World.Generator.SampleColumn(x, z).Biome));
+        }
+        return Beds.Automix(around);
+    }
+
     public override void _Process(double delta)
     {
         var b = _player.Body;
@@ -854,6 +875,7 @@ public partial class Main : Node3D
         _weapons.Pose(delta, b.Speed, b.OnGround, _player.LookDelta);
         _props?.Update(delta, _view.Focus);
         _audio.Underground = Combat != null && Combat.Sim.CurrentFloor >= 0;
+        _audio.SetBedMix(BedMixNow());
         if (_music.FollowGame) _music.State = MusicNow();
         if (_story.EndingShown && !_endingStingerSent) { _endingStingerSent = true; _music.Trigger(Stinger.Ending); }
         _dust.Active = _audio.Underground;
