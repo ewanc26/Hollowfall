@@ -62,8 +62,9 @@ thresholds, the window expiring, the damage formula, no self-damage, speed loss.
 
 **Pitch.** In deeper floors most stone is dead stone. Portals only stick to marked plates, so the generator is a puzzle setter.
 
-**Rules.** From floor 2, walls become `Obsidian` (not portalable). The layout places 2 to 5 `RiftPlate` blocks per arena, always
-at least one facing each other across the room and one on a high wall or ceiling. `BlockInfo.Portalable` becomes depth-aware:
+**Rules.** From floor 2, walls become `Obsidian` (not portalable). The layout places a pair of `RiftPlate` blocks on the edge of each
+arena (two plateable walls as far apart as the room allows) and a pair beside every gap hallway and pit, so each gap can be
+crossed. Plates on a high wall or ceiling are not placed yet. `BlockInfo.Portalable` becomes depth-aware:
 floor 0 and 1 allow everything (so the mechanic is learned freely), later floors allow only plates. Plates survive carving
 (feature 3.3).
 
