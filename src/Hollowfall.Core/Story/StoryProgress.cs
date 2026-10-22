@@ -26,6 +26,8 @@ public sealed class StoryProgress
         public int WulverVisits;
         public readonly List<string> CatFlags = [];
         public int CatVisits;
+        public readonly List<string> VillagerFlags = [];
+        public int VillagerVisits;
     }
 
     private readonly List<string> _order = [];
@@ -102,6 +104,21 @@ public sealed class StoryProgress
         s.CatVisits = Math.Clamp(visits, 0, 10_000);
     }
 
+    /// <summary>What the villagers remember of this seed: short flag ids (at most <see cref="VillagerConversation.MaxFlags"/>) and how often they have been spoken to.</summary>
+    public IReadOnlyList<string> VillagerFlags(string seed) => Find(seed)?.VillagerFlags ?? (IReadOnlyList<string>)[];
+
+    public int VillagerVisits(string seed) => Find(seed)?.VillagerVisits ?? 0;
+
+    /// <summary>Replaces what the villagers remember. Invalid or surplus flags are dropped.</summary>
+    public void SetVillagers(string seed, IEnumerable<string> flags, int visits)
+    {
+        if (Touch(seed) is not { } s) return;
+        s.VillagerFlags.Clear();
+        foreach (var f in flags)
+            if (WulverEncounter.ValidFlag(f) && !s.VillagerFlags.Contains(f) && s.VillagerFlags.Count < VillagerConversation.MaxFlags) s.VillagerFlags.Add(f);
+        s.VillagerVisits = Math.Clamp(visits, 0, 10_000);
+    }
+
     public bool IsRead(string seed, string noteId) => Find(seed)?.Notes.Contains(noteId) ?? false;
 
     /// <summary>The ids of the notes read on a seed, in the order they were first read.</summary>
@@ -138,6 +155,11 @@ public sealed class StoryProgress
                 {
                     ["visits"] = s.CatVisits,
                     ["flags"] = new JsonArray([.. s.CatFlags.Select(id => (JsonNode?)JsonValue.Create(id))]),
+                },
+                ["villagers"] = new JsonObject
+                {
+                    ["visits"] = s.VillagerVisits,
+                    ["flags"] = new JsonArray([.. s.VillagerFlags.Select(id => (JsonNode?)JsonValue.Create(id))]),
                 },
             };
         }
@@ -178,6 +200,14 @@ public sealed class StoryProgress
                     foreach (var item in cf)
                         if (item is JsonValue v && v.TryGetValue<string>(out var flag) && WulverEncounter.ValidFlag(flag) && !s.CatFlags.Contains(flag) && s.CatFlags.Count < CatEncounter.MaxFlags)
                             s.CatFlags.Add(flag);
+            }
+            if (entry["villagers"] is JsonObject vg)
+            {
+                if (vg["visits"] is JsonValue gv && gv.TryGetValue<int>(out var villagerVisits)) s.VillagerVisits = Math.Clamp(villagerVisits, 0, 10_000);
+                if (vg["flags"] is JsonArray vf)
+                    foreach (var item in vf)
+                        if (item is JsonValue v && v.TryGetValue<string>(out var flag) && WulverEncounter.ValidFlag(flag) && !s.VillagerFlags.Contains(flag) && s.VillagerFlags.Count < VillagerConversation.MaxFlags)
+                            s.VillagerFlags.Add(flag);
             }
             if (entry["notes"] is not JsonArray notes) continue;
             foreach (var item in notes)

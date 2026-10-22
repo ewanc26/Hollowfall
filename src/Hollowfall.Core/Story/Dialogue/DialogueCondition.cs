@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Hollowfall.Core.Localization;
+using Hollowfall.Core.Relations;
 
 namespace Hollowfall.Core.Story.Dialogue;
 
@@ -45,6 +46,8 @@ public abstract class DialogueCondition
     public static DialogueCondition CarryingKey { get; } = new Atom(c => c.HasKey);
 
     public static DialogueCondition GiftGiven { get; } = new Atom(c => c.GiftGiven);
+
+    public static DialogueCondition VillagerTierAtLeast(ReputationTier tier) => new Atom(c => c.VillagerTier >= tier);
 
     public static DialogueCondition EndingReached { get; } = new Atom(c => c.EndingReached);
 

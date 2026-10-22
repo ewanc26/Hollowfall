@@ -1,4 +1,5 @@
 using Hollowfall.Core.Localization;
+using Hollowfall.Core.Relations;
 
 namespace Hollowfall.Core.Story.Dialogue;
 
@@ -34,6 +35,9 @@ public sealed record DialogueContext
 
     public int NotesRead { get; init; }
     public bool HasKey { get; init; }
+
+    /// <summary>How the Villagers of the glen regard the player.</summary>
+    public ReputationTier VillagerTier { get; init; } = ReputationTier.Neutral;
 
     /// <summary>Whether his gift has already been given this run.</summary>
     public bool GiftGiven { get; init; }
