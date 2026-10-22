@@ -54,6 +54,9 @@ public sealed class PortalSystem
         }
     }
 
+    /// <summary>The fixed rift openings of the current floor.</summary>
+    public IEnumerable<Portal> Rifts => _fixed.SelectMany(pair => new[] { pair.A, pair.B });
+
     public Portal? Get(PortalColor color) => color == PortalColor.Teal ? Teal : Violet;
 
     public Portal? Other(Portal p)
