@@ -64,8 +64,8 @@ public class SynthTests
     }
 
     [Fact]
-    public void OnlyTheAmbienceLoops() =>
-        Assert.Equal([SoundId.Ambience, SoundId.FireCrackle, SoundId.CatPurr], Enum.GetValues<SoundId>().Where(Synth.Loops));
+    public void OnlyTheAmbienceAndBedsLoop() =>
+        Assert.Equal([SoundId.Ambience, SoundId.FireCrackle, SoundId.CatPurr, .. Beds.All], Enum.GetValues<SoundId>().Where(Synth.Loops));
 
     [Fact]
     public void SoundsAreDistinctFromOneAnother()
@@ -149,7 +149,7 @@ public class SoundMapTests
         };
         var used = events.Select(SoundMap.For).Where(s => s != null).Select(s => s!.Value).ToHashSet();
         // Floor completion needs a result object; UI, ambience, footsteps and story sounds (reading a note, a title card) are played by the host directly.
-        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.Ambience, SoundId.NoteRead, SoundId.TitleCard, SoundId.WulverGreeting, SoundId.WulverGift, SoundId.FireCrackle, SoundId.CatMeow, SoundId.CatPurr, SoundId.CharmWear }.Concat(Footsteps.StepSounds);
+        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.Ambience, SoundId.NoteRead, SoundId.TitleCard, SoundId.WulverGreeting, SoundId.WulverGift, SoundId.FireCrackle, SoundId.CatMeow, SoundId.CatPurr, SoundId.CharmWear }.Concat(Footsteps.StepSounds).Concat(Beds.All);
         foreach (var id in Enum.GetValues<SoundId>().Except(exempt)) Assert.Contains(id, used);
     }
 

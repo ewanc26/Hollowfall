@@ -68,6 +68,18 @@ public enum SoundId
     // ---- items (appended; new sounds go below this line) ----
     CreamSip,
     CharmWear,
+
+    // ---- places: looping beds (appended; new sounds go below this line) ----
+    BedOcean,
+    BedBeach,
+    BedPlains,
+    BedForest,
+    BedDesert,
+    BedMountains,
+    BedRiver,
+    BedDungeonPlain,
+    BedDungeonMossy,
+    BedDungeonAshen,
 }
 
 /// <summary>
@@ -149,6 +161,7 @@ public static class Synth
             SoundId.AllyJoin => Mix(0.6, (t, _) => (Sine(t, Lerp(330, 660, Math.Min(1, t / 0.2))) * Decay(t, 5) + Sine(t, 990) * Decay(t, 9) * 0.4) * 0.45),
             SoundId.CreamSip => Mix(0.35, (t, _) => (Sine(t, Lerp(280, 540, Math.Min(1, t / 0.12))) * Decay(t, 12) + Sine(t, 1080) * Decay(t, 30) * 0.2) * 0.5),
             SoundId.CharmWear => Mix(0.8, (t, _) => (Sine(t, 1046.5) * Decay(t, 6) + (t > 0.08 ? Sine(t - 0.08, 1568) * Decay(t - 0.08, 7) : 0)) * 0.4),
+            _ when Beds.IsBed(id) => Beds.Render(id),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
@@ -157,7 +170,7 @@ public static class Synth
     }
 
     /// <summary>Whether a sound is meant to repeat seamlessly.</summary>
-    public static bool Loops(SoundId id) => id is SoundId.Ambience or SoundId.FireCrackle or SoundId.CatPurr;
+    public static bool Loops(SoundId id) => id is SoundId.Ambience or SoundId.FireCrackle or SoundId.CatPurr || Beds.IsBed(id);
 
     // ---- building blocks -----------------------------------------------------------------------
 
