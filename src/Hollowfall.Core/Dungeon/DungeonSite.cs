@@ -11,6 +11,10 @@ namespace Hollowfall.Core.Dungeon;
 public sealed class DungeonSite
 {
     public const int FloorSpacing = 8;
+
+    /// <summary>From this floor down, portals take only on rift plates.</summary>
+    public const int RiftPlateFloor = 2;
+
     public const int FirstFloorY = 38;
     public const int PlazaRadius = 3;
 
@@ -127,7 +131,9 @@ public sealed class DungeonSite
         switch (floor.CellAt(lx, lz))
         {
             case CellKind.Rock:
-                return floor.IsWallCell(lx, lz) ? BlockType.StoneBrick : null;
+                if (!floor.IsWallCell(lx, lz)) return null;
+                if (floor.IsPlate(lx, lz, yo)) return BlockType.RiftPlate;
+                return floor.Floor >= RiftPlateFloor ? BlockType.Obsidian : BlockType.StoneBrick;
             case CellKind.Floor:
                 // Gap hallways and shaft tunnels stand on a solid platform up to their height.
                 return yo <= floor.HeightAt(lx, lz) ? BlockType.BrickFloor : yo == 6 ? BlockType.StoneBrick : BlockType.Air;

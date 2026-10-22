@@ -51,6 +51,6 @@ public class DungeonGoldenTests
         var g = new TerrainGenerator(1);
         var site = g.Dungeons!.GetSite(0, 1)!;
         var chunk = g.GenerateChunk(site.EntranceX >> 4, site.EntranceZ >> 4);
-        Assert.Equal(2952558081228442399UL, TestHelpers.Checksum(chunk));
+        Assert.Equal(17363895346012628923UL, TestHelpers.Checksum(chunk));
     }
 }
