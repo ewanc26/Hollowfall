@@ -42,6 +42,8 @@ public static class BlockPalette
         BlockType.Spikes => new(0.74f, 0.74f, 0.80f),
         BlockType.Plank => new(0.66f, 0.46f, 0.28f),
         BlockType.Thatch => new(0.78f, 0.66f, 0.36f),
+        BlockType.RiftPlate => new(0.72f, 0.64f, 0.46f),
+        BlockType.Obsidian => new(0.36f, 0.32f, 0.42f),
         _ => new(1f, 0f, 1f), // magenta marks a block with no colour yet
     };
 
