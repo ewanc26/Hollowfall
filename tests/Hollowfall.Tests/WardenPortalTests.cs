@@ -188,6 +188,32 @@ public class WardenPortalTests
     }
 
     [Fact]
+    public void AReflectedShotThroughHisGateComesBackAndHurtsHim()
+    {
+        var (sim, view, warden, _) = Duel(0.5);
+        double startHealth = warden.Health;
+        bool reflected = false, crossedAfter = false;
+        for (int i = 0; i < 60 * 40 && warden.Health >= startHealth; i++)
+        {
+            var incoming = sim.Projectiles.FirstOrDefault(p => !p.Reflected && p.Position.DistanceTo(view.Eye) <= CombatSim.ParryReach * 0.8);
+            var actions = default(PlayerActions);
+            var aimAt = incoming?.Position ?? warden.Feet + new Vec3(0, 1.0, 0);
+            var aimed = Aim(view, aimAt);
+            if (incoming != null) actions = new PlayerActions(false, false, true);
+            Step(sim, aimed, actions);
+            var events = sim.DrainEvents().ToList();
+            if (events.OfType<ProjectileReflected>().Any()) reflected = true;
+            if (reflected && events.OfType<PortalTraversed>().Any(e => e.What == "projectile")) crossedAfter = true;
+        }
+        Assert.True(reflected, "no incoming shot was parried");
+        Assert.True(crossedAfter, "the reflected shot never went back through a gate");
+        Assert.True(warden.Health < startHealth, "the reflected shot did not hurt the Warden");
+    }
+
+    private static PlayerView Aim(PlayerView v, Vec3 at) =>
+        v with { Forward = (at - v.Eye).Normalized() };
+
+    [Fact]
     public void AVolleyThroughHisGateReachesYou()
     {
         var (sim, view, _, _) = Duel(0.5);
