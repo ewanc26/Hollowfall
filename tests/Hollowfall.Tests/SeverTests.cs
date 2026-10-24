@@ -204,6 +204,49 @@ public class SeverSimTests
         return a.Sim.SpawnEnemy(kind, new Vec3(at.X, a.Y, at.Z));
     }
 
+    private static (Portal Rift, Portal Partner) RiftPairOn(Arena a)
+    {
+        var rift = PortalSystem.Fixed(10, (int)a.Y - 1, (int)a.Z, (1, 0, 0));
+        var partner = PortalSystem.Fixed(30, (int)a.Y - 1, (int)a.Z, (-1, 0, 0));
+        a.Sim.Portals.SetFixed([(rift, partner)]);
+        return (rift, partner);
+    }
+
+    [Fact]
+    public void ClosingPortalsCutsWhoeverStandsInARiftOpeningAndKeepsIt()
+    {
+        var a = MakeArena();
+        LinkPair(a);
+        var (rift, partner) = RiftPairOn(a);
+        var c = rift.Frame.Center;
+        var husk = a.Sim.SpawnEnemy(EnemyKind.Husk, new Vec3(c.X + 0.2, c.Y - 1, c.Z));
+        a.Sim.DrainEvents();
+
+        Assert.True(a.Sim.ClosePortals());
+        var events = a.Sim.DrainEvents();
+
+        var cut = Assert.Single(events.OfType<EnemySevered>());
+        Assert.Equal(husk.Id, cut.Id);
+        Assert.Equal(PortalColor.Rift, cut.Portal);
+        Assert.True(husk.Dead);
+        Assert.Same(partner, a.Sim.Portals.Other(rift));
+        Assert.Equal(2, a.Sim.Portals.Rifts.Count());
+    }
+
+    [Fact]
+    public void CloseWithNoPlacedPortalDoesNotCutRiftOpenings()
+    {
+        var a = MakeArena();
+        var (rift, _) = RiftPairOn(a);
+        var c = rift.Frame.Center;
+        var husk = a.Sim.SpawnEnemy(EnemyKind.Husk, new Vec3(c.X + 0.2, c.Y - 1, c.Z));
+        a.Sim.DrainEvents();
+
+        Assert.False(a.Sim.ClosePortals());
+        Assert.Empty(a.Sim.DrainEvents().OfType<EnemySevered>());
+        Assert.Equal(husk.Spec.Health, husk.Health);
+    }
+
     private static void ReplaceTeal(Arena a) => Tick(a, new PlayerActions(false, false, false, PortalTeal: true), East);
 
     [Fact]
@@ -475,6 +518,7 @@ public class SeverPlumbingTests
     {
         string dir = AppContext.BaseDirectory;
         while (dir != null && !File.Exists(Path.Combine(dir, "README.md"))) dir = Path.GetDirectoryName(dir)!;
+        Assert.NotNull(dir);
         string readme = File.ReadAllText(Path.Combine(dir, "README.md"));
         Assert.Contains("Close portals", readme);
     }

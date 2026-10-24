@@ -3,6 +3,12 @@ using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
+if (args is ["--po", var poPath])
+{
+    File.WriteAllText(poPath, Hollowfall.Core.Localization.PoFiles.Export(Hollowfall.Core.Localization.LocTable.All, "gd"), new UTF8Encoding(false));
+    return;
+}
+
 // Usage: dotnet run --project src/Hollowfall.Cli -- [seed] [chunksRadius]
 string seedText = args.Length > 0 ? args[0] : "voxel";
 int radius = args.Length > 1 && int.TryParse(args[1], out var r) ? Math.Clamp(r, 1, 12) : 5;
@@ -119,6 +125,10 @@ static (int, int, int) Color(BlockType b) => b switch
     BlockType.Water => (52, 100, 200),
     BlockType.Gravel => (140, 135, 130),
     BlockType.Log => (100, 72, 40),
+    BlockType.Plank => (168, 118, 72),
+    BlockType.Thatch => (200, 168, 92),
+    BlockType.RiftPlate => (184, 164, 118),
+    BlockType.Obsidian => (92, 84, 108),
     BlockType.Leaves => (40, 110, 40),
     BlockType.Cactus => (60, 130, 70),
     BlockType.CoalOre => (60, 60, 65),

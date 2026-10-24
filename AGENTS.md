@@ -4,7 +4,7 @@ Guidance for AI coding agents working in **Hollowfall**.
 
 ## Project overview
 
-A voxel dungeon crawler in C# on .NET 10. `Hollowfall.Core` holds world data, seeded terrain and dungeon generation, the combat and portal simulation, input rules and sound synthesis (no engine dependency), `game/` is the Godot shell, `Hollowfall.Cli` is a seed inspector, `tools/Hollowfall.AssetGen` writes the committed vector assets, and `Hollowfall.Tests` is the xunit suite.
+A voxel dungeon crawler in C# on .NET 10. `Hollowfall.Core` holds world data, seeded terrain and dungeon generation, the combat and portal simulation, input rules and sound synthesis (no engine dependency), `game/` is the Godot shell, `Hollowfall.Cli` is a seed inspector, `tools/Hollowfall.AssetGen` writes the committed static assets (SVG glyphs, the block atlas PNG, the sound effect WAVs and the model GLBs; `Hollowfall.Core.Assets.StaticAssets` lists them, and the game falls back to generating them only when a file is missing), and `Hollowfall.Tests` is the xunit suite.
 
 - Language: C#
 - Default branch: main
@@ -56,5 +56,6 @@ All saved data lives in one folder, `~/.ewanc26/hollowfall` (`Hollowfall.Core.St
 - Terrain generation must remain a pure function of the seed and coordinates: no `System.Random`, no shared mutable state, no dependence on generation order.
 - Dungeon generation follows the same rule: `FloorLayout` and `DungeonSite.BlockAt` are pure functions of the seed and coordinates. Add new dungeon blocks at the end of `BlockType` so existing values never shift.
 - Keep changes scoped and update tests or documentation when behavior changes.
+- No dead or duplicate code. Each behaviour has one home: if Core authors something (geometry, animation clips, textures, sounds), Core is the only place that builds it. The committed file is that output, and game scripts load it through one loader. The just-in-time fallback when a file is missing runs the same Core builder and the same loader, so it produces the same bytes; never write a second builder in game code. When a change makes code unreachable, delete it in the same change; do not leave commented-out or unused members, and do not copy logic between game scripts and Core.
 - Use feature branches and pull requests.
 - Treat generated files, credentials, deployment configuration, and release metadata as sensitive.

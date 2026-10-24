@@ -170,8 +170,8 @@ public class ReplayTests
         Assert.Equal(ExpectedGoldenChecksum, ReplayCodec.Fnv32(bytes));
     }
 
-    private const int ExpectedGoldenLength = 4210;
-    private const uint ExpectedGoldenChecksum = 3367250316; // changed on purpose: FormatVersion 3 records the run's two stats, and SimVersion 5 is in the header
+    private const int ExpectedGoldenLength = 4212;
+    private const uint ExpectedGoldenChecksum = 3285020802; // changed on purpose: the sim version byte went up to 13 for the Warden gate deferral
 
     [Fact]
     public void FileSizesStaySane()
@@ -388,6 +388,23 @@ public class ReplayTests
     {
         var store = ReplayStore.Beside(Path.Combine(TempDir(), "records.json"));
         Assert.Equal("replays", Path.GetFileName(store.Folder));
+    }
+
+    [Fact]
+    public void LoadAllReturnsTheStoredFloorsOfOneSeedInOrder()
+    {
+        var dir = TempDir();
+        try
+        {
+            var store = new ReplayStore(dir);
+            Assert.True(store.TrySaveIfBest(Tiny("deep", 2, OverallGrade.B, 9, 120)));
+            Assert.True(store.TrySaveIfBest(Tiny("deep", 0, OverallGrade.C, 6, 90)));
+            Assert.True(store.TrySaveIfBest(Tiny("other", 1, OverallGrade.D, 1, 200)));
+
+            Assert.Equal([0, 2], store.LoadAll("deep").Select(r => r.Floor));
+            Assert.Empty(store.LoadAll("unseen"));
+        }
+        finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
     }
 
     [Fact]

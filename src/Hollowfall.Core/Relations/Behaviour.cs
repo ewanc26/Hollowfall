@@ -158,6 +158,13 @@ public sealed class Brain
         return Intent = next;
     }
 
+    public Intent StepVillager(Perception p, Traits t, double anger, double fear)
+    {
+        var next = VillagerNet.Decide(new VillagerSense(p, t, anger, fear, Intent));
+        if (next is not (Intent.Warn or Intent.Attack)) _warn = 0;
+        return Intent = next;
+    }
+
     public void Reset()
     {
         Intent = Intent.Idle;
@@ -313,7 +320,8 @@ public sealed class Mind
         Disposition = Dispositions.Decide(new DispositionInput(Species, stance, Traits, Provoked, Scared));
         if (Disposition == Disposition.Allied && before != Disposition.Allied) events |= MindEvents.Allied;
 
-        _brain.Step(dt, Disposition, Species, Traits, Provoked, Scared, Memory.Anger >= Brain.FuryAnger, p);
+        if (Species.Kind == EnemyKind.Villager) _brain.StepVillager(p, Traits, Memory.Anger, Memory.Fear);
+        else _brain.Step(dt, Disposition, Species, Traits, Provoked, Scared, Memory.Anger >= Brain.FuryAnger, p);
         return events;
     }
 }

@@ -10,7 +10,7 @@ namespace Hollowfall.Game;
 public partial class MiniMap : Control
 {
     private const int Window = 44; // cells shown across
-    private const float Size = 176;
+    private const float Pixels = 176;
 
     private static readonly Color WallColour = new(0.55f, 0.62f, 0.8f);
     private static readonly Color FloorColour = new(0.2f, 0.25f, 0.36f);
@@ -29,7 +29,7 @@ public partial class MiniMap : Control
 
     public MiniMap()
     {
-        CustomMinimumSize = new Vector2(Size, Size);
+        CustomMinimumSize = new Vector2(Pixels, Pixels);
         MouseFilter = MouseFilterEnum.Ignore;
         TextureFilter = TextureFilterEnum.Nearest;
         ClipContents = true;
@@ -72,20 +72,20 @@ public partial class MiniMap : Control
 
     public override void _Draw()
     {
-        DrawRect(new Rect2(Vector2.Zero, new Vector2(Size, Size)), new Color(0.03f, 0.03f, 0.05f, 0.7f));
+        DrawRect(new Rect2(Vector2.Zero, new Vector2(Pixels, Pixels)), new Color(0.03f, 0.03f, 0.05f, 0.7f));
         if (_texture == null) return;
 
-        float scale = Size / Window;
+        float scale = Pixels / Window;
         var centre = _player + new Vector2(Window, Window);
         var source = new Rect2(centre - new Vector2(Window, Window) / 2, new Vector2(Window, Window));
-        DrawTextureRectRegion(_texture, new Rect2(Vector2.Zero, new Vector2(Size, Size)), source);
+        DrawTextureRectRegion(_texture, new Rect2(Vector2.Zero, new Vector2(Pixels, Pixels)), source);
 
         // The player: an arrow pointing the way they face (yaw 0 looks down -Z, which is up on the map).
-        var middle = new Vector2(Size, Size) / 2;
+        var middle = new Vector2(Pixels, Pixels) / 2;
         var forward = new Vector2(-Mathf.Sin(_yaw), -Mathf.Cos(_yaw));
         var side = new Vector2(-forward.Y, forward.X);
         float r = scale * 1.8f;
         DrawColoredPolygon([middle + forward * r, middle - forward * r * 0.7f + side * r * 0.6f, middle - forward * r * 0.7f - side * r * 0.6f], new Color(1f, 0.95f, 0.5f));
-        DrawRect(new Rect2(Vector2.Zero, new Vector2(Size, Size)), new Color(0.4f, 0.45f, 0.6f, 0.8f), false, 2);
+        DrawRect(new Rect2(Vector2.Zero, new Vector2(Pixels, Pixels)), new Color(0.4f, 0.45f, 0.6f, 0.8f), false, 2);
     }
 }

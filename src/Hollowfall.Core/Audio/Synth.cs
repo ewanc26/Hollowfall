@@ -29,7 +29,6 @@ public enum SoundId
     Death,
     UiMove,
     UiSelect,
-    Ambience,
     Meteor,
     StepStone,
     StepBrick,
@@ -64,6 +63,22 @@ public enum SoundId
     StandingDown,
     BoonChime,
     AllyJoin,
+
+    // ---- items (appended; new sounds go below this line) ----
+    CreamSip,
+    CharmWear,
+
+    // ---- places: looping beds (appended; new sounds go below this line) ----
+    BedOcean,
+    BedBeach,
+    BedPlains,
+    BedForest,
+    BedDesert,
+    BedMountains,
+    BedRiver,
+    BedDungeonPlain,
+    BedDungeonMossy,
+    BedDungeonAshen,
 }
 
 /// <summary>
@@ -74,9 +89,6 @@ public enum SoundId
 public static class Synth
 {
     public const int SampleRate = 22050;
-
-    /// <summary>Length of the looping ambience, in seconds. Every tone in it has a whole number of cycles in this time.</summary>
-    public const double AmbienceSeconds = 4.0;
 
     /// <summary>Lengths of the looping fire crackle and cat purr, in seconds. The purr's tones fit whole cycles into the loop, and the crackle's pops wrap round the end of it, so neither joins with a click (a test checks the step across each join).</summary>
     public const double CrackleSeconds = 3.0;
@@ -116,7 +128,6 @@ public static class Synth
             SoundId.UiMove => Mix(0.05, (t, _) => Sine(t, 920) * Decay(t, 70) * 0.5),
             SoundId.UiSelect => Mix(0.14, (t, _) => Sine(t, Lerp(700, 1050, t / 0.14)) * Decay(t, 22) * 0.5),
             SoundId.Meteor => Mix(0.55, (t, i) => Sweep(t, 220, 38, 0.55) * Decay(t, 7) * 0.8 + Noise(i, 11) * Decay(t, 38) * 0.45 + Sine(t, 70) * Decay(t, 12) * 0.4),
-            SoundId.Ambience => Ambience(),
             SoundId.StepStone => Mix(0.13, (t, i) => Noise(i, 50) * Decay(t, 80) * 0.35 + Sine(t, 150) * Decay(t, 55) * 0.6),
             SoundId.StepBrick => Mix(0.17, (t, i) => Sine(t, 108) * Decay(t, 32) * 0.55 + Sine(t, 216) * Decay(t, 42) * 0.3 + Noise(i, 51) * Decay(t, 95) * 0.3),
             SoundId.StepDirt => Step(0.15, 52, 700, 38, 0.9, 85, 45),
@@ -143,6 +154,9 @@ public static class Synth
             SoundId.StandingDown => Mix(0.8, (t, i) => (Sine(t, 196) + 0.5 * Sine(t, 185)) * Decay(t, 4) * 0.5 + (t > 0.14 ? (Sine(t - 0.14, 147) + 0.5 * Sine(t - 0.14, 139)) * Decay(t - 0.14, 4) * 0.5 : 0)),
             SoundId.BoonChime => Mix(0.9, (t, _) => (Sine(t, 880) * Decay(t, 5) + (t > 0.1 ? Sine(t - 0.1, 1175) * Decay(t - 0.1, 5) : 0) + (t > 0.2 ? Sine(t - 0.2, 1568) * Decay(t - 0.2, 5) : 0)) * 0.3),
             SoundId.AllyJoin => Mix(0.6, (t, _) => (Sine(t, Lerp(330, 660, Math.Min(1, t / 0.2))) * Decay(t, 5) + Sine(t, 990) * Decay(t, 9) * 0.4) * 0.45),
+            SoundId.CreamSip => Mix(0.35, (t, _) => (Sine(t, Lerp(280, 540, Math.Min(1, t / 0.12))) * Decay(t, 12) + Sine(t, 1080) * Decay(t, 30) * 0.2) * 0.5),
+            SoundId.CharmWear => Mix(0.8, (t, _) => (Sine(t, 1046.5) * Decay(t, 6) + (t > 0.08 ? Sine(t - 0.08, 1568) * Decay(t - 0.08, 7) : 0)) * 0.4),
+            _ when Beds.IsBed(id) => Beds.Render(id),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };
 
@@ -151,7 +165,7 @@ public static class Synth
     }
 
     /// <summary>Whether a sound is meant to repeat seamlessly.</summary>
-    public static bool Loops(SoundId id) => id is SoundId.Ambience or SoundId.FireCrackle or SoundId.CatPurr;
+    public static bool Loops(SoundId id) => id is SoundId.FireCrackle or SoundId.CatPurr || Beds.IsBed(id);
 
     // ---- building blocks -----------------------------------------------------------------------
 
@@ -287,15 +301,6 @@ public static class Synth
             + Sine(t, Lerp(300, 720, t / 0.12)) * Decay(t, 30) * 0.22
             + (t > 0.09 ? Sine(t - 0.09, Lerp(420, 900, (t - 0.09) / 0.12)) * Decay(t - 0.09, 28) * 0.16 : 0));
     }
-
-    /// <summary>A low drone: three slow tones that beat against each other. Every frequency fits whole cycles into the loop, so it joins up without a click.</summary>
-    private static float[] Ambience() =>
-        Mix(AmbienceSeconds, (t, _) =>
-        {
-            double swell = 0.75 + 0.25 * Math.Sin(Tau * t / AmbienceSeconds);
-            double drone = Sine(t, 55) * 0.5 + Sine(t, 55.25) * 0.4 + Sine(t, 82.5) * 0.25 + Sine(t, 110.25) * 0.12;
-            return drone * swell * 0.5;
-        });
 
     /// <summary>
     /// A fire burning softly: a low warm bed of filtered noise that swells and falls, with small pops and snaps scattered through it. Pops wrap

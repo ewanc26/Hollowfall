@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Audio;
 using Hollowfall.Core.Audio.Music;
 using Hollowfall.Core.Storage;
 using Hollowfall.Core.Combat;
@@ -9,6 +10,7 @@ using Hollowfall.Core.Progression;
 using Hollowfall.Core.Relations;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Terrain;
+using Hollowfall.Core.Topology;
 using Hollowfall.Core.Textures;
 using Hollowfall.Core.World;
 using Hollowfall.Core.Ui;
@@ -44,6 +46,7 @@ public partial class Main : Node3D
     private WulverDirector? _wulver;
     private WulverView? _wulverView;
     private CatDirector? _cat;
+    private VillagerDirector? _villagers;
     private CatView? _catView;
     private int _deathCount, _killCount, _deepestFloor = -1;
     private double _playSeconds;
@@ -132,7 +135,9 @@ public partial class Main : Node3D
         GetWindow().SizeChanged += ApplyUiScale;
 
         string seedText = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SEED") is { Length: > 0 and <= 100 } s ? s : Settings.Seed;
+        bool gluedLevel = System.Environment.GetEnvironmentVariable("HOLLOWFALL_LEVEL") == "glued" || DevRequests.TakeGluedRoom();
         World = new VoxelWorld(TerrainGenerator.SeedFromString(seedText));
+        if (gluedLevel) World.Glue = GluedTestLevel.Create();
         _seedName = seedText;
         _records = RunRecords.Load(RecordsPath);
 
@@ -148,13 +153,15 @@ public partial class Main : Node3D
 
         _audio = new AudioDirector { Name = "Audio", Settings = Settings };
         AddChild(_audio);
-        _music = new MusicDirector { Name = "Music", Settings = Settings, Seed = World.Seed, Audio = _audio };
+        _music = new MusicDirector { Name = "Music", Settings = Settings, Seed = World.Seed };
         AddChild(_music);
         _uiSound = id => _audio.Play(id);
         Menus.UiSound += _uiSound;
 
-        var site = FindNearestSite(World);
-        var (feet, yaw, where) = Spawn(World, site);
+        var site = gluedLevel ? null : FindNearestSite(World);
+        var (feet, yaw, where) = gluedLevel
+            ? (new Vector3((float)GluedTestLevel.Spawn.X, (float)GluedTestLevel.Spawn.Y, (float)GluedTestLevel.Spawn.Z), 0.0, "in the glued test level")
+            : Spawn(World, site);
         _where = where;
 
         _view = new WorldView { Name = "World" };
@@ -183,6 +190,7 @@ public partial class Main : Node3D
             Combat.EventRaised += e => { if (e is EnemyKilled killed) AwardKill(killed); };
             Combat.EventRaised += e => { if (e is FloorCompleted) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => { if (e is BoonGiven && _character.ReceiveBoon()) ProgressionStore.TrySave(_character, ProgressionPath); };
+            Combat.EventRaised += e => { if (e is CreamUsed && _character.Items.Remove(ItemKind.BrownieCream) > 0) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => { if (MusicEvents.For(e, site.FloorCount - 1, site.Floors[^1].BossRoom?.Id ?? -1) is { } stinger) _music.Trigger(stinger); };
             Combat.EventRaised += e => _hud?.OnEvent(e);
@@ -244,10 +252,21 @@ public partial class Main : Node3D
             var catEncounter = new CatEncounter(World.Seed, _seedName, catSpot, storyProgress.CatFlags(_seedName), storyProgress.CatVisits(_seedName));
             _cat = new CatDirector(catEncounter, Combat.Sim.Vitals, _storyUi, storyProgress, _seedName, StoryPath, (id, at) => _audio.Play(id, at))
             {
+                Loc = _loc,
                 InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
                 MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
             };
             GD.Print($"Hollowfall: something warm rests on floor {catSpot.Pit.Floor} at ({catSpot.X:F1}, {catSpot.Y:F1}, {catSpot.Z:F1})");
+        }
+
+        if (Combat != null)
+        {
+            var conversation = new VillagerConversation(World.Seed, _seedName, storyProgress.VillagerFlags(_seedName), storyProgress.VillagerVisits(_seedName));
+            _villagers = new VillagerDirector(conversation, _storyUi, storyProgress, _seedName, StoryPath, () => Combat?.Sim.Relations?.Reputation.Tier(Faction.Villagers) ?? ReputationTier.Neutral)
+            {
+                InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+            };
         }
 
         // The weapons in your hands, drawn under the HUD.
@@ -271,11 +290,27 @@ public partial class Main : Node3D
         _menus.QuitRequested += () => GetTree().Quit();
         _menus.NewGameRequested += () => Restart(skipTitle: true);
         _menus.MainMenuRequested += () => Restart(skipTitle: false);
+        _menus.GluedRoomRequested += () =>
+        {
+            DevRequests.GluedRoom = true;
+            Restart(skipTitle: true);
+        };
+        _menus.ShowcaseRequested += page =>
+        {
+            DevRequests.ShowcasePage = page;
+            GetTree().Paused = false;
+            GetTree().ChangeSceneToFile("res://scenes/Showcase.tscn");
+        };
+        _menus.DebugOverlayOn = () => _hud.DebugOn;
+        _menus.DebugOverlayChanged += on => _hud.SetDebug(on);
         _menus.JournalProvider = () => (plan.Title, _story.Journal());
         _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
         _menus.CharacterProvider = () => _character;
         _menus.SpendRequested += stat => { if (_character.Spend(stat)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.QuestTakeRequested += quest => { if (_character.Quests.Take(quest)) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.BagProvider = () => _character.Items;
+        _menus.WearRequested += kind => { if (_character.Items.Wear(kind)) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.TakeOffRequested += () => { if (_character.Items.TakeOff()) ProgressionStore.TrySave(_character, ProgressionPath); };
         AddChild(_menus);
         if (_wulver != null)
         {
@@ -300,7 +335,7 @@ public partial class Main : Node3D
             if (skipTitle) CallDeferred(MethodName.ShowIntro);
         }
 
-        // For screenshots and videos: HOLLOWFALL_MENU=title|pause|controls|settings opens that screen straight away.
+        // For screenshots and videos: HOLLOWFALL_MENU=title|pause|controls|settings|journal|standing|bag opens that screen straight away.
         if (System.Environment.GetEnvironmentVariable("HOLLOWFALL_MENU") is { } menu)
             _menus.CallDeferred(Menus.MethodName.OpenFrom, (int)MenuScreen.Pause, (int)(menu switch
             {
@@ -309,6 +344,7 @@ public partial class Main : Node3D
                 "settings" => MenuScreen.Settings,
                 "journal" => MenuScreen.Journal,
                 "standing" => MenuScreen.Standing,
+                "bag" => MenuScreen.Bag,
                 _ => MenuScreen.Pause,
             }));
 
@@ -339,14 +375,26 @@ public partial class Main : Node3D
     /// </summary>
     public void ApplyUiScale()
     {
+        // Setting the factor fires SizeChanged synchronously, which lands back here.
+        if (_applyingUiScale) return;
         var window = GetWindow();
         if (window == null) return;
-        double factor = UiScaling.Factor(window.Size.X, window.Size.Y, Settings.UiScale, Settings.AutoUiScale);
-        window.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
-        window.ContentScaleSize = Vector2I.Zero; // no base size: the factor alone decides
-        window.ContentScaleFactor = (float)factor;
-        UiScaleApplied = factor;
+        _applyingUiScale = true;
+        try
+        {
+            double factor = UiScaling.Factor(window.Size.X, window.Size.Y, Settings.UiScale, Settings.AutoUiScale);
+            window.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+            window.ContentScaleSize = Vector2I.Zero; // no base size: the factor alone decides
+            window.ContentScaleFactor = (float)factor;
+            UiScaleApplied = factor;
+        }
+        finally
+        {
+            _applyingUiScale = false;
+        }
     }
+
+    private bool _applyingUiScale;
 
     /// <summary>The interface scale in force, for tests and the debug overlay.</summary>
     public double UiScaleApplied { get; private set; } = 1.0;
@@ -451,10 +499,12 @@ public partial class Main : Node3D
             if (_wulver != null) actions = _wulver.Filter(actions, view.Feet, !dead);
             if (_demo is { } cd && cd.StartsWith("cat")) RunCatDemo(cd);
             if (_cat != null) actions = _cat.Filter(actions, view.Feet, !dead);
+            if (_villagers != null) actions = _villagers.Filter(actions, view.Feet, !dead, Combat.Sim.Enemies);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "gap") (view, actions) = RunGapDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
             if (_replay != null) (view, actions) = _replay.Capture(delta, view, actions);
+            if (_player.TakeSlamLanding() is { } fall) Combat.Sim.Slam(view.Feet, fall);
             Combat.Step(delta, view, actions);
             foreach (var impact in Combat.LastEvents.OfType<MeteorImpact>()) _player.KeepSpeed(impact.SpeedKept);
             // Fell into a pit: the sim says where it is safe, and the body goes there (the replay records the new place on the next step).
@@ -807,6 +857,7 @@ public partial class Main : Node3D
         _weapons.Pose(delta, b.Speed, b.OnGround, _player.LookDelta);
         _props?.Update(delta, _view.Focus);
         _audio.Underground = Combat != null && Combat.Sim.CurrentFloor >= 0;
+        _audio.SetBedMix(Beds.MixAt(World.Generator, b.X, b.Z, Combat?.Sim.CurrentFloor ?? -1));
         if (_music.FollowGame) _music.State = MusicNow();
         if (_story.EndingShown && !_endingStingerSent) { _endingStingerSent = true; _music.Trigger(Stinger.Ending); }
         _dust.Active = _audio.Underground;
@@ -834,6 +885,7 @@ public partial class Main : Node3D
         _weapons.SetPortals(sim.Portals.Teal != null, sim.Portals.Violet != null);
         if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds, sim.Items.KeysHeld);
         else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
+        _hud.SetCream(sim.CreamsLeft);
         {
             _hud.SetMap(sim.Map, floor, new Vector2((float)(b.X - Combat.Site.OriginX), (float)(b.Z - Combat.Site.OriginZ)), (float)_player.Yaw);
         }

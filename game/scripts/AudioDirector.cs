@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Assets;
 using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Input;
@@ -19,8 +20,9 @@ public partial class AudioDirector : Node
     private readonly Dictionary<SoundId, AudioStreamWav> _streams = [];
     private readonly List<AudioStreamPlayer> _flat = [];
     private readonly List<AudioStreamPlayer3D> _spatial = [];
-    private AudioStreamPlayer _ambience = null!;
-    private double _ambienceLevel;
+    private AudioStreamPlayer[] _beds = [];
+    private double[] _bedTarget = [];
+    private double[] _bedLevel = [];
     private int _next;
     private readonly Stride _stride = new();
 
@@ -44,13 +46,28 @@ public partial class AudioDirector : Node
             _spatial.Add(spatial);
         }
 
-        _ambience = new AudioStreamPlayer { Stream = _streams[SoundId.Ambience], VolumeDb = -80 };
-        AddChild(_ambience);
-        _ambience.Play();
+        _beds = new AudioStreamPlayer[Beds.All.Length];
+        for (int i = 0; i < _beds.Length; i++)
+        {
+            _beds[i] = new AudioStreamPlayer { Stream = _streams[Beds.All[i]], VolumeDb = -80 };
+            AddChild(_beds[i]);
+            _beds[i].Play();
+        }
+        _bedTarget = new double[Beds.All.Length];
+        _bedLevel = new double[Beds.All.Length];
     }
 
     private static AudioStreamWav ToStream(SoundId id)
     {
+        var loop = Synth.Loops(id) ? AudioStreamWav.LoopModeEnum.Forward : AudioStreamWav.LoopModeEnum.Disabled;
+        if (GD.Load<AudioStreamWav>("res://" + StaticAssets.SoundFile(id)) is { } stored)
+        {
+            stored.LoopMode = loop;
+            stored.LoopBegin = 0;
+            stored.LoopEnd = stored.Data.Length / 2;
+            return stored;
+        }
+
         var samples = Synth.Render(id);
         var bytes = new byte[samples.Length * 2];
         for (int i = 0; i < samples.Length; i++)
@@ -65,7 +82,7 @@ public partial class AudioDirector : Node
             MixRate = Synth.SampleRate,
             Stereo = false,
             Data = bytes,
-            LoopMode = Synth.Loops(id) ? AudioStreamWav.LoopModeEnum.Forward : AudioStreamWav.LoopModeEnum.Disabled,
+            LoopMode = loop,
             LoopBegin = 0,
             LoopEnd = samples.Length,
         };
@@ -138,14 +155,17 @@ public partial class AudioDirector : Node
 
     private static Vector3 V(Vec3 v) => new((float)v.X, (float)v.Y, (float)v.Z);
 
-    /// <summary>
-    /// Set by the <see cref="MusicDirector"/> once the adaptive music is playing: its drone layer is the bed from then on (the Ambience
-    /// slider scales that layer), so the old looping drone goes quiet instead of doubling it.
-    /// </summary>
-    public bool BedReplaced { get; set; }
-
-    /// <summary>Whether the player is underground, where the drone plays.</summary>
+    /// <summary>Whether the player is underground.</summary>
     public bool Underground { get; set; }
+
+    /// <summary>
+    /// Sets the automix of the place beds: each bed's share of the places around the listener. The beds all play from the start, in step,
+    /// and their levels glide toward the mix, so a change of place is heard as the sound drifting over, not a cut.
+    /// </summary>
+    public void SetBedMix(IReadOnlyDictionary<SoundId, double> mix)
+    {
+        for (int i = 0; i < Beds.All.Length; i++) _bedTarget[i] = mix.GetValueOrDefault(Beds.All[i]);
+    }
 
     private readonly Dictionary<SoundId, (AudioStreamPlayer Player, double Level)> _loops = [];
 
@@ -155,7 +175,7 @@ public partial class AudioDirector : Node
     /// </summary>
     public void SetLoopLevel(SoundId id, double level)
     {
-        if (!IsInsideTree() || !Synth.Loops(id) || id == SoundId.Ambience) return;
+        if (!IsInsideTree() || !Synth.Loops(id)) return;
         if (!_loops.TryGetValue(id, out var loop))
         {
             var player = new AudioStreamPlayer { Stream = _streams[id], VolumeDb = -80 };
@@ -189,9 +209,13 @@ public partial class AudioDirector : Node
     /// <summary>Fades the drone in underground and applies the volume settings. Runs while paused, so the volume sliders are heard at once.</summary>
     public override void _Process(double delta)
     {
-        _ambienceLevel = Mathf.MoveToward((float)_ambienceLevel, Underground && !BedReplaced ? 1f : 0f, (float)(delta * 0.6));
-        double level = Settings.MasterVolume * Settings.AmbienceVolume * _ambienceLevel * SoundMap.Gain(SoundId.Ambience);
-        _ambience.VolumeDb = level <= 1e-4 ? -80 : Mathf.LinearToDb((float)level);
+        for (int i = 0; i < _beds.Length; i++)
+        {
+            double step = Math.Clamp(_bedTarget[i] - _bedLevel[i], -delta * 0.5, delta * 0.5);
+            _bedLevel[i] += step;
+            double level = Settings.MasterVolume * Settings.AmbienceVolume * SoundMap.Gain(Beds.All[i]) * _bedLevel[i];
+            _beds[i].VolumeDb = level <= 1e-4 ? -80 : Mathf.LinearToDb((float)level);
+        }
         UpdateLoops();
     }
 }

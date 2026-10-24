@@ -6,6 +6,9 @@ public enum PortalColor
 {
     Teal,
     Violet,
+
+    /// <summary>A fixed opening set into a dungeon wall. It cannot be placed or removed, only passed through.</summary>
+    Rift,
 }
 
 /// <summary>
@@ -64,18 +67,20 @@ public static class PortalTransform
     /// A point seen in the entrance's frame as (a, b, c) comes out of the exit at (-a, b, -c): mirrored across the
     /// portal plane and turned 180 degrees about the portal's up axis, so walking in means walking out.
     /// </summary>
-    public static Vec3 Point(Portal entrance, Portal exit, Vec3 p)
-    {
-        var (a, b, c) = entrance.Frame.ToLocal(p);
-        var e = exit.Frame;
-        return e.Center + e.Right * -a + e.Up * b + e.Normal * -c;
-    }
+    public static Vec3 Point(Portal entrance, Portal exit, Vec3 p) => Point(entrance.Frame, exit.Frame, p);
 
     /// <summary>Directions and velocities rotate the same way but have no position.</summary>
-    public static Vec3 Vector(Portal entrance, Portal exit, Vec3 v)
+    public static Vec3 Vector(Portal entrance, Portal exit, Vec3 v) => Vector(entrance.Frame, exit.Frame, v);
+
+    public static Vec3 Point(Frame entrance, Frame exit, Vec3 p)
     {
-        var (a, b, c) = entrance.Frame.VectorToLocal(v);
-        var e = exit.Frame;
-        return e.Right * -a + e.Up * b + e.Normal * -c;
+        var (a, b, c) = entrance.ToLocal(p);
+        return exit.Center + exit.Right * -a + exit.Up * b + exit.Normal * -c;
+    }
+
+    public static Vec3 Vector(Frame entrance, Frame exit, Vec3 v)
+    {
+        var (a, b, c) = entrance.VectorToLocal(v);
+        return exit.Right * -a + exit.Up * b + exit.Normal * -c;
     }
 }

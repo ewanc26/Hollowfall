@@ -33,6 +33,8 @@ public enum StyleBonus
     FinishedOff,
     Meteor,
     Sever,
+    Hollowfall,
+    Freefall,
 }
 
 /// <summary>How worn a weapon's novelty is: stale weapons earn less style, which pushes you to mix them.</summary>
@@ -83,6 +85,8 @@ public sealed class StyleMeter
         [StyleBonus.FinishedOff] = 50,
         [StyleBonus.Meteor] = 180,
         [StyleBonus.Sever] = 250,
+        [StyleBonus.Hollowfall] = 150,
+        [StyleBonus.Freefall] = 120,
     };
 
     private readonly List<double> _killTimes = [];

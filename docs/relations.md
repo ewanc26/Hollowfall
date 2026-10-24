@@ -27,27 +27,29 @@ stance never changes whatever the standing says, so the existing monsters stay e
 
 | Faction | Group | Stance toward the player | Fixed | Starts at |
 |---|---|---|---|---|
-| Husks, Spitters, Wardens | Hollow | Enemy | yes | -90 (Hated) |
+| Husks, Spitters, Wardens, Cù-sìth | Hollow | Enemy | yes | -90 (Hated) |
 | Brownies | Folk | Neutral | no | 0 |
 | Selkies | Folk | Neutral | no | 0 |
 | Kelpies | Folk | Hostile | no | -50 (Hostile) |
 | Wanderers (the Wulver, the Bean Nighe) | Wanderers | Neutral | no | 0 |
 | Vermin (hares) | Vermin | Neutral | no | 0 |
+| Villagers (the crofters of the glen) | Folk | Neutral | no | 0 |
 
 ### How the factions regard each other
 
 Row looks at column. A = Ally, F = Friendly, N = Neutral, W = Wary, H = Hostile, E = Enemy. Every faction is its own Ally, Ally is
 always mutual, and no pair disagrees by more than three steps (tests check all of it).
 
-| | Delver | Husks | Spitters | Wardens | Brownies | Selkies | Kelpies | Wanderers | Vermin |
-|---|---|---|---|---|---|---|---|---|---|
-| Delver | A | E | E | E | N | N | H | N | N |
-| Husks, Spitters, Wardens | E | A | A | A | H | H | N | W | N |
-| Brownies | N | E | E | E | A | F | W | N | F |
-| Selkies | N | E | E | E | F | A | W | F | N |
-| Kelpies | H | N | N | N | W | W | A | N | W |
-| Wanderers | N | H | H | H | N | N | W | A | N |
-| Vermin | N | W | W | W | N | N | W | N | A |
+| | Delver | Husks | Spitters | Wardens | Brownies | Selkies | Kelpies | Wanderers | Vermin | Villagers |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Delver | A | E | E | E | N | N | H | N | N | N |
+| Husks, Spitters, Wardens, Cù-sìth | E | A | A | A | H | H | N | W | N | H |
+| Brownies | N | E | E | E | A | F | W | N | F | F |
+| Selkies | N | E | E | E | F | A | W | F | N | N |
+| Kelpies | H | N | N | N | W | W | A | N | W | N |
+| Wanderers | N | H | H | H | N | N | W | A | N | N |
+| Vermin | N | W | W | W | N | N | W | N | A | N |
+| Villagers | N | E | E | E | F | N | W | N | N | A |
 
 The matrix decides how a witness feels about a victim (see below) and who an allied creature will help against. The Folk fear the Hollow
 and the Hollow hunts them.
@@ -161,6 +163,10 @@ monsters, loot, keys and traps are exactly where they were. `Spawn.Variant` hold
 Creatures are spawned when the player first reaches their floor and only when the relationship system is on. They are never part of an
 encounter: a room holding only passive creatures does not lock, and clearing an encounter counts only the aggressive monsters.
 
+**Villages** are on the surface, not in the Hollow. Each village (see `src/Hollowfall.Core/Village/`) has one Villager standing on the road
+outside each cottage's door. They appear once the player comes within two chunks of the village, stay until the run restarts, and are
+never part of an encounter. The Wulver never stands within a village yard (or 8 blocks beyond it).
+
 ## Tuning constants
 
 | Constant | Value | Where |
@@ -204,6 +210,6 @@ The cistern pool is a model too (`cistern_pool`), laid once per pool at a water-
 
 ## Later phases
 
-Phase 2 (in progress, issue #3): character progression and stats. Built so far: experience from the Hollow (10 for a Husk, 12 for a Spitter, 60 for a Warden; creatures give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour (+10 maximum health per point) and Might (+5 percent damage per point) to spend them on. Done: the run reads Vigour (maximum health) and Might (guns and parries) once at its start, and the replay records them (format 3). Still to do: a screen to spend points, and Might on melee, meteor and the Warden's explosions. Phase 3 (in progress, issue #4): inventory and equipment. Built: the bag, the worn charm, and the cream a friendly Brownie leaves (`Progression/Inventory.cs`). Not yet: using the cream, the charm's effect, and a screen for the bag. Phase 4: quests and
+Phase 2 (in progress, issue #3): character progression and stats. Built so far: experience from the Hollow (10 for a Husk, 12 for a Spitter, 14 for a Cù-sìth, 60 for a Warden; creatures give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour (+10 maximum health per point) and Might (+5 percent damage per point) to spend them on. Done: the run reads Vigour (maximum health) and Might (guns and parries) once at its start, and the replay records them (format 3). Still to do: a screen to spend points, and Might on melee, meteor and the Warden's explosions. Phase 3 (in progress, issue #4): inventory and equipment. Built: the bag, the worn charm, and the cream a friendly Brownie leaves (`Progression/Inventory.cs`). The cream heals 40 in a run, the thorn charm takes 10 percent less damage, and a Bag screen in the pause menu wears and takes off charms. Chest loot is still used on the spot (not yet items). The replay records creams and the worn charm (format 4). Phase 4: quests and
 merchants, using standing for prices and access. The relationship system is built so each of those reads `Reputation` and `Mind` rather
 than adding new state.

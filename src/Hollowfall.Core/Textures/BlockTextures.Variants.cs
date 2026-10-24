@@ -142,6 +142,42 @@ public static partial class BlockTextures
                     float v = tip ? 0.98f : cx == 0 || cy == 0 ? 0.42f : 0.68f;
                     return Out(Gray(v + Tone(120, x, y, 2, 0.03f)).Mul(0.95f, 0.95f, 1f));
                 }
+
+            // ---- village cottages ----
+            case Tile.Plank:
+                {
+                    // Four boards a tile tall, each a slightly different tone, with a dark seam and a few knots.
+                    int board = y / 4;
+                    bool seam = y % 4 == 0;
+                    float v = 0.86f + (Hash(121, board, 0) - 0.5f) * 0.12f + Tone(122, x, y, 8, 0.05f) - (seam ? 0.22f : 0f);
+                    return Tint(v - (Speck(123, x, y, 0.03f) ? 0.14f : 0f), 1f, 0.92f, 0.78f);
+                }
+
+            case Tile.Thatch:
+                {
+                    // Loose straw: diagonal strands in light and shade, with the odd dark gap between them.
+                    float strand = (x + y) % 3 == 0 ? 0.08f : (x - y + 16) % 5 == 0 ? -0.1f : 0f;
+                    float v = 0.82f + strand + Tone(124, x, y, 3, 0.07f) - (Speck(125, x, y, 0.06f) ? 0.2f : 0f);
+                    return Tint(v, 1f, 0.95f, 0.72f);
+                }
+
+            // ---- rift plates and deep obsidian ----
+            case Tile.RiftPlate:
+                {
+                    // A grey-gold plate cut with a ring and a cross, so a portal's place on it reads at a glance.
+                    bool ring = Math.Abs(Math.Max(Math.Abs(x - 7.5), Math.Abs(y - 7.5)) - 5) < 0.6;
+                    bool cross = (Math.Abs(x - 7.5) < 0.6 || Math.Abs(y - 7.5) < 0.6) && Math.Max(Math.Abs(x - 7.5), Math.Abs(y - 7.5)) < 4;
+                    float v = 0.62f + Tone(126, x, y, 4, 0.05f) + (ring || cross ? 0.22f : 0f);
+                    return Tint(v, 1f, 0.92f, 0.66f);
+                }
+
+            case Tile.Obsidian:
+                {
+                    // Dark glass with a few conchoidal sheens and the odd bright fleck.
+                    float sheen = Smooth(127, x, y, 3) > 0.7f ? 0.1f : 0f;
+                    float v = 0.62f + sheen + Tone(128, x, y, 2, 0.04f) + (Speck(129, x, y, 0.02f) ? 0.25f : 0f);
+                    return Tint(v, 0.92f, 0.9f, 1f);
+                }
         }
         return Grey(0.8f);
     }

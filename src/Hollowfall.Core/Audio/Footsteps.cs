@@ -31,6 +31,7 @@ public static class Footsteps
         BlockType.Log or BlockType.Cactus => Surface.Wood,
         BlockType.Water => Surface.Water,
         BlockType.BrickFloor or BlockType.StoneBrick or BlockType.Stairs or BlockType.Pillar or BlockType.Gate => Surface.Brick,
+        BlockType.Plank => Surface.Wood,
         _ => Surface.Stone,
     };
 

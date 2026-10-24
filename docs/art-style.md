@@ -7,7 +7,7 @@ Everything in Hollowfall that is not a voxel is a **low-poly model built in code
 - **Flat shading only.** Every face of a model has one normal and one colour; no smoothing, no textures on models (blocks do wear textures, see below).
 - **Convex primitives.** `Box`, `Prism` (cylinders, cones, pyramids by `sides` and `taper`), `Wedge`, `Gem` (octahedron) and `Blob` (icosahedron).
 - **Triangle budgets** (tested): Warden 520, Wulver 450, Husk and Spitter 460, the cat 420, the fire pit 320, any other model 260, the whole catalogue under 3000 (it is 2900 now).
-- **One shared palette** (`ModelCatalog.Palette`). Enemies are told apart by silhouette and hue: rust Husk, violet Spitter, steel and crimson Warden.
+- **One shared palette** (`ModelCatalog.Palette`). Enemies are told apart by silhouette and hue: rust Husk, violet Spitter, steel and crimson Warden, grey Cù-sìth with red eyes.
 - **Glow is for meaning.** Eyes, cores, gems and flames are in the glow buffer, drawn unlit. While an enemy winds up an attack its glow flashes bright yellow, the cue to parry.
 - **Hit boxes match the art.** An enemy's model is as tall and wide as its `EnemySpec`, and a head shot lands on the head.
 
@@ -19,6 +19,8 @@ A model is a set of named parts, each with a pivot at its joint. Geometry is pos
 | --- | --- | --- |
 | Husk, Warden | `torso`, `head`, `arm_l`, `arm_r`, `leg_l`, `leg_r` | head and arms hang from the torso; legs from the model |
 | Spitter | `body`, `mouth`, `tent_0` to `tent_3` | none |
+| Cù-sìth | `body`, `head`, `tail`, `leg_fl`, `leg_fr`, `leg_bl`, `leg_br` | head and tail from the body; legs from the body |
+| Villager | `torso`, `head`, `arm_l`, `arm_r`, `leg_l`, `leg_r` | head and arms from the torso; legs from the model; a glowing lantern on `arm_r` |
 | Revolver | `body`, `cylinder`, `hammer`, `gem` | none |
 | Shotgun | `body`, `gem` | none |
 | Spike trap | `plate`, `spikes` | none |
@@ -50,7 +52,7 @@ Water uses the water tile of the shared atlas, but not the shared material. Scro
 
 ## Effects
 
-- **Shards, not blood.** A killed enemy bursts into 10 to 22 chunky prisms in its own palette (`Gibs.Palette`: rust and bone for the Husk, violet for the Spitter, steel and crimson for the Warden). They tumble, bounce on the floor and walls, lie for a couple of seconds and shrink away. Hits throw bright flecks from the impact point: orange for a body hit, gold for a head shot, hot white for the killing blow.
+- **Shards, not blood.** A killed enemy bursts into 6 to 22 chunky prisms in its own palette (`Gibs.Palette`: rust and bone for the Husk, violet for the Spitter, steel and crimson for the Warden, pale steel and red for the Cù-sìth). They tumble, bounce on the floor and walls, lie for a couple of seconds and shrink away. Hits throw bright flecks from the impact point: orange for a body hit, gold for a head shot, hot white for the killing blow.
 - **Pooled.** `ShardField` is a fixed array (192 gibs, 96 sparks) that recycles its oldest slot, and `EffectsView` draws it as two MultiMeshes, so a fight allocates nothing per frame. What flies, and where, is decided in Core from a seed and is unit tested.
 - **Dust motes.** `EffectsDust` is a small CPU particle box (70 tiny warm specks) that follows the viewer while the motes stay put in the world. Underground only. It should be noticed only when missing.
 - **Footsteps.** `Footsteps` maps the block underfoot to one of nine synthesised sounds (stone, brick, dirt, grass, sand, gravel, snow, wood, splash) and `Stride` times them by distance walked, with a heavier landing sound and a little pitch and volume variation from a hash, never a random generator.

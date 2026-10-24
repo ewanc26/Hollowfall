@@ -1,3 +1,4 @@
+using Hollowfall.Core.Portals;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Core.Dungeon;
@@ -11,6 +12,10 @@ namespace Hollowfall.Core.Dungeon;
 public sealed class DungeonSite
 {
     public const int FloorSpacing = 8;
+
+    /// <summary>From this floor down, portals take only on rift plates.</summary>
+    public const int RiftPlateFloor = 2;
+
     public const int FirstFloorY = 38;
     public const int PlazaRadius = 3;
 
@@ -75,6 +80,13 @@ public sealed class DungeonSite
 
     public static int FloorY(int floor) => FirstFloorY - FloorSpacing * floor;
 
+    /// <summary>The rift doors of a floor as world portal pairs, to be passed through while the body is on that floor.</summary>
+    public IReadOnlyList<(Portal A, Portal B)> RiftPassages(int floor) =>
+        _floors[floor].RiftDoors.Select(d => (Opening(floor, d.A), Opening(floor, d.B))).ToList();
+
+    private Portal Opening(int floor, RiftDoor d) =>
+        PortalSystem.Fixed(OriginX + d.X, FloorY(floor) + 1, OriginZ + d.Z, (d.NormalX, 0, d.NormalZ));
+
     public int LowestY => FloorY(FloorCount - 1);
 
     public bool Contains(int wx, int wz) =>
@@ -127,7 +139,9 @@ public sealed class DungeonSite
         switch (floor.CellAt(lx, lz))
         {
             case CellKind.Rock:
-                return floor.IsWallCell(lx, lz) ? BlockType.StoneBrick : null;
+                if (!floor.IsWallCell(lx, lz)) return null;
+                if (floor.IsPlate(lx, lz, yo)) return BlockType.RiftPlate;
+                return floor.Floor >= RiftPlateFloor ? BlockType.Obsidian : BlockType.StoneBrick;
             case CellKind.Floor:
                 // Gap hallways and shaft tunnels stand on a solid platform up to their height.
                 return yo <= floor.HeightAt(lx, lz) ? BlockType.BrickFloor : yo == 6 ? BlockType.StoneBrick : BlockType.Air;

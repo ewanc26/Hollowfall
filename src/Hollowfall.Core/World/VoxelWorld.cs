@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Hollowfall.Core.Terrain;
+using Hollowfall.Core.Topology;
 
 namespace Hollowfall.Core.World;
 
@@ -15,6 +16,9 @@ public sealed class VoxelWorld
     public long Seed => Generator.Seed;
 
     public VoxelWorld(long seed) => Generator = new TerrainGenerator(seed);
+
+    /// <summary>When set, the world is this glued room instead of generated terrain.</summary>
+    public GluedBox? Glue { get; set; }
 
     public int CachedChunks => _chunks.Count;
 
@@ -36,8 +40,11 @@ public sealed class VoxelWorld
     public static bool InHeight(int y) => y >= 0 && y < Chunk.Height;
 
     /// <summary>Block at a world position; anything above or below the world is Air.</summary>
-    public BlockType GetBlock(int x, int y, int z) =>
-        InHeight(y) ? GetChunk(x >> 4, z >> 4)[x & 15, y, z & 15] : BlockType.Air;
+    public BlockType GetBlock(int x, int y, int z)
+    {
+        if (Glue is { } glue) return glue.BlockAt(x, y, z);
+        return InHeight(y) ? GetChunk(x >> 4, z >> 4)[x & 15, y, z & 15] : BlockType.Air;
+    }
 
     public BlockType SetBlock(int x, int y, int z, BlockType block)
     {
@@ -51,6 +58,14 @@ public sealed class VoxelWorld
         }
         return previous;
     }
+
+    /// <summary>The dug cubes of a block, or null when it is whole (or outside the world).</summary>
+    public BlockHole? HoleAt(int x, int y, int z) =>
+        InHeight(y) ? GetChunk(x >> 4, z >> 4).HoleAt(x & 15, y, z & 15) : null;
+
+    /// <summary>Digs one 10 cm cube out of the block at (x, y, z). Returns false if there was no solid cube there to dig.</summary>
+    public bool DigCube(int x, int y, int z, int sx, int sy, int sz) =>
+        InHeight(y) && GetChunk(x >> 4, z >> 4).DigCube(x & 15, y, z & 15, sx, sy, sz);
 
     /// <summary>Y of the highest non-air block in a column, or -1.</summary>
     public int TopY(int x, int z) => GetChunk(x >> 4, z >> 4).TopY(x & 15, z & 15);

@@ -282,4 +282,60 @@ public class AssetTests
         Assert.Equal("ZR", BindingNames.Display(Binding.Axis("TriggerRight", 1), ControllerStyle.Nintendo));
         Assert.Equal("RT", BindingNames.Display(Binding.Axis("TriggerRight", 1)));
     }
+
+    [Fact]
+    public void CommittedStaticAssetsMatchTheGenerator()
+    {
+        foreach (var (path, bytes) in Hollowfall.Core.Assets.StaticAssets.All())
+        {
+            string full = Path.Combine(Root, path);
+            Assert.True(File.Exists(full), $"{path} is missing; run the asset generator");
+            if (path.EndsWith(".png"))
+                Assert.True(DecodePixels(File.ReadAllBytes(full)).AsSpan().SequenceEqual(DecodePixels(bytes)), $"{path} is out of date; run the asset generator");
+            else
+                Assert.True(File.ReadAllBytes(full).AsSpan().SequenceEqual(bytes), $"{path} is out of date; run the asset generator");
+        }
+    }
+
+    /// <summary>The pixels of an 8-bit RGBA, unfiltered PNG. zlib builds differ in compressed bytes, not in pixels.</summary>
+    private static byte[] DecodePixels(byte[] png)
+    {
+        using var data = new MemoryStream();
+        int at = 8;
+        while (at < png.Length)
+        {
+            int length = (png[at] << 24) | (png[at + 1] << 16) | (png[at + 2] << 8) | png[at + 3];
+            string type = System.Text.Encoding.ASCII.GetString(png, at + 4, 4);
+            if (type == "IDAT") data.Write(png, at + 8, length);
+            at += 12 + length;
+        }
+        data.Position = 0;
+        using var inflated = new MemoryStream();
+        using (var z = new System.IO.Compression.ZLibStream(data, System.IO.Compression.CompressionMode.Decompress)) z.CopyTo(inflated);
+        return inflated.ToArray();
+    }
+
+    [Fact]
+    public void NoStrayFilesSitInTheAudioFolder()
+    {
+        var expected = Hollowfall.Core.Assets.StaticAssets.All()
+            .Select(f => Path.GetFileName(f.Path))
+            .Where(n => n.EndsWith(".wav"))
+            .ToHashSet();
+        var actual = Directory.EnumerateFiles(Path.Combine(Root, "game", "assets", "audio"), "*.wav").Select(Path.GetFileName).ToHashSet();
+        Assert.Empty(actual.Except(expected));
+        Assert.Empty(expected.Except(actual));
+    }
+
+    [Fact]
+    public void NoStrayFilesSitInTheModelFolder()
+    {
+        var expected = Hollowfall.Core.Assets.StaticAssets.All()
+            .Select(f => Path.GetFileName(f.Path))
+            .Where(n => n.EndsWith(".glb"))
+            .ToHashSet();
+        var actual = Directory.EnumerateFiles(Path.Combine(Root, "game", "assets", "models"), "*.glb").Select(Path.GetFileName).ToHashSet();
+        Assert.Empty(actual.Except(expected));
+        Assert.Empty(expected.Except(actual));
+    }
 }

@@ -12,6 +12,7 @@ public enum Faction
     Kelpies,
     Wanderers,
     Vermin,
+    Villagers,
 }
 
 /// <summary>How one faction regards another, from worst to best. The numeric order is the order of warmth.</summary>
@@ -73,6 +74,7 @@ public static class FactionGraph
         new(Faction.Kelpies, "the Kelpies", "Folk", Stance.Hostile, false, "Water-horses that wait calmly at the pool's edge, then drown whoever comes close."),
         new(Faction.Wanderers, "the Wanderers", "Wanderers", Stance.Neutral, false, "Lone travellers, like the Wulver, who owe the Hollow nothing."),
         new(Faction.Vermin, "the Vermin", "Vermin", Stance.Neutral, false, "Hares and strays. They keep the dungeon feeling lived in, and run from trouble."),
+        new(Faction.Villagers, "the Villagers", "Folk", Stance.Neutral, false, "Crofters and cottagers of the glen. They keep to their doors and fear what climbs up from the Hollow."),
     ];
 
     /// <summary>The factions the player has a standing with (everyone but the player).</summary>
@@ -84,18 +86,19 @@ public static class FactionGraph
 
     private const Stance E = Stance.Enemy, H = Stance.Hostile, W = Stance.Wary, N = Stance.Neutral, F = Stance.Friendly, A = Stance.Ally;
 
-    // Row = who is looking, column = who they look at. Order: Delver, Husks, Spitters, Wardens, Brownies, Selkies, Kelpies, Wanderers, Vermin.
+    // Row = who is looking, column = who they look at. Order: Delver, Husks, Spitters, Wardens, Brownies, Selkies, Kelpies, Wanderers, Vermin, Villagers.
     private static readonly Stance[,] Matrix =
     {
-        /* Delver    */ { A, E, E, E, N, N, H, N, N },
-        /* Husks     */ { E, A, A, A, H, H, N, W, N },
-        /* Spitters  */ { E, A, A, A, H, H, N, W, N },
-        /* Wardens   */ { E, A, A, A, H, H, N, W, N },
-        /* Brownies  */ { N, E, E, E, A, F, W, N, F },
-        /* Selkies   */ { N, E, E, E, F, A, W, F, N },
-        /* Kelpies   */ { H, N, N, N, W, W, A, N, W },
-        /* Wanderers */ { N, H, H, H, N, N, W, A, N },
-        /* Vermin    */ { N, W, W, W, N, N, W, N, A },
+        /* Delver    */ { A, E, E, E, N, N, H, N, N, N },
+        /* Husks     */ { E, A, A, A, H, H, N, W, N, H },
+        /* Spitters  */ { E, A, A, A, H, H, N, W, N, H },
+        /* Wardens   */ { E, A, A, A, H, H, N, W, N, H },
+        /* Brownies  */ { N, E, E, E, A, F, W, N, F, F },
+        /* Selkies   */ { N, E, E, E, F, A, W, F, N, N },
+        /* Kelpies   */ { H, N, N, N, W, W, A, N, W, N },
+        /* Wanderers */ { N, H, H, H, N, N, W, A, N, N },
+        /* Vermin    */ { N, W, W, W, N, N, W, N, A, N },
+        /* Villagers */ { N, E, E, E, F, N, W, N, N, A },
     };
 
     /// <summary>How <paramref name="from"/> regards <paramref name="to"/> before the player is involved.</summary>
@@ -118,15 +121,16 @@ public static class FactionGraph
     // so a dead Husk makes them a little warmer, while the rest of the Hollow takes offence.
     private static readonly Dictionary<Faction, Ripple[]> KillRipples = new()
     {
-        [Faction.Husks] = [new(Faction.Husks, 1), new(Faction.Spitters, 0.4), new(Faction.Wardens, 0.4), new(Faction.Brownies, -0.25), new(Faction.Selkies, -0.25), new(Faction.Wanderers, -0.1)],
-        [Faction.Spitters] = [new(Faction.Spitters, 1), new(Faction.Husks, 0.4), new(Faction.Wardens, 0.4), new(Faction.Brownies, -0.25), new(Faction.Selkies, -0.25), new(Faction.Wanderers, -0.1)],
-        [Faction.Wardens] = [new(Faction.Wardens, 1), new(Faction.Husks, 0.5), new(Faction.Spitters, 0.5), new(Faction.Brownies, -0.4), new(Faction.Selkies, -0.4), new(Faction.Wanderers, -0.2)],
+        [Faction.Husks] = [new(Faction.Husks, 1), new(Faction.Spitters, 0.4), new(Faction.Wardens, 0.4), new(Faction.Brownies, -0.25), new(Faction.Selkies, -0.25), new(Faction.Wanderers, -0.1), new(Faction.Villagers, -0.25)],
+        [Faction.Spitters] = [new(Faction.Spitters, 1), new(Faction.Husks, 0.4), new(Faction.Wardens, 0.4), new(Faction.Brownies, -0.25), new(Faction.Selkies, -0.25), new(Faction.Wanderers, -0.1), new(Faction.Villagers, -0.25)],
+        [Faction.Wardens] = [new(Faction.Wardens, 1), new(Faction.Husks, 0.5), new(Faction.Spitters, 0.5), new(Faction.Brownies, -0.4), new(Faction.Selkies, -0.4), new(Faction.Wanderers, -0.2), new(Faction.Villagers, -0.4)],
         // Harm a brownie and the Folk turn on you; the Hollow does not care.
         [Faction.Brownies] = [new(Faction.Brownies, 1), new(Faction.Selkies, 0.8), new(Faction.Kelpies, 0.2), new(Faction.Wanderers, 0.15)],
         [Faction.Selkies] = [new(Faction.Selkies, 1), new(Faction.Brownies, 0.8), new(Faction.Kelpies, 0.2), new(Faction.Wanderers, 0.15)],
         [Faction.Kelpies] = [new(Faction.Kelpies, 1), new(Faction.Brownies, -0.3), new(Faction.Selkies, -0.3), new(Faction.Wanderers, -0.1)],
         [Faction.Wanderers] = [new(Faction.Wanderers, 1), new(Faction.Brownies, 0.75), new(Faction.Selkies, 0.75), new(Faction.Kelpies, 0.2), new(Faction.Vermin, 0.1)],
         [Faction.Vermin] = [new(Faction.Vermin, 1), new(Faction.Wanderers, 0.1), new(Faction.Brownies, 0.05)],
+        [Faction.Villagers] = [new(Faction.Villagers, 1), new(Faction.Brownies, 0.4), new(Faction.Selkies, 0.3), new(Faction.Wanderers, 0.1)],
     };
 
     // Helping someone warms their friends and cools nobody.
@@ -140,6 +144,7 @@ public static class FactionGraph
         [Faction.Kelpies] = [new(Faction.Kelpies, 1)],
         [Faction.Wanderers] = [new(Faction.Wanderers, 1), new(Faction.Brownies, 0.1), new(Faction.Selkies, 0.1)],
         [Faction.Vermin] = [new(Faction.Vermin, 1), new(Faction.Wanderers, 0.1)],
+        [Faction.Villagers] = [new(Faction.Villagers, 1), new(Faction.Brownies, 0.2)],
     };
 
     /// <summary>The size of one act, before ripples. Negative hurts standing.</summary>

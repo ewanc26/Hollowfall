@@ -12,7 +12,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding, Vec3 Velocity = default, bool Crossed = false);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false, bool FireMortar = false, bool UseCream = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -32,6 +32,18 @@ public sealed class CombatSim
     public const double ReflectedDamageBoost = 2.5;
     public const double ExplosionRadius = 3;
     public const double ExplosionDamage = 40;
+    public const double SlamShockwaveRadius = 3.5;
+    public const double SlamShockwaveDamage = 30;
+    public const double AirSlamHeight = 8;
+    public const double HollowfallWindowSeconds = 8;
+    public const double ArrivalDelaySeconds = 0.5;
+
+    /// <summary>The Warden's gate is open for this long, then shut for as long again, from phase two on.</summary>
+    public const double WardenGateSeconds = 6;
+    public const double WardenPhaseTwoAt = 0.6;
+    public const double WardenPhaseThreeAt = 0.3;
+    public const double PortalSwapSeconds = 8;
+    private const double WardenGateRetrySeconds = 0.5;
 
     private sealed class Encounter
     {
@@ -51,6 +63,7 @@ public sealed class CombatSim
         public double StartStyle;
         public int Kills;
         public int Restarts;
+        public double Paused;
         public int Enemies;
         public FloorTargets Targets;
     }
@@ -58,10 +71,26 @@ public sealed class CombatSim
     private readonly VoxelWorld _world;
     private readonly DungeonSite _site;
     private readonly SeededRandom _rng;
+    private readonly SlamBreach _breach = new();
+    private double _hollowfallUntil = -1;
+    private CollapseSequence? _collapse;
+    private readonly HashSet<int> _collapsedFloors = [];
+    private readonly List<(int X, int Y, int Z)> _collapsedCells = [];
+    private int _pendingFall = -1;
+    private double _arrivalAt = -1;
+    private bool _falling;
+    private int _wardenPhase;
+    private double _gateTimer;
+    private double _swapTimer;
     private readonly List<Encounter> _encounters = [];
     private readonly FloorProgress[] _floors;
     private readonly List<Enemy> _enemies = [];
+    public const int SurfaceFloor = -1;
+    private const int VillageReach = 2;
+    private readonly HashSet<(int X, int Z)> _villagesPopulated = [];
+    private (int X, int Z)? _villageChunk;
     private readonly List<Projectile> _projectiles = [];
+    private readonly List<MortarShell> _shells = [];
     private readonly List<CombatEvent> _events = [];
     private readonly HashSet<(int, int)> _dirtyChunks = [];
     private readonly Dictionary<string, double> _cooldowns = [];
@@ -69,6 +98,7 @@ public sealed class CombatSim
     private double _parryWindow, _parryCooldown;
     private readonly MeteorTracker _meteor = new();
     private int _nextId = 1;
+    private int _creams;
     private readonly HashSet<int> _populated = [];
 
     /// <summary>
@@ -91,6 +121,9 @@ public sealed class CombatSim
     /// <summary>The character's stats for this run, read once when it starts (see RunStats). Vigour sets the maximum health; Might scales the guns and parries.</summary>
     public RunStats Stats { get; }
 
+    /// <summary>Jars of cream the run still has: the bag's count when the run started, less those used.</summary>
+    public int CreamsLeft => _creams;
+
     /// <summary>Seconds left in the open parry window (0 when closed), which a Wide Parry perk lengthens.</summary>
     public double ParryWindowLeft => _parryWindow;
 
@@ -104,6 +137,7 @@ public sealed class CombatSim
 
     public IReadOnlyList<Enemy> Enemies => _enemies;
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
+    public IReadOnlyList<MortarShell> Shells => _shells;
 
     public int CurrentFloor { get; private set; } = -1;
     public bool Dead => Vitals.Dead;
@@ -113,6 +147,7 @@ public sealed class CombatSim
         _world = world;
         _site = site;
         Stats = stats;
+        _creams = stats.ClampedCreams;
         Vitals = new PlayerVitals(stats.MaxHealth);
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
         _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add,
@@ -222,6 +257,7 @@ public sealed class CombatSim
     public void Tick(double dt, PlayerView view, PlayerActions actions)
     {
         Time += dt;
+        PopulateVillages(view);
         Style.Tick(dt);
         Style.NotifyMoving(view.Airborne || view.Sliding);
         Vitals.Tick(dt, Style.HardDamageSpeed);
@@ -230,7 +266,16 @@ public sealed class CombatSim
 
         if (Vitals.Dead) return;
 
+        _falling = _pendingFall >= 0 && view.Airborne && view.Feet.Y < DungeonSite.FloorY(_pendingFall) + 0.9
+            && (CurrentFloor == _pendingFall || CurrentFloor == _pendingFall + 1);
+        if (_falling) _floors[_pendingFall].Paused += dt;
         TrackFloor(view);
+        if (_pendingFall >= 0 && CurrentFloor == _pendingFall + 1 && !view.Airborne)
+        {
+            _pendingFall = -1;
+            _arrivalAt = Time + ArrivalDelaySeconds;
+        }
+        if (_collapse != null && _collapse.Tick(dt, _world, (x, y, z) => MarkEdited(x, z, 0))) _collapse = null;
         TrackPits(dt, view);
         if (CurrentFloor >= 0) Map.Reveal(CurrentFloor, view.Feet.X, view.Feet.Z);
         _items.Tick(dt, view, actions.Interact);
@@ -261,11 +306,32 @@ public sealed class CombatSim
 
         if (actions.FireRevolver) Fire(WeaponSpec.Revolver, view);
         if (actions.FireShotgun) Fire(WeaponSpec.Shotgun, view);
+        if (actions.FireMortar) FireMortar(view);
+        if (actions.UseCream) UseCream();
 
+        UpdateWarden(dt, view);
         foreach (var e in _enemies.ToList()) UpdateEnemy(e, dt, view);
         UpdateProjectiles(dt, view);
+        UpdateShells(dt, view);
         CheckEncounterClears();
         _enemies.RemoveAll(e => e.Dead);
+    }
+
+    /// <summary>The folk of each village stand at their doors once the player comes near it; they stay until the run restarts.</summary>
+    private void PopulateVillages(PlayerView view)
+    {
+        if (Relations == null) return;
+        int cx = (int)Math.Floor(view.Feet.X / Chunk.Size), cz = (int)Math.Floor(view.Feet.Z / Chunk.Size);
+        if (_villageChunk == (cx, cz)) return;
+        _villageChunk = (cx, cz);
+        for (int dx = -VillageReach; dx <= VillageReach; dx++)
+            for (int dz = -VillageReach; dz <= VillageReach; dz++)
+                foreach (var plan in _world.Generator.Villages.Overlapping(cx + dx, cz + dz))
+                {
+                    if (!_villagesPopulated.Add((plan.CenterX, plan.CenterZ))) continue;
+                    foreach (var (x, z) in plan.Residents)
+                        SpawnEnemy(EnemyKind.Villager, new Vec3(x + 0.5, plan.Ground + 1, z + 0.5), SurfaceFloor);
+                }
     }
 
     /// <summary>Adds an enemy outside any encounter, for tests, debugging and scripted fights.</summary>
@@ -285,8 +351,10 @@ public sealed class CombatSim
         if (floor < 0 || floor == CurrentFloor) return;
 
         // Finishing a floor means getting down to the next one.
+        int from = CurrentFloor;
         if (CurrentFloor >= 0 && floor > CurrentFloor) CompleteFloor(CurrentFloor);
         CurrentFloor = floor;
+        Portals.SetFixed(_site.RiftPassages(floor));
         PopulateFloor(floor);
 
         var p = _floors[floor];
@@ -296,6 +364,40 @@ public sealed class CombatSim
             p.StartTime = Time;
             p.StartStyle = Style.TotalScore;
         }
+
+        if (from >= 0 && floor > from && view.Airborne && Time <= _hollowfallUntil && _encounters.Any(e => e.Floor == floor))
+        {
+            Style.Award(StyleBonus.Hollowfall);
+            _hollowfallUntil = -1;
+        }
+    }
+
+    /// <summary>
+    /// Called on the step the player lands from a slam: shocks the enemies around the landing, awards the slam, and cracks or
+    /// breaks the brick underfoot. <paramref name="fallBlocks"/> is how far the slam dropped.
+    /// </summary>
+    public void Slam(Vec3 feet, double fallBlocks)
+    {
+        if (Vitals.Dead) return;
+
+        Style.Award(fallBlocks > AirSlamHeight ? StyleBonus.AirSlam : StyleBonus.GroundSlam);
+        foreach (var e in _enemies.ToList())
+        {
+            if (e.Dead || e.Feet.DistanceTo(feet) > SlamShockwaveRadius) continue;
+            DamageEnemy(e, SlamShockwaveDamage * Stats.DamageScale, HitZone.Torso, e.Feet + new Vec3(0, 1, 0), "slam", false);
+        }
+
+        int ux = (int)Math.Floor(feet.X), uy = (int)Math.Floor(feet.Y - 1), uz = (int)Math.Floor(feet.Z);
+        var result = _breach.Land(_world, ux, uy, uz, Time);
+        if (result != FloorSlam.None) MarkEdited(ux, uz, SlamBreach.HoleRadius);
+        if (result == FloorSlam.Broken) _hollowfallUntil = Time + HollowfallWindowSeconds;
+    }
+
+    /// <summary>Queues the chunks around a block edit for re-meshing, including the neighbour whose border faces it changes.</summary>
+    private void MarkEdited(int x, int z, int reach)
+    {
+        for (int cx = (x - reach - 1) >> 4; cx <= (x + reach + 1) >> 4; cx++)
+            for (int cz = (z - reach - 1) >> 4; cz <= (z + reach + 1) >> 4; cz++) _dirtyChunks.Add((cx, cz));
     }
 
     private void CompleteFloor(int floor)
@@ -304,8 +406,8 @@ public sealed class CombatSim
         if (p.Completed || !p.Started) return;
         p.Completed = true;
         p.FinishTime = Time;
-        var result = FloorRanking.Score(p.Targets, Time - p.StartTime, p.Kills, Style.TotalScore - p.StartStyle, p.Restarts);
-        _events.Add(new FloorCompleted(floor, result, Time - p.StartTime));
+        var result = FloorRanking.Score(p.Targets, Time - p.StartTime - p.Paused, p.Kills, Style.TotalScore - p.StartStyle, p.Restarts);
+        _events.Add(new FloorCompleted(floor, result, Time - p.StartTime - p.Paused));
     }
 
     // ---- pits ---------------------------------------------------------------------------------
@@ -408,7 +510,7 @@ public sealed class CombatSim
         var layout = _site.Floors[CurrentFloor];
         int lx = (int)Math.Floor(view.Feet.X) - _site.OriginX, lz = (int)Math.Floor(view.Feet.Z) - _site.OriginZ;
         int room = layout.RoomIdAt(lx, lz);
-        if (room < 0) return;
+        if (room < 0 || Time < _arrivalAt) return;
 
         foreach (var enc in _encounters)
             if (enc.Floor == CurrentFloor && enc.RoomId == room && !enc.Triggered && !enc.Cleared)
@@ -422,7 +524,7 @@ public sealed class CombatSim
 
         foreach (var sp in enc.Spawns)
         {
-            var kind = sp.Kind == SpawnKind.Boss ? EnemyKind.Warden : (sp.X + sp.Z) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
+            var kind = sp.Kind == SpawnKind.Boss ? EnemyKind.Warden : HollowKindAt(sp.X, sp.Z);
             var enemy = Adopt(new Enemy(_nextId++, SpecFor(kind, enc.Floor, enc.RoomId), new Vec3(sp.X + 0.5, sp.Y, sp.Z + 0.5), enc.Floor, enc.RoomId));
             _enemies.Add(enemy);
             enc.Enemies.Add(enemy);
@@ -460,7 +562,22 @@ public sealed class CombatSim
 
             // Killing the boss on the last floor ends the dungeon.
             if (enc.Floor == _site.FloorCount - 1 && _site.Floors[enc.Floor].BossRoom?.Id == enc.RoomId) CompleteFloor(enc.Floor);
+
+            bool bossCleared = _site.Floors[enc.Floor].BossRoom?.Id == enc.RoomId;
+            if (enc.Floor < _site.FloorCount - 1 && !_collapsedFloors.Contains(enc.Floor)
+                && (bossCleared || _encounters.Where(e => e.Floor == enc.Floor).All(e => e.Cleared)))
+                StartCollapse(enc);
         }
+    }
+
+    /// <summary>The floor under a cleared boss room or last arena gives way (docs/features.md 3.3).</summary>
+    private void StartCollapse(Encounter enc)
+    {
+        var room = _site.Floors[enc.Floor].Rooms.First(r => r.Id == enc.RoomId);
+        _collapse = CollapseSequence.Plan(_world, enc.Floor, _site.OriginX + room.CenterX, _site.OriginZ + room.CenterZ);
+        _collapsedFloors.Add(enc.Floor);
+        _collapsedCells.AddRange(_collapse.Cells);
+        _pendingFall = enc.Floor;
     }
 
     /// <summary>
@@ -477,7 +594,10 @@ public sealed class CombatSim
             enc.Enemies.Clear();
         }
         _enemies.Clear();
+        _villagesPopulated.Clear();
+        _villageChunk = null;
         _projectiles.Clear();
+        _shells.Clear();
         if (Relations != null)
         {
             Relations.OmenArmed = false;
@@ -498,9 +618,65 @@ public sealed class CombatSim
         _pitGrace = 0;
         _parryWindow = _parryCooldown = 0;
         _meteor.Reset();
+        _collapse = null;
+        _wardenPhase = 0;
+        _gateTimer = 0;
+        _swapTimer = 0;
+        _pendingFall = -1;
+        _falling = false;
+        _arrivalAt = -1;
+        foreach (var (x, y, z) in _collapsedCells)
+        {
+            _world.SetBlock(x, y, z, _site.BlockAt(x, y, z) ?? BlockType.Air);
+            MarkEdited(x, z, 0);
+        }
+        _collapsedCells.Clear();
     }
 
     // ---- weapons ----------------------------------------------------------------------------
+
+    public const double MortarCooldownSeconds = 1.4;
+
+    private void FireMortar(PlayerView view)
+    {
+        if (_cooldowns.GetValueOrDefault("mortar") > 0) return;
+        _cooldowns["mortar"] = MortarCooldownSeconds;
+        Style.NotifyWeaponUsed("mortar");
+        _shells.Add(new MortarShell(_nextId++, view.Eye, view.Forward.Normalized() * MortarShell.Speed));
+    }
+
+    private void UpdateShells(double dt, PlayerView view)
+    {
+        foreach (var s in _shells.ToList())
+        {
+            s.Age += dt;
+            s.Velocity -= new Vec3(0, MortarShell.Gravity * dt, 0);
+            var next = s.Position + s.Velocity * dt;
+
+            var hitEnemy = _enemies.FirstOrDefault(e => !e.Dead && e.Mind is not { Disposition: Disposition.Allied } && Inflate(e.Bounds, Projectile.Radius).Contains(next));
+            if (hitEnemy == null && s.Age <= MortarShell.LifetimeSeconds && !BlockInfo.IsSolid(Blocks((int)Math.Floor(next.X), (int)Math.Floor(next.Y), (int)Math.Floor(next.Z))))
+            {
+                s.Position = next;
+                continue;
+            }
+
+            Detonate(s, hitEnemy != null ? next : s.Position, view);
+        }
+    }
+
+    private void Detonate(MortarShell shell, Vec3 at, PlayerView view)
+    {
+        _shells.Remove(shell);
+        if (MortarBlast.Carve(_world, at) > 0) MarkEdited((int)Math.Floor(at.X), (int)Math.Floor(at.Z), (int)Math.Ceiling(MortarBlast.Radius));
+        foreach (var e in _enemies.ToList())
+        {
+            if (e.Dead || e.Mind is { Disposition: Disposition.Allied }) continue;
+            double dist = (e.Feet + new Vec3(0, 0.9, 0)).DistanceTo(at);
+            if (dist > MortarBlast.Radius) continue;
+            DamageEnemy(e, MortarBlast.DamageAt(dist) * Stats.DamageScale, HitZone.Torso, at, "mortar", view.Airborne);
+        }
+        _events.Add(new ProjectileGone(shell.Id, Exploded: true, at));
+    }
 
     private void Fire(WeaponSpec weapon, PlayerView view)
     {
@@ -572,8 +748,14 @@ public sealed class CombatSim
 
     private void FirePortal(PortalColor color, PlayerView view)
     {
+        if (Portals.WardenLive)
+        {
+            _events.Add(new PortalPlaced(color, false, view.Eye, new Vec3(0, 0, 0), new Vec3(0, 1, 0), PlaceFailure.Disabled));
+            return;
+        }
         var replaced = Portals.Get(color);
-        var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks);
+        int floor = _site.FloorIndexAt(view.Feet.X, view.Feet.Y + 0.1, view.Feet.Z);
+        var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks, platesOnly: floor >= DungeonSite.RiftPlateFloor);
         var p = result.Portal;
         if (result.Placed && replaced != null) Close(replaced);
         _events.Add(new PortalPlaced(color, result.Placed,
@@ -590,17 +772,26 @@ public sealed class CombatSim
     }
 
     /// <summary>Closes both portals, severing whatever stands in either opening.</summary>
-    public bool ClosePortals() => ClosePortal(PortalColor.Teal) | ClosePortal(PortalColor.Violet);
+    /// <summary>Closes both portals. Rift openings cannot be closed, but a close that takes a placed portal also cuts whoever stands in them.</summary>
+    public bool ClosePortals()
+    {
+        bool closed = ClosePortal(PortalColor.Teal) | ClosePortal(PortalColor.Violet);
+        if (!closed) return false;
+        foreach (var rift in Portals.Rifts) SeverRules.Apply(rift, _enemies, Style, _events.Add, KillSevered);
+        return true;
+    }
 
     private void Close(Portal old)
     {
         _events.Add(new PortalClosed(old.Color, old.Frame.Center, old.Frame.Normal, old.Frame.Up));
-        SeverRules.Apply(old, _enemies, Style, _events.Add, e =>
-        {
-            if (!IsCreature(e)) _floors[e.Floor].Kills++;
-            Relations?.PlayerHurt(e, e.Spec.Health, true, _enemies, Time);
-            OnDeath(e);
-        });
+        SeverRules.Apply(old, _enemies, Style, _events.Add, KillSevered);
+    }
+
+    private void KillSevered(Enemy e)
+    {
+        if (!IsCreature(e)) _floors[e.Floor].Kills++;
+        Relations?.PlayerHurt(e, e.Spec.Health, true, _enemies, Time);
+        OnDeath(e);
     }
 
     private Vec3 Spread(Vec3 forward, double radians)
@@ -859,15 +1050,16 @@ public sealed class CombatSim
     {
         // A Bean Nighe who can no longer wring out her cloth warns of nothing.
         if (Relations != null && e.Mind is { Species.Kind: EnemyKind.BeanNighe }) Relations.OmenArmed = false;
+        if (_falling) Style.Award(StyleBonus.Freefall);
     }
 
-    /// <summary>Interact beside a Brownie while the Brownies think well of you: it repays you once with a warm hearth.</summary>
+    /// <summary>Interact beside a Brownie or villager while its folk think well of you: it repays you once with a warm hearth or a jar of cream.</summary>
     private bool TryBoon(PlayerView view)
     {
-        if (Relations!.Reputation.Tier(Faction.Brownies) < ReputationTier.Friendly) return false;
         foreach (var e in _enemies)
         {
-            if (e.Dead || e.Mind is not { Species.Kind: EnemyKind.Brownie, BoonGiven: false } m) continue;
+            if (e.Dead || e.Mind is not { Species.Kind: EnemyKind.Brownie or EnemyKind.Villager, BoonGiven: false } m) continue;
+            if (Relations!.Reputation.Tier(m.Faction) < ReputationTier.Friendly) continue;
             double dx = e.Feet.X - view.Feet.X, dz = e.Feet.Z - view.Feet.Z;
             if (Math.Sqrt(dx * dx + dz * dz) > BoonReach || Math.Abs(e.Feet.Y - view.Feet.Y) > 2) continue;
             m.BoonGiven = true;
@@ -935,7 +1127,7 @@ public sealed class CombatSim
         for (int i = 0; i < extra; i++)
         {
             var (wx, wy, wz) = _site.ToWorld(enc.Floor, cells[i].X, cells[i].Z);
-            var kind = (wx + wz) % 2 == 0 ? EnemyKind.Husk : EnemyKind.Spitter;
+            var kind = HollowKindAt(wx, wz);
             var enemy = Adopt(new Enemy(_nextId++, SpecFor(kind, enc.Floor, enc.RoomId), new Vec3(wx + 0.5, wy, wz + 0.5), enc.Floor, enc.RoomId));
             _enemies.Add(enemy);
             enc.Enemies.Add(enemy);
@@ -951,7 +1143,8 @@ public sealed class CombatSim
 
         if (spec.MeleeRange > 0 && flat <= spec.MeleeRange && Math.Abs(toPlayer.Y) < 2)
         {
-            BeginWindup(e);
+            if (HasAttackSlot(e)) BeginWindup(e);
+            else Circle(e, dt, toPlayer, flat);
             return;
         }
 
@@ -959,21 +1152,18 @@ public sealed class CombatSim
         // behind the portal's face, which carries the enemy through the portal and out beside them.
         var goal = view.Feet;
         bool viaPortal = false;
-        if (Portals.Linked)
+        double direct = e.Feet.DistanceTo(view.Feet);
+        foreach (var entrance in Portals.Openings.ToArray())
         {
-            double direct = e.Feet.DistanceTo(view.Feet);
-            foreach (var entrance in new[] { Portals.Teal!, Portals.Violet! })
+            var exit = Portals.Other(entrance)!;
+            var mirrored = PortalTransform.Point(exit, entrance, view.Feet);
+            double via = e.Feet.DistanceTo(mirrored);
+            var face = entrance.Frame.Center + entrance.Frame.Normal * 0.5;
+            if (via + 1.5 < direct && RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.0, 0), face))
             {
-                var exit = Portals.Other(entrance)!;
-                var mirrored = PortalTransform.Point(exit, entrance, view.Feet);
-                double via = e.Feet.DistanceTo(mirrored);
-                var face = entrance.Frame.Center + entrance.Frame.Normal * 0.5;
-                if (via + 1.5 < direct && RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.0, 0), face))
-                {
-                    goal = mirrored;
-                    direct = via + 1.5;
-                    viaPortal = true;
-                }
+                goal = mirrored;
+                direct = via + 1.5;
+                viaPortal = true;
             }
         }
 
@@ -990,12 +1180,31 @@ public sealed class CombatSim
         bool sees = RayCast.HasLineOfSight(Blocks, e.Feet + new Vec3(0, 1.4, 0), view.Eye);
         if (sees && flat >= spec.PreferredMin && flat <= spec.PreferredMax)
         {
-            BeginWindup(e);
+            if (HasAttackSlot(e)) BeginWindup(e);
+            else Circle(e, dt, toPlayer, flat);
             return;
         }
 
         double dir = flat < spec.PreferredMin && sees ? -1 : 1;
         Walk(e, dt, dx * dir, dz * dir);
+    }
+
+    /// <summary>A room lets only this many enemies wind up at once, so a crowd takes its turns instead of swarming the player.</summary>
+    public const int AttackSlots = 2;
+
+    /// <summary>The Hollow kind on a cell: odd cells are Spitters, a quarter of the even cells are Cù-sìth, the rest Husks.</summary>
+    public static EnemyKind HollowKindAt(int x, int z) =>
+        (x + z) % 2 != 0 ? EnemyKind.Spitter : (x + z) / 2 % 4 == 0 ? EnemyKind.CuSith : EnemyKind.Husk;
+
+    private bool HasAttackSlot(Enemy e) =>
+        _enemies.Count(o => !o.Dead && o.State == EnemyState.Windup && o.Floor == e.Floor && o.RoomId == e.RoomId) < AttackSlots;
+
+    /// <summary>Waiting for a slot: walks sideways around the player at a slower pace, keeping its distance, instead of standing still.</summary>
+    private void Circle(Enemy e, double dt, Vec3 toPlayer, double flat)
+    {
+        if (flat < 1e-6) return;
+        double side = e.Id % 2 == 0 ? 1 : -1;
+        Walk(e, dt, -toPlayer.Z / flat * side, toPlayer.X / flat * side, 0.6);
     }
 
     /// <summary>Moves an enemy, letting it walk through portal openings and come out of the other one.</summary>
@@ -1009,6 +1218,7 @@ public sealed class CombatSim
     /// <summary>Enemies stop at the edge of a pit instead of walking into it: the part of a step that would take them over is dropped.</summary>
     private (double Dx, double Dz) KeepOffPits(Enemy e, double dx, double dz)
     {
+        if (e.Floor == SurfaceFloor) return (dx, dz);
         var layout = _site.Floors[e.Floor];
         double reach = e.Spec.HalfWidth + 0.4;
         CellKind At(double x, double z) => layout.CellAt((int)Math.Floor(x) - _site.OriginX, (int)Math.Floor(z) - _site.OriginZ);
@@ -1041,16 +1251,23 @@ public sealed class CombatSim
             var aim = view.Eye + new Vec3(0, -0.4, 0);
             for (int i = 0; i < spec.Volley; i++)
             {
+                double spread = i - (spec.Volley - 1) / 2.0;
+                var from = origin;
                 var dir = (aim - origin).Normalized();
-                if (spec.Volley > 1)
+                var through = spec.Kind == EnemyKind.Warden ? LaunchThroughWarden(origin, spread, view.Eye) : null;
+                if (through is { } launch)
                 {
-                    double yaw = (i - (spec.Volley - 1) / 2.0) * 0.22;
+                    (from, dir) = launch;
+                }
+                else if (spec.Volley > 1)
+                {
+                    double yaw = spread * 0.22;
                     double c = Math.Cos(yaw), s = Math.Sin(yaw);
                     dir = new Vec3(dir.X * c - dir.Z * s, dir.Y, dir.X * s + dir.Z * c).Normalized();
                 }
-                var p = new Projectile(_nextId++, origin, dir * ProjectileSpeed, spec.ProjectileDamage);
+                var p = new Projectile(_nextId++, from, dir * ProjectileSpeed, spec.ProjectileDamage);
                 _projectiles.Add(p);
-                _events.Add(new ProjectileFired(p.Id, origin));
+                _events.Add(new ProjectileFired(p.Id, from));
             }
         }
 
@@ -1058,13 +1275,111 @@ public sealed class CombatSim
         e.Timer = spec.CooldownSeconds;
     }
 
+    private (Vec3 Start, Vec3 Direction)? LaunchThroughWarden(Vec3 origin, double spread, Vec3 eye)
+    {
+        foreach (var (entry, start, direction) in Portals.WardenLaunches(eye, spread))
+        {
+            if (RayCast.HasLineOfSight(Blocks, origin, entry.Frame.Center + entry.Frame.Normal * 0.5)) return (start, direction);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Opens the Warden's pair when phase two starts and every <see cref="WardenGateSeconds"/> after, shutting it in
+    /// between. Phase three swaps the player's two portals on a timer.
+    /// </summary>
+    private void UpdateWarden(double dt, PlayerView view)
+    {
+        var warden = _enemies.FirstOrDefault(e => e.Kind == EnemyKind.Warden && !e.Dead);
+        if (warden == null)
+        {
+            Portals.CloseWarden();
+            _wardenPhase = 0;
+            _gateTimer = 0;
+            return;
+        }
+
+        double fraction = warden.Health / warden.Spec.Health;
+        int phase = fraction <= WardenPhaseThreeAt ? 3 : fraction <= WardenPhaseTwoAt ? 2 : 1;
+        if (phase != _wardenPhase)
+        {
+            _wardenPhase = phase;
+            if (phase == 3) _swapTimer = PortalSwapSeconds;
+        }
+        if (phase < 2) return;
+
+        _gateTimer -= dt;
+        if (_gateTimer <= 0)
+        {
+            if (Portals.WardenLive)
+            {
+                Portals.CloseWarden();
+                _gateTimer = WardenGateSeconds;
+            }
+            else if (PlayerInsidePlacedHole(view))
+            {
+                _gateTimer = WardenGateRetrySeconds;
+            }
+            else
+            {
+                _gateTimer = OpenWardenGate(warden) ? WardenGateSeconds : WardenGateRetrySeconds;
+            }
+        }
+
+        if (phase == 3)
+        {
+            _swapTimer -= dt;
+            if (_swapTimer <= 0)
+            {
+                if (PlayerInsidePlacedHole(view))
+                {
+                    _swapTimer = WardenGateRetrySeconds;
+                }
+                else
+                {
+                    Portals.SwapPlaced();
+                    _swapTimer = PortalSwapSeconds;
+                }
+            }
+        }
+    }
+
+    /// <summary>Holes that turn back into stone, or swap places, would bury a body standing in them.</summary>
+    private bool PlayerInsidePlacedHole(PlayerView view)
+    {
+        var body = Box.AroundFeet(view.Feet, Physics.PlayerBody.HalfWidth, Physics.PlayerBody.Height);
+        foreach (var placed in new[] { Portals.Teal, Portals.Violet })
+        {
+            if (placed == null) continue;
+            foreach (var (x, y, z) in placed.HoleCells)
+                if (body.Min.X < x + 1 && body.Max.X > x && body.Min.Y < y + 1 && body.Max.Y > y && body.Min.Z < z + 1 && body.Max.Z > z)
+                    return true;
+        }
+        return false;
+    }
+
+    private bool OpenWardenGate(Enemy warden)
+    {
+        var eye = warden.Feet + new Vec3(0, 1.4, 0);
+        var aims = new[] { (eye, new Vec3(1, 0, 0)), (eye, new Vec3(-1, 0, 0)), (eye, new Vec3(0, 0, 1)), (eye, new Vec3(0, 0, -1)) };
+        return Portals.OpenWarden(aims, b => BlockInfo.IsSolid(b) && b is not (BlockType.Bedrock or BlockType.Gate or BlockType.SecretDoor or BlockType.Stairs), Blocks);
+    }
+
     private void HurtPlayer(double damage)
     {
-        double taken = Vitals.Damage(damage);
+        double taken = Vitals.Damage(damage * (1 - Stats.WardFraction));
         if (taken <= 0) return;
         Style.OnDamaged();
         _events.Add(new PlayerHurt(taken, Vitals.Health));
         if (Vitals.Dead) _events.Add(new PlayerDied());
+    }
+
+    /// <summary>Eats a jar of cream to heal, if the run has one and the player is hurt. A jar is not used up at full health.</summary>
+    private void UseCream()
+    {
+        if (_creams <= 0 || Vitals.Dead || Vitals.Health >= Vitals.Ceiling) return;
+        _creams--;
+        _events.Add(new CreamUsed(Vitals.Heal(Inventory.CreamHeal)));
     }
 
     private void UpdateProjectiles(double dt, PlayerView view)

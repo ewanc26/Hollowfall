@@ -12,7 +12,10 @@ namespace Hollowfall.Core.Replay;
 public sealed class RunReplay
 {
     /// <summary>The file format. Bump when the byte layout changes.</summary>
-    public const int FormatVersion = 3;
+    public const int FormatVersion = 4;
+
+    /// <summary>The format before the bag's cream and worn charm were recorded. Those files still load, with neither.</summary>
+    public const int FormatVersionWithoutItems = 3;
 
     /// <summary>The format before the run's stats were recorded. Those files still load, as a character with nothing spent.</summary>
     public const int FormatVersionWithoutStats = 2;
@@ -21,7 +24,7 @@ public sealed class RunReplay
     /// The simulation rules the run was recorded under. Bump this whenever <c>CombatSim</c> behaviour changes in a way that alters a
     /// replay's outcome; older files still load (a ghost only needs the recorded positions) but are flagged as unverifiable.
     /// </summary>
-    public const int SimVersion = 5;
+    public const int SimVersion = 13;
 
     public const int TicksPerSecond = 60;
     public const double Dt = 1.0 / TicksPerSecond;
@@ -93,6 +96,8 @@ public static class ReplayCodec
         o.Add((byte)replay.SimVersionRecorded);
         PutVar(o, (uint)replay.Stats.ClampedVigour);
         PutVar(o, (uint)replay.Stats.ClampedMight);
+        PutVar(o, (uint)replay.Stats.ClampedCreams);
+        PutVar(o, replay.Stats.Charm is { } charm ? (uint)charm + 1 : 0);
         var seed = Encoding.UTF8.GetBytes(replay.Seed.Length > RunReplay.MaxSeedLength ? replay.Seed[..RunReplay.MaxSeedLength] : replay.Seed);
         PutVar(o, (uint)seed.Length);
         o.AddRange(seed);
@@ -238,14 +243,22 @@ public static class ReplayCodec
         var r = new Reader(data[..^4]);
         if (!r.Take(4).SequenceEqual(Magic)) return null;
         int format = r.Byte();
-        if (format is not (RunReplay.FormatVersion or RunReplay.FormatVersionWithoutStats)) return null;
+        if (format is not (RunReplay.FormatVersion or RunReplay.FormatVersionWithoutItems or RunReplay.FormatVersionWithoutStats)) return null;
         int sim = r.Byte();
         var stats = new RunStats();
-        if (format == RunReplay.FormatVersion)
+        if (format >= RunReplay.FormatVersionWithoutItems)
         {
             uint vigour = r.Var(), might = r.Var();
             if (r.Failed || vigour > RunStats.MaxPoints || might > RunStats.MaxPoints) return null;
             stats = new RunStats((int)vigour, (int)might);
+        }
+        if (format == RunReplay.FormatVersion)
+        {
+            uint creams = r.Var(), charm = r.Var();
+            var worn = charm == 0 ? (ItemKind?)null : (ItemKind)(int)(charm - 1);
+            if (r.Failed || creams > Inventory.MaxStack * Inventory.Slots || charm > Enum.GetValues<ItemKind>().Length) return null;
+            if (worn is { } w && Inventory.Info(w).Use != ItemUse.Charm) return null;
+            stats = stats with { Creams = (int)creams, Charm = worn };
         }
         uint seedLen = r.Var();
         if (r.Failed || seedLen is 0 or > RunReplay.MaxSeedLength * 4) return null;

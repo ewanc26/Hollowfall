@@ -1,5 +1,6 @@
 using Godot;
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Input;
 using Hollowfall.Core.Models;
 
 namespace Hollowfall.Game;
@@ -18,7 +19,7 @@ public partial class ModelShowcase : Node3D
 
     public override void _Ready()
     {
-        _page = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SHOWCASE") ?? "enemies";
+        _page = System.Environment.GetEnvironmentVariable("HOLLOWFALL_SHOWCASE") ?? DevRequests.TakeShowcasePage() ?? "enemies";
 
         AddChild(new WorldEnvironment
         {
@@ -58,6 +59,11 @@ public partial class ModelShowcase : Node3D
         }
     }
 
+    public override void _UnhandledInput(InputEvent e)
+    {
+        if (e.IsActionPressed(InputMapper.Name(GameAction.Pause)) && !e.IsEcho()) GetTree().ChangeSceneToFile("res://scenes/Main.tscn");
+    }
+
     private void Place(Node3D node, Vector3 at, string label, double spin = 0, float labelHeight = 0.2f)
     {
         node.Position = at;
@@ -73,12 +79,12 @@ public partial class ModelShowcase : Node3D
         _camera.Position = new Vector3(0, 1.7f, 7.2f);
         _camera.LookAt(new Vector3(0, 1.1f, 0), Vector3.Up);
         int i = 0;
-        foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Spitter, EnemyKind.Warden })
+        foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Spitter, EnemyKind.Warden, EnemyKind.CuSith, EnemyKind.Villager })
         {
             var view = new EnemyView(kind);
-            view.ForcePose("idle");
+            view.ForcePose(Motion.Idle);
             _posed.Add(view);
-            Place(view, new Vector3(-3.4f + i * 3.4f, 0, 0), kind.ToString(), spin: 0.5);
+            Place(view, new Vector3(-4.8f + i * 2.4f, 0, 0), kind.ToString(), spin: 0.5);
             i++;
         }
     }
@@ -87,7 +93,7 @@ public partial class ModelShowcase : Node3D
     {
         _camera.Position = new Vector3(0, 6.5f, 15f);
         _camera.LookAt(new Vector3(0, 0.8f, 0), Vector3.Up);
-        string[] poses = ["walk", "windup", "stunned"];
+        Motion[] poses = [Motion.Walk, Motion.Windup, Motion.Stunned];
         int row = 0;
         foreach (var kind in new[] { EnemyKind.Husk, EnemyKind.Spitter, EnemyKind.Warden })
         {
@@ -96,7 +102,7 @@ public partial class ModelShowcase : Node3D
                 var view = new EnemyView(kind);
                 view.ForcePose(poses[col]);
                 _posed.Add(view);
-                Place(view, new Vector3(-4.2f + col * 4.2f, 0, -4.5f + row * 4.5f), $"{kind} {poses[col]}", spin: 0.35, labelHeight: 0.05f);
+                Place(view, new Vector3(-4.2f + col * 4.2f, 0, -4.5f + row * 4.5f), $"{kind} {Motions.Name(poses[col])}", spin: 0.35, labelHeight: 0.05f);
             }
             row++;
         }

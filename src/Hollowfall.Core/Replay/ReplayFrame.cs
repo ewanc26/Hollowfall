@@ -30,7 +30,9 @@ public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey
     public const int InteractBit = 1 << 7;
     public const int ClosePortalsBit = 1 << 8;
     public const int CrossedBit = 1 << 9;
-    public const int AllFlags = 0x3FF;
+    public const int MortarBit = 1 << 10;
+    public const int CreamBit = 1 << 11;
+    public const int AllFlags = 0xFFF;
 
     /// <summary>Speed is stored in 1/64 of a block per second. The Meteor reads only the speed and whether the player just crossed a portal, so that is all the frame keeps of the velocity.</summary>
     public const int SpeedScale = 64;
@@ -64,6 +66,8 @@ public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey
         if (actions.PortalViolet) flags |= VioletBit;
         if (actions.Interact) flags |= InteractBit;
         if (actions.ClosePortals) flags |= ClosePortalsBit;
+        if (actions.FireMortar) flags |= MortarBit;
+        if (actions.UseCream) flags |= CreamBit;
         if (view.Crossed) flags |= CrossedBit;
         double speed = view.Velocity.Length;
         int quantisedSpeed = double.IsFinite(speed) ? (int)Math.Clamp(Math.Round(speed * SpeedScale), 0, MaxSpeed) : 0;
@@ -97,5 +101,6 @@ public readonly record struct ReplayFrame(int Fx, int Fy, int Fz, int Ex, int Ey
 
     public PlayerActions ToActions() => new(
         (Flags & RevolverBit) != 0, (Flags & ShotgunBit) != 0, (Flags & ParryBit) != 0,
-        (Flags & TealBit) != 0, (Flags & VioletBit) != 0, (Flags & InteractBit) != 0, (Flags & ClosePortalsBit) != 0);
+        (Flags & TealBit) != 0, (Flags & VioletBit) != 0, (Flags & InteractBit) != 0, (Flags & ClosePortalsBit) != 0,
+        (Flags & MortarBit) != 0, (Flags & CreamBit) != 0);
 }

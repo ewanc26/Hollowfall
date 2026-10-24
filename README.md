@@ -56,6 +56,9 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. The game 
 | Parry (hit it while an enemy flashes yellow) | V | X |
 | Teal / violet portal | Q / E | LB / RB |
 | Close portals (sever anything standing in them) | C | D-pad down |
+| Slam (drop straight down from the air; cracks, then breaks, brick floor) | X | D-pad up |
+| Block mortar (arcing shell that digs a sphere of brick, earth and stone, in 10 cm cubes) | T | D-pad left |
+| Use Brownie's cream (heals 40 when hurt) | H | D-pad right |
 | Open chests (a key for locked ones), read notes, speak to what you find | F | Left stick click |
 | Respawn | R | Y |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
@@ -99,7 +102,7 @@ The HUD is kept clean: health, style, hints, a floor panel (floor, kills, time a
 
 **Ghosts.** Every run is recorded as compact fixed-step inputs, and the best run of a floor is saved. On the same seed and floor it races you as a translucent ghost. Runs replay deterministically, so a stored run can be verified. See [docs/features.md](docs/features.md).
 
-**Sound and music.** Every effect and all of the music are synthesised in code, so there are no audio files. The music is adaptive: layers fade in and out as you move between the surface and the dungeon, fight, meet the boss, run low on health or rest by a fire, and the key and mood follow the seed. Its volume defaults to 60 percent, and the Ambience slider scales the music's drone layer. See [docs/music.md](docs/music.md).
+**Sound and music.** Every effect and all of the music are synthesised in code, so there are no audio files. The music is adaptive: layers fade in and out as you move between the surface and the dungeon, fight, meet the boss, run low on health or rest by a fire, and the key and mood follow the seed. Its volume defaults to 60 percent, and the Ambience slider scales the music's drone layer and each place's ambience. Every place has its own looping bed of wind, water or room tone: each biome on the surface and each dungeon theme underground, mixed together where places meet. See [docs/music.md](docs/music.md).
 
 ## Story
 

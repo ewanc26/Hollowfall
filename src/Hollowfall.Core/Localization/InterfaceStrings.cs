@@ -45,6 +45,9 @@ public static class InterfaceStrings
             T("title.seedHint", "any text or number"),
             T("title.random", "Random"),
             T("title.daily", "Daily"),
+            T("title.board", "Verified today"),
+            T("title.boardNone", "No verified run yet today."),
+            T("title.boardRow", "Floor {0}: grade {1}, {2} points, {3} s"),
 
             // ---- pause ----
             G("pause.title", "PAUSED", "AIR STAD", ReviewStatus.NeedsReview, "WK FF", "held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state"),
@@ -52,6 +55,15 @@ public static class InterfaceStrings
             T("pause.respawn", "Respawn"),
             T("pause.standing", "Standing"),
             T("pause.character", "Character"),
+            T("pause.bag", "Bag"),
+            T("bag.title", "Bag"),
+            T("bag.slots", "Slots used: {0} of {1}"),
+            T("bag.none", "Nothing is carried yet."),
+            T("bag.creamHint", "Eat it in a run to heal {0}."),
+            T("bag.wear", "Wear"),
+            T("bag.takeOff", "Take off"),
+            T("bag.worn", "worn"),
+            T("bag.wearHint", "Worn charms take effect from your next run."),
 
             // ---- the character (progression) ----
             T("character.title", "CHARACTER"),
@@ -133,6 +145,9 @@ public static class InterfaceStrings
             T(ActionKey(GameAction.Interact), "Open and use"),
             T(ActionKey(GameAction.ClosePortals), "Close portals (sever)"),
             T(ActionKey(GameAction.Pause), "Pause menu"),
+            T(ActionKey(GameAction.Slam), "Slam"),
+            T(ActionKey(GameAction.FireMortar), "Fire block mortar"),
+            T(ActionKey(GameAction.UseCream), "Use Brownie's cream"),
 
             // ---- settings ----
             G("settings.title", "SETTINGS", "ROGHAINNEAN", ReviewStatus.Verified, "FF", "capitals of Firefox gd's 'Roghainnean'"),
@@ -165,6 +180,11 @@ public static class InterfaceStrings
             T("toast.boon", "The brownie warms the hearth for you (+{0} health)"),
             T("standing.better", "{0} think better of you: {1}"),
             T("standing.worse", "{0} now regard you as {1}"),
+            T("standing.title", "STANDING"),
+            T("standing.subtitle", "How the dungeon's peoples regard you. Hurt a creature in front of its kin and they will remember."),
+            T("standing.nobody", "Nobody here has an opinion of you yet."),
+            T("standing.recent", "RECENT"),
+            T("standing.nothingYet", "Nothing yet."),
 
             // ---- gaps and falls ----
             T("gap.edge", "A gap. Fire a portal across it ({0}), then another beside you ({1}), and step through."),
@@ -188,6 +208,7 @@ public static class InterfaceStrings
             // ---- prompts and panels ----
             G("prompt.read", "{0}  read: {1}", "{0}  leugh: {1}", ReviewStatus.Likely, "WK", "leugh, read (the imperative; Wiktionary quotes 'Leugh seo', Read this)"),
             G("prompt.speak", "{0}  speak", "{0}  bruidhinn", ReviewStatus.Likely, "WK", "bruidhinn, to speak or talk; the bare verb is the imperative"),
+            T("cat.warmth", "The fire is warm, and you feel a little better."),
             T("prompt.closeHint", "{0} or {1} to close"),
             T("prompt.leaveHint", "{0} or {1} to leave"),
 

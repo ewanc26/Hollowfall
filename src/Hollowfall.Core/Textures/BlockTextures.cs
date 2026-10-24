@@ -64,6 +64,14 @@ public enum Tile
 
     // Gap pits.
     Spikes,
+
+    // Village cottages (appended).
+    Plank,
+    Thatch,
+
+    // Rift plates and deep-floor obsidian (appended).
+    RiftPlate,
+    Obsidian,
 }
 
 /// <summary>
@@ -125,11 +133,16 @@ public static partial class BlockTextures
         BlockType.Flower => Tile.Flower,
         BlockType.StoneBrick or BlockType.SecretDoor => Tile.StoneBrick, // a secret door must look exactly like the wall it hides in
         BlockType.BrickFloor => Tile.BrickFloor,
+        BlockType.CrackedFloor => Tile.FloorCracked,
         BlockType.Pillar => Tile.Pillar,
         BlockType.Stairs => Tile.Stairs,
         BlockType.Gate => Tile.Gate,
         BlockType.Door => Tile.Door,
         BlockType.Spikes => Tile.Spikes,
+        BlockType.Plank => Tile.Plank,
+        BlockType.Thatch => Tile.Thatch,
+        BlockType.RiftPlate => Tile.RiftPlate,
+        BlockType.Obsidian => Tile.Obsidian,
         _ => Tile.Stone,
     };
 

@@ -63,7 +63,7 @@ public class CombatSimTests
 {
     private const double Dt = 1.0 / 60;
 
-    private sealed class Arena
+    internal sealed class Arena
     {
         public required VoxelWorld World { get; init; }
         public required DungeonSite Site { get; init; }
@@ -78,7 +78,7 @@ public class CombatSimTests
     }
 
     /// <summary>A real dungeon room with a big open floor: the player at the west end, empty space to the east.</summary>
-    private static Arena MakeArena(long seed = 1)
+    internal static Arena MakeArena(long seed = 1)
     {
         for (long s = seed; s < seed + 20; s++)
         {
@@ -287,6 +287,39 @@ public class CombatSimTests
         husk.ForceWindup(1);
         Run(a.Sim, view, 1, new PlayerActions(false, false, true));
         Assert.DoesNotContain(a.Sim.DrainEvents(), e => e is Parried);
+    }
+
+    [Fact]
+    public void AQuarterOfTheHollowSpawnAsCuSithAndTheRestAsHusksOrSpitters()
+    {
+        var cells = Enumerable.Range(-20, 40).SelectMany(x => Enumerable.Range(-20, 40).Select(z => (x, z))).ToList();
+        var kinds = cells.Select(c => CombatSim.HollowKindAt(c.x, c.z)).ToList();
+        int even = cells.Count(c => (c.x + c.z) % 2 == 0);
+        Assert.InRange(kinds.Count(k => k == EnemyKind.CuSith), even * 0.2, even * 0.3);
+        for (int i = 0; i < cells.Count; i++)
+        {
+            bool evenCell = (cells[i].x + cells[i].z) % 2 == 0;
+            Assert.True(evenCell ? kinds[i] is EnemyKind.Husk or EnemyKind.CuSith : kinds[i] == EnemyKind.Spitter);
+        }
+        Assert.True(EnemySpec.Of(EnemyKind.CuSith).Speed > EnemySpec.Of(EnemyKind.Husk).Speed);
+    }
+
+    [Fact]
+    public void ACrowdTakesTurnsAtAttacking()
+    {
+        var a = MakeArena();
+        var husks = new[] { Place(a, EnemyKind.Husk, 1.3), Place(a, EnemyKind.Husk, 0, 1.3), Place(a, EnemyKind.Husk, 0, -1.3), Place(a, EnemyKind.Husk, -1.3) };
+        var view = a.View();
+        var telegraphed = new HashSet<int>();
+        int most = 0;
+        for (int i = 0; i < 60 * 20; i++)
+        {
+            a.Sim.Tick(Dt, view, default);
+            most = Math.Max(most, husks.Count(h => h.Telegraphing));
+            foreach (var t in a.Sim.DrainEvents().OfType<EnemyTelegraph>()) telegraphed.Add(t.Id);
+        }
+        Assert.Equal(CombatSim.AttackSlots, most);
+        Assert.All(husks, h => Assert.Contains(h.Id, telegraphed));
     }
 
     [Fact]
@@ -688,5 +721,51 @@ public class CombatSimTests
         Assert.Equal(1, site.FloorIndexAt(site.OriginX + 10, DungeonSite.FloorY(1) + 3, site.OriginZ + 10));
         Assert.Equal(-1, site.FloorIndexAt(site.OriginX + 10, site.SurfaceY + 1, site.OriginZ + 10));
         Assert.Equal(-1, site.FloorIndexAt(site.OriginX - 5, DungeonSite.FloorY(0) + 1, site.OriginZ + 10));
+    }
+
+    [Fact]
+    public void SlamShockwaveHurtsOnlyEnemiesInItsRadius()
+    {
+        var a = MakeArena();
+        var near = Place(a, EnemyKind.Husk, 2);
+        var far = Place(a, EnemyKind.Husk, 6);
+        double nearBefore = near.Health, farBefore = far.Health;
+
+        a.Sim.Slam(a.View().Feet, 1);
+
+        Assert.True(near.Health < nearBefore);
+        Assert.Equal(farBefore, far.Health);
+    }
+
+    [Fact]
+    public void AirSlamFromHighAwardsMoreThanGroundSlam()
+    {
+        var ground = MakeArena();
+        ground.Sim.Slam(ground.View().Feet, 2);
+        var air = MakeArena();
+        air.Sim.Slam(air.View().Feet, 12);
+
+        Assert.True(air.Sim.Style.TotalScore > ground.Sim.Style.TotalScore);
+    }
+
+    [Fact]
+    public void SecondSlamOnTheSameTileBreaksAHoleUnderfoot()
+    {
+        var a = MakeArena();
+        var view = a.View();
+        int x = (int)Math.Floor(view.Feet.X), y = (int)Math.Floor(view.Feet.Y) - 1, z = (int)Math.Floor(view.Feet.Z);
+        for (int dx = -1; dx <= 2; dx++)
+            for (int dz = -1; dz <= 1; dz++)
+                a.World.SetBlock(x + dx, y, z + dz, BlockType.BrickFloor);
+
+        a.Sim.Slam(view.Feet, 1);
+        Assert.Equal(BlockType.CrackedFloor, a.World.GetBlock(x, y, z));
+
+        Run(a.Sim, view, 60);
+        a.Sim.Slam(view.Feet, 1);
+
+        Assert.Equal(BlockType.Air, a.World.GetBlock(x, y, z));
+        Assert.False(BlockHole.IsSolid(BlockType.BrickFloor, a.World.HoleAt(x + 1, y, z - 1), 0, 5, 9));
+        Assert.Equal(BlockType.BrickFloor, a.World.GetBlock(x + 2, y, z));
     }
 }

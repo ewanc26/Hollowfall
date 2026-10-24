@@ -108,6 +108,8 @@ Add a value to `Language`, a native name in `Languages.NativeName`, a column (or
 
 If you read Gàidhlig, please look over the tables below and tell us what is wrong, odd, stiff or unnatural: spelling, accents, mutation, word order, a better word, a regional preference, anything. You do not need to be a programmer: a list of the keys and what each should say is enough, in an issue or an email to the author. Corrections are welcome and will be credited if you wish. Thank you; the game takes Gaelic seriously and wants to get it right.
 
+If you would rather correct the strings in a translation tool, run `dotnet run --project src/Hollowfall.Cli -- --po gd.po` and open `gd.po` in Poedit or any gettext editor. Each entry's comment gives its key, status and sources, and an entry marked fuzzy needs a decision before it is shown.
+
 ## Independent re-check (21 October 2026)
 
 A second pass, made after the first build, read the primary pages directly instead of relying on summaries. It confirmed these and found nothing wrong, but it is still not a speaker's review.
@@ -138,7 +140,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 136.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 157.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -153,11 +155,23 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 136.
 | `title.seedHint` | any text or number | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.random` | Random | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.daily` | Daily | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `title.board` | Verified today | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `title.boardNone` | No verified run yet today. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `title.boardRow` | Floor {0}: grade {1}, {2} points, {3} s | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.title` | PAUSED | AIR STAD | NeedsReview | WK FF | held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state |
 | `pause.resume` | Resume | Lean air | Verified | FF WK | Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue |
 | `pause.respawn` | Respawn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.standing` | Standing | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.character` | Character | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pause.bag` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.title` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.slots` | Slots used: {0} of {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.none` | Nothing is carried yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.creamHint` | Eat it in a run to heal {0}. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.wear` | Wear | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.takeOff` | Take off | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.worn` | worn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.wearHint` | Worn charms take effect from your next run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.title` | CHARACTER | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.none` | No character yet. Defeat something to begin. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.level` | Level {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -229,6 +243,9 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 136.
 | `action.interact` | Open and use | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.closePortals` | Close portals (sever) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.pause` | Pause menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.slam` | Slam | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.fireMortar` | Fire block mortar | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.useCream` | Use Brownie's cream | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.title` | SETTINGS | ROGHAINNEAN | Verified | FF | capitals of Firefox gd's 'Roghainnean' |
 | `settings.language` | Language | Cànan | Verified | FF WK | Firefox gd's 'Language' header is Cànan; cànan, a language |
 | `settings.mouseSensitivity` | Mouse sensitivity | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -257,6 +274,11 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 136.
 | `toast.boon` | The brownie warms the hearth for you (+{0} health) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.better` | {0} think better of you: {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.worse` | {0} now regard you as {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.title` | STANDING | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.subtitle` | How the dungeon's peoples regard you. Hurt a creature in front of its kin and they will remember. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.nobody` | Nobody here has an opinion of you yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.recent` | RECENT | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.nothingYet` | Nothing yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.edge` | A gap. Fire a portal across it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.alcove` | A high alcove. Fire a portal up into it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.afterFall` | You are set back at the edge. Fire a portal across the gap instead ({0}, then {1}). | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -274,6 +296,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 136.
 | `hint.menu` | menu | clàr-taice | Likely | DRU | a software translation of 'Menu'; not in the dictionaries checked |
 | `prompt.read` | {0}  read: {1} | {0}  leugh: {1} | Likely | WK | leugh, read (the imperative; Wiktionary quotes 'Leugh seo', Read this) |
 | `prompt.speak` | {0}  speak | {0}  bruidhinn | Likely | WK | bruidhinn, to speak or talk; the bare verb is the imperative |
+| `cat.warmth` | The fire is warm, and you feel a little better. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `prompt.closeHint` | {0} or {1} to close | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `prompt.leaveHint` | {0} or {1} to leave | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.died` | YOU DIED | THA THU MARBH | Likely | WK | Tha thu (you are) + marbh, dead |

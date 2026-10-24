@@ -1,4 +1,5 @@
 using Godot;
+using Hollowfall.Core.Assets;
 using Hollowfall.Core.Textures;
 using Hollowfall.Core.Meshing;
 
@@ -13,7 +14,8 @@ public static class ChunkMeshBuilder
 
     /// <summary>The block texture atlas, drawn by Core and uploaded once.</summary>
     public static ImageTexture Atlas => _atlas ??= ImageTexture.CreateFromImage(
-        Image.CreateFromData(BlockTextures.Width, BlockTextures.Height, false, Image.Format.Rgba8, BlockTextures.Rgba));
+        GD.Load<Texture2D>("res://" + StaticAssets.AtlasPath)?.GetImage()
+        ?? Image.CreateFromData(BlockTextures.Width, BlockTextures.Height, false, Image.Format.Rgba8, BlockTextures.Rgba));
 
     private static StandardMaterial3D Textured(Action<StandardMaterial3D>? tweak = null)
     {
@@ -54,7 +56,7 @@ public static class ChunkMeshBuilder
     }
 
     /// <summary>Adds one buffer as a surface with its own material. Core winds counter-clockwise; Godot wants clockwise, so triangles are reversed.</summary>
-    public static void AddSurface(ArrayMesh mesh, MeshBuffer buffer, Material material)
+    private static void AddSurface(ArrayMesh mesh, MeshBuffer buffer, Material material)
     {
         if (buffer.IsEmpty) return;
 

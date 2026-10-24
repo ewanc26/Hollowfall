@@ -24,6 +24,7 @@ public partial class CombatView : Node3D
     private readonly HashSet<(int, int, int)> _pools = [];
     private Vector3 _playerPosition;
     private readonly Dictionary<PortalColor, PortalView> _portals = [];
+    private readonly Dictionary<Portal, PortalView> _openingViews = [];
     private readonly List<Tracer> _tracers = [];
     private WorldView _world = null!;
     private EffectsView _effects = null!;
@@ -57,6 +58,7 @@ public partial class CombatView : Node3D
         foreach (var e in events) Handle(e);
         foreach (var (cx, cz) in Sim.TakeDirtyChunks()) _world.MarkDirty(cx, cz);
 
+        RefreshOpenings();
         SyncEnemies(delta);
         SyncProjectiles(delta);
     }
@@ -85,6 +87,8 @@ public partial class CombatView : Node3D
         var rects = new List<Rect2>();
         foreach (var pv in _portals.Values)
             if (Sim.Portals.Linked && pv.ScreenRect(viewer) is { } rect) rects.Add(rect);
+        foreach (var pv in _openingViews.Values)
+            if (pv.ScreenRect(viewer) is { } rect) rects.Add(rect);
         return rects;
     }
 
@@ -92,6 +96,7 @@ public partial class CombatView : Node3D
     public void UpdatePortalViews(Camera3D viewer)
     {
         foreach (var pv in _portals.Values) pv.UpdateView(Sim.Portals.Other(pv.Portal), viewer);
+        foreach (var pv in _openingViews.Values) pv.UpdateView(Sim.Portals.Other(pv.Portal), viewer);
     }
 
     private void Handle(CombatEvent e)
@@ -137,10 +142,33 @@ public partial class CombatView : Node3D
         }
     }
 
+    /// <summary>Makes a view for each rift opening on the current floor and for the Warden's gates, and drops the ones no longer open.</summary>
+    private void RefreshOpenings()
+    {
+        var current = Sim.Portals.Rifts.ToHashSet();
+        if (Sim.Portals.Warden is { } gates)
+        {
+            current.Add(gates.A);
+            current.Add(gates.B);
+        }
+        foreach (var portal in _openingViews.Keys.Where(p => !current.Contains(p)).ToList())
+        {
+            _openingViews[portal].QueueFree();
+            _openingViews.Remove(portal);
+        }
+        foreach (var portal in current)
+        {
+            if (_openingViews.ContainsKey(portal)) continue;
+            var view = new PortalView(portal) { Name = "Rift" };
+            AddChild(view);
+            _openingViews[portal] = view;
+        }
+    }
+
     /// <summary>A killed enemy bursts into shards (<see cref="EffectsView"/>) as the body slumps, shrinks into the floor and disappears.</summary>
     private void Collapse(EnemyView view)
     {
-        view.ForcePose("stunned");
+        view.ForcePose(Motion.Stunned);
         var tween = CreateTween();
         tween.SetParallel();
         tween.TweenProperty(view, "scale", new Vector3(1.15f, 0.05f, 1.15f), 0.3).SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.In);
@@ -184,16 +212,16 @@ public partial class CombatView : Node3D
     private void SyncProjectiles(double delta)
     {
         var alive = new HashSet<int>();
-        foreach (var p in Sim.Projectiles)
+        foreach (var (id, position, reflected) in Sim.Projectiles.Select(p => (p.Id, p.Position, p.Reflected)).Concat(Sim.Shells.Select(s => (s.Id, s.Position, false))))
         {
-            alive.Add(p.Id);
-            if (!_projectiles.TryGetValue(p.Id, out var view))
+            alive.Add(id);
+            if (!_projectiles.TryGetValue(id, out var view))
             {
-                view = new ProjectileView { Name = $"Projectile_{p.Id}" };
+                view = new ProjectileView { Name = $"Projectile_{id}" };
                 AddChild(view);
-                _projectiles[p.Id] = view;
+                _projectiles[id] = view;
             }
-            view.Follow(new Vector3((float)p.Position.X, (float)p.Position.Y, (float)p.Position.Z), p.Reflected, delta);
+            view.Follow(new Vector3((float)position.X, (float)position.Y, (float)position.Z), reflected, delta);
         }
 
         foreach (var id in _projectiles.Keys.Where(id => !alive.Contains(id)).ToList())

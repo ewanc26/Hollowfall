@@ -33,7 +33,6 @@ public partial class MusicDirector : Node
     public long Seed { get; set; }
 
     /// <summary>The audio director whose old drone this replaces once the music is ready.</summary>
-    public AudioDirector? Audio { get; set; }
 
     /// <summary>What the music should follow: the host sets it every frame.</summary>
     public MusicState State { get; set; } = new();
@@ -42,7 +41,7 @@ public partial class MusicDirector : Node
     public bool FollowGame { get; set; } = true;
 
     /// <summary>The loops are rendered, the streams built and the players running.</summary>
-    public bool Ready { get; private set; }
+    public bool IsReady { get; private set; }
 
     /// <summary>Why the music is not coming, if the background render failed.</summary>
     public string? Failure { get; private set; }
@@ -137,14 +136,14 @@ public partial class MusicDirector : Node
         RenderMilliseconds = r.Milliseconds;
         BufferBytes = bytes;
         BuildMilliseconds = watch.Elapsed.TotalMilliseconds;
-        Ready = true;
+        IsReady = true;
         GD.Print($"Hollowfall: music ready: rendered in {RenderMilliseconds:F0} ms on a background task, built in {BuildMilliseconds:F0} ms, {bytes / 1048576.0:F1} MB of audio, {_clock.ElapsedMilliseconds} ms after startup");
     }
 
     /// <summary>Plays a stinger over the music, at the music volume.</summary>
     public void PlayStinger(Stinger s)
     {
-        if (!Ready || Level <= 0.001 || !_stingers.TryGetValue(s, out var stream)) return;
+        if (!IsReady || Level <= 0.001 || !_stingers.TryGetValue(s, out var stream)) return;
         _stingerPlayer.Stream = stream;
         _stingerPlayer.VolumeDb = Mathf.LinearToDb((float)Math.Max(1e-4, Level * Hollowfall.Core.Audio.Music.MusicEvents.Gain(s)));
         _stingerPlayer.Play();
@@ -161,7 +160,7 @@ public partial class MusicDirector : Node
 
     public override void _Process(double delta)
     {
-        if (!Ready)
+        if (!IsReady)
         {
             if (_render is { IsCompleted: true })
             {
@@ -174,7 +173,6 @@ public partial class MusicDirector : Node
         _mixer.Update(State, delta);
         double level = Level;
         double drone = Settings.AmbienceVolume * MusicTuning.DroneBoost; // the Ambience slider scales the drone layer: 1 at its default
-        if (Audio != null) Audio.BedReplaced = level > 0.001;
         for (int c = 0; c < Contexts.Length; c++)
             for (int l = 0; l < Layers.Length; l++)
             {

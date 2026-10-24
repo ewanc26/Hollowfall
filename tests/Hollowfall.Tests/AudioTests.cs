@@ -37,18 +37,6 @@ public class SynthTests
         Assert.True(Math.Abs(s[^1]) < 0.02f, $"{id} ends with a click");
     }
 
-    [Fact]
-    public void TheAmbienceLoopsSeamlessly()
-    {
-        var s = Synth.Render(SoundId.Ambience);
-        Assert.Equal((int)(Synth.AmbienceSeconds * Synth.SampleRate), s.Length);
-        // The sample after the last is the first, so the step across the join must be as small as any other step.
-        double join = Math.Abs(s[0] - s[^1]);
-        double biggest = 0;
-        for (int i = 1; i < s.Length; i++) biggest = Math.Max(biggest, Math.Abs(s[i] - s[i - 1]));
-        Assert.True(join <= biggest * 1.05, $"the loop join steps {join:F4} against a normal maximum of {biggest:F4}");
-    }
-
     [Theory]
     [InlineData(SoundId.FireCrackle)]
     [InlineData(SoundId.CatPurr)]
@@ -64,8 +52,8 @@ public class SynthTests
     }
 
     [Fact]
-    public void OnlyTheAmbienceLoops() =>
-        Assert.Equal([SoundId.Ambience, SoundId.FireCrackle, SoundId.CatPurr], Enum.GetValues<SoundId>().Where(Synth.Loops));
+    public void OnlyTheFireCatAndBedsLoop() =>
+        Assert.Equal([SoundId.FireCrackle, SoundId.CatPurr, .. Beds.All], Enum.GetValues<SoundId>().Where(Synth.Loops));
 
     [Fact]
     public void SoundsAreDistinctFromOneAnother()
@@ -145,11 +133,11 @@ public class SoundMapTests
             new ReputationChanged(Relations.Faction.Brownies, Relations.ReputationTier.Neutral, Relations.ReputationTier.Wary),
             new EntityProvoked(1, Relations.Faction.Brownies), new EntityProvoked(1, Relations.Faction.Selkies), new EntityProvoked(1, Relations.Faction.Kelpies),
             new EntityProvoked(1, Relations.Faction.Wanderers), new EntityProvoked(1, Relations.Faction.Vermin),
-            new OmenSensed(1), new BoonGiven(1, "warmth", 5), new EntityAllied(1, Relations.Faction.Selkies),
+            new OmenSensed(1), new BoonGiven(1, "warmth", 5), new EntityAllied(1, Relations.Faction.Selkies), new CreamUsed(40),
         };
         var used = events.Select(SoundMap.For).Where(s => s != null).Select(s => s!.Value).ToHashSet();
-        // Floor completion needs a result object; UI, ambience, footsteps and story sounds (reading a note, a title card) are played by the host directly.
-        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.Ambience, SoundId.NoteRead, SoundId.TitleCard, SoundId.WulverGreeting, SoundId.WulverGift, SoundId.FireCrackle, SoundId.CatMeow, SoundId.CatPurr }.Concat(Footsteps.StepSounds);
+        // Floor completion needs a result object; UI, footsteps and story sounds (reading a note, a title card) are played by the host directly.
+        var exempt = new[] { SoundId.FloorComplete, SoundId.UiMove, SoundId.UiSelect, SoundId.NoteRead, SoundId.TitleCard, SoundId.WulverGreeting, SoundId.WulverGift, SoundId.FireCrackle, SoundId.CatMeow, SoundId.CatPurr, SoundId.CharmWear }.Concat(Footsteps.StepSounds).Concat(Beds.All);
         foreach (var id in Enum.GetValues<SoundId>().Except(exempt)) Assert.Contains(id, used);
     }
 

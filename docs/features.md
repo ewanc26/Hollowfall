@@ -62,8 +62,9 @@ thresholds, the window expiring, the damage formula, no self-damage, speed loss.
 
 **Pitch.** In deeper floors most stone is dead stone. Portals only stick to marked plates, so the generator is a puzzle setter.
 
-**Rules.** From floor 2, walls become `Obsidian` (not portalable). The layout places 2 to 5 `RiftPlate` blocks per arena, always
-at least one facing each other across the room and one on a high wall or ceiling. `BlockInfo.Portalable` becomes depth-aware:
+**Rules.** From floor 2, walls become `Obsidian` (not portalable). The layout places a pair of `RiftPlate` blocks on the edge of each
+arena (two plateable walls as far apart as the room allows) and a pair beside every gap hallway and pit, so each gap can be
+crossed, and one plate high on a wall of each arena. `BlockInfo.Portalable` becomes depth-aware:
 floor 0 and 1 allow everything (so the mechanic is learned freely), later floors allow only plates. Plates survive carving
 (feature 3.3).
 
@@ -90,6 +91,8 @@ twenty steps away on foot and two through a door, and enemy shortcuts (already i
 **Tests:** layouts with rift links are still fully connected without them, links join distant rooms, replays stay
 deterministic. **Effort:** medium.
 
+**Status: built** (`FloorLayout.Doors.cs`, `DungeonSite.RiftPassages`, `PortalSystem.SetFixed`/`Rifts`, `CombatView` rift views). Doors are not in the room graph links, so the boss route and reachability never depend on them; the Sever cut is applied on the close action only when it takes a placed portal. **Tests:** `RiftDoorTests`, and the rift cases in `SeverSimTests`.
+
 ### 2.4a Gaps (built)
 
 The generated half of 2.4: rooms are joined by corridors, portal gaps (hallways across a pit) and rare shaft gaps, and every room is guaranteed a gap. See `docs/game-loop.md` (Room links and gaps), `LinkMix`, `GapCrossing` and `DungeonReach`.
@@ -110,6 +113,8 @@ reflect-and-redirect rules that already exist.
 crossing. **Tests:** projectile from the boss's gate reaches the player, a reflected shot through the boss's gate damages him,
 your portals are disabled in the window and restored after. **Effort:** large (needs the boss to exist first).
 
+**Status: built** (`PortalSystem.OpenWarden`/`WardenLaunches`/`SwapPlaced`, `CombatSim.UpdateWarden`, gate views in `CombatView`). Phase two starts at 60% health and opens his gate for 6 seconds, shut for 6, repeating. Phase three starts at 30% and swaps your two portals every 8 seconds. If you stand inside one of your own portal holes when his gate would open or your portals would swap, the change waits and retries until you step clear, so nothing gets buried in stone. **Tests:** `WardenPortalTests`, including a parried shot that comes back through his gate and hurts him. Host visuals for his gates are not checked by playing the game.
+
 ### 2.6 Portal-aware sound and a readable pair
 
 Small, and unusual enough to matter. Sound sources are heard from the closer of the direct path and the path through a portal,
@@ -128,7 +133,7 @@ The world is voxels, so the world should be breakable, in a few controlled ways.
 **Rules.** A new action, *Slam* (default C on the keyboard and L3, the left stick click, on a gamepad), pressed while airborne, drives
 you straight down at 30 blocks per second. On landing it shockwaves a 3.5 block radius for 30 damage and awards **Slam** (60)
 or **Air Slam** (160 from over 8 blocks). Floors on arena rooms are made of `BrickFloor`; the first slam cracks the tile
-(`CrackedFloor`), the second within 3 seconds breaks a 3 x 3 hole. Slam only breaks floor where there is a floor below it,
+(`CrackedFloor`), the second within 3 seconds breaks a round hole about three blocks across, cut in 10 cm cubes. Slam only breaks floor where there is a floor below it,
 never over a stair shaft, and never on plates. Dropping through a hole skips the rest of the room above and awards **Hollowfall**
 (150 points) if you land in another arena.
 
@@ -139,13 +144,15 @@ instead of a staircase, and it makes "push forward" literal.
 Needs a new `GameAction`. **Tests:** crack then break timing, no break over shafts, hole size, enemies in the radius damaged,
 falling through counts as a floor change. **Effort:** medium.
 
-### 3.2 Block Mortar (a weapon that digs)
+### 3.2 Block Mortar (a weapon that digs) (built)
 
 **Pitch.** A third weapon that trades damage for terrain.
 
-**Rules.** Slow arcing shell (1.4 second cooldown). On impact it removes blocks in a sphere of radius 2.5 (only `Breakable`
-blocks: brick, dirt, sand, stone; never bedrock, plates, gates or door frames) and deals 40 at the centre falling to 10 at the
-edge. Removed blocks leave six physical **debris** voxels that roll for a second and vanish. It can open a wall to a secret,
+**Rules.** Slow arcing shell (1.4 second cooldown). On impact it digs a sphere of radius 2.5 out of the world in 10 cm cubes. Each 1 m block is a 10 x 10 x 10 grid of cubes, so craters have
+partly dug walls; a block is only removed once every cube in it is gone. Only `Breakable` blocks are dug (brick, dirt, sand,
+stone; never bedrock, plates, gates or door frames). It deals 40 at the centre falling to 10 at the edge. Dug holes are drawn
+per cube, but collision still treats a block as solid until it is fully dug, so the player stands on a crater's rim.
+Debris voxels are not built yet. It can open a wall to a secret,
 drop a ceiling slab onto a group, or carve a line of sight for a portal.
 
 **Why it is ours.** It makes the portal gun and the world talk: carve a wall, place a portal on the fresh surface (Rift plates
@@ -169,6 +176,19 @@ mesh-based shooter can, and gives each floor a distinct ending.
 **Build on.** `VoxelWorld` batch edits and `WorldView.MarkDirty` (needs batching, see risks), `CombatSim` floor transitions.
 **Tests:** rings remove the expected blocks in order, the player ends on the next floor, no softlocks if the player stands on
 the stairs, floor timer pauses. **Effort:** large.
+
+**Status: built in core** (`CollapseSequence`, the collapse wiring in `CombatSim`, the Freefall bonus). Host visuals are not verified: the collapse relies on existing chunk re-meshing and has no dedicated effect yet. **Tests:** `CollapseTests`, `CollapseSimTests`.
+### 3.4 The bag, the cream and the thorn charm (built)
+
+**Pitch.** Something to carry, so a friendly brownie's gift is worth keeping.
+
+**Rules.** The bag has 12 slots of up to 9 of each item. A **Brownie's cream** heals 40 when used in a run (H, or D-pad right),
+and only when you are hurt below your ceiling; it is used up on use. A full bag leaves the cream behind. Creams found during a
+run are not usable until the next run. The **thorn charm** can be worn in the one charm slot (Bag screen, Wear or Take off) and
+takes 10 percent less damage. Worn charms and carried creams are read when a run starts, so changes take effect from the next run.
+
+**Build on.** `Inventory`, `RunStats` (creams and charm recorded in the replay, format 4), `CreamUsed` in `CombatSim`. **Tests:**
+`ItemUseTests`. **Not yet:** chest loot still heals on the spot rather than becoming items.
 
 ## 4. Pillar three: Chain
 

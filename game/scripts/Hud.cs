@@ -27,6 +27,8 @@ public partial class Hud : CanvasLayer
     private Control _crossCluster = null!;
     private MiniMap _map = null!;
     private Label _floorStairs = null!, _floorKills = null!, _floorTime = null!, _floorKeys = null!;
+    private HBoxContainer _creamRow = null!;
+    private Label _creamCount = null!;
     private PanelContainer _floorPanel = null!;
     private ShaderMaterial _vignette = null!;
     private readonly List<Control> _avoid = [];
@@ -144,6 +146,12 @@ public partial class Hud : CanvasLayer
         healthRow.AddChild(Glyphs.Icon(GameIcons.Health, 24));
         _health = Text(healthRow, Vector2.Zero, 24);
         _health.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+        _creamRow = new HBoxContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+        _creamRow.AddThemeConstantOverride("separation", 6);
+        _creamRow.AddChild(Glyphs.Icon(GameIcons.Cream, 24));
+        _creamCount = Text(_creamRow, Vector2.Zero, 24);
+        _creamCount.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+        healthRow.AddChild(_creamRow);
 
         _hint = new HintBar();
         stack.AddChild(_hint);
@@ -253,6 +261,13 @@ public partial class Hud : CanvasLayer
     }
 
     /// <summary>Shows what the player has seen of the floor, or hides the map on the surface.</summary>
+    /// <summary>Shows the jars of cream the run still has, beside the health; hidden when there are none.</summary>
+    public void SetCream(int count)
+    {
+        _creamRow.Visible = count > 0;
+        _creamCount.Text = count.ToString();
+    }
+
     public void SetMap(FloorMap? map, int floor, Vector2 cell, float yaw)
     {
         _map.Visible = map != null && floor >= 0;

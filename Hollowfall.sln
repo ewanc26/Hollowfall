@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hollowfall.AssetGen", "tools\Hollowfall.AssetGen\Hollowfall.AssetGen.csproj", "{9CEB45C6-7832-402B-ABA3-3AE0DF5B3D61}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hollowfall.VillagerTrainer", "tools\Hollowfall.VillagerTrainer\Hollowfall.VillagerTrainer.csproj", "{047583CE-CFEB-47BF-89E7-8B8700806361}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -91,6 +93,18 @@ Global
 		{9CEB45C6-7832-402B-ABA3-3AE0DF5B3D61}.Release|x64.Build.0 = Release|Any CPU
 		{9CEB45C6-7832-402B-ABA3-3AE0DF5B3D61}.Release|x86.ActiveCfg = Release|Any CPU
 		{9CEB45C6-7832-402B-ABA3-3AE0DF5B3D61}.Release|x86.Build.0 = Release|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Debug|x64.Build.0 = Debug|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Debug|x86.Build.0 = Debug|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Release|Any CPU.Build.0 = Release|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Release|x64.ActiveCfg = Release|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Release|x64.Build.0 = Release|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Release|x86.ActiveCfg = Release|Any CPU
+		{047583CE-CFEB-47BF-89E7-8B8700806361}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -101,5 +115,6 @@ Global
 		{7C524E42-E171-46D6-A858-B70EFE5C6E1F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{6A459222-EE28-43C4-880B-50A95087DB54} = {AE49D761-A782-2099-29A5-159B937B43CB}
 		{9CEB45C6-7832-402B-ABA3-3AE0DF5B3D61} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{047583CE-CFEB-47BF-89E7-8B8700806361} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

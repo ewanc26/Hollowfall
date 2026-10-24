@@ -138,6 +138,8 @@ public sealed partial class FloorLayout
         layout.AssignRoles(rng);
         layout.PlanLinks(new SeededRandom(seed, floor, attempt, 310));
         layout.PlacePillars();
+        layout.PlacePlates();
+        layout.PlaceRiftDoors(new SeededRandom(seed, floor, attempt, 320));
         return layout;
     }
 

@@ -113,6 +113,9 @@ public partial class PlayerController : Node3D
     /// <summary>True the frame the respawn action was pressed.</summary>
     public bool RespawnRequested => InputMapper.JustPressed(GameAction.Respawn);
 
+    /// <summary>How far a slam dropped since this was last asked, once it has landed.</summary>
+    public double? TakeSlamLanding() => Body.TakeSlamLanding();
+
     /// <summary>
     /// Advances the player one fixed step and returns this step's button presses. Portals, if any, are walked through.
     /// Called by the director so movement always happens before combat.
@@ -127,15 +130,18 @@ public partial class PlayerController : Node3D
         var actions = new PlayerActions(
             FireRevolver: live && InputMapper.Pressed(GameAction.FirePrimary),
             FireShotgun: live && InputMapper.Pressed(GameAction.FireSecondary),
+            FireMortar: live && InputMapper.Pressed(GameAction.FireMortar),
             Parry: live && InputMapper.JustPressed(GameAction.Parry),
             PortalTeal: live && InputMapper.JustPressed(GameAction.PortalTeal),
             PortalViolet: live && InputMapper.JustPressed(GameAction.PortalViolet),
             Interact: live && InputMapper.JustPressed(GameAction.Interact),
-            ClosePortals: live && InputMapper.JustPressed(GameAction.ClosePortals));
+            ClosePortals: live && InputMapper.JustPressed(GameAction.ClosePortals),
+            UseCream: live && InputMapper.JustPressed(GameAction.UseCream));
 
         if (!dead)
         {
             if (InputMapper.JustPressed(GameAction.FlyToggle)) Flying = !Flying;
+            if (live && !Flying && InputMapper.JustPressed(GameAction.Slam)) Body.BeginSlam();
             double yBefore = Body.Y;
             bool groundedBefore = Body.OnGround;
             Move(delta, portals);
@@ -177,6 +183,11 @@ public partial class PlayerController : Node3D
         }
 
         bool jump = InputMapper.Pressed(GameAction.Jump);
+        if (_world.Glue is { } glue)
+        {
+            if (glue.Step(Body, delta, mx, mz, jump)) _yaw = glue.YawAfterCrossing(_yaw);
+            return;
+        }
         if (portals != null && PortalWalker.Step(Body, portals, delta, mx, mz, jump, _world.GetBlock, Forward) is { } crossing)
         {
             // Turn to face where the portal sends us, keeping the view upright.
