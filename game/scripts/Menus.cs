@@ -26,6 +26,8 @@ public enum MenuScreen
     /// <summary>The character: experience, level and the stat points to spend (progression). Appended after Standing.</summary>
     Character,
 
+    /// <summary>The quests on offer and their progress (progression). Appended after Character.</summary>
+    Quests,
     /// <summary>The bag: items carried between runs, and the charm worn. Appended after Character.</summary>
     Bag,
 
@@ -59,6 +61,7 @@ public partial class Menus : CanvasLayer
     private Label _journalTitle = null!;
     private VBoxContainer _standingList = null!;
     private VBoxContainer _characterList = null!;
+    private VBoxContainer _questList = null!;
     private VBoxContainer _bagList = null!;
 
     /// <summary>Supplies the player's reputation for the Standing screen; null when the relationship system is off. Set by the game.</summary>
@@ -81,6 +84,9 @@ public partial class Menus : CanvasLayer
 
     /// <summary>Raised when the player spends a point on a stat. The host spends it and saves the character.</summary>
     public event Action<Stat>? SpendRequested;
+
+    /// <summary>Raised when the player takes a quest on the Quests screen.</summary>
+    public event Action<QuestId>? QuestTakeRequested;
 
     public Menus(GameSettings settings, string savePath, Loc? loc = null)
     {
@@ -151,6 +157,7 @@ public partial class Menus : CanvasLayer
         _screens[MenuScreen.Journal] = BuildJournal();
         _screens[MenuScreen.Standing] = BuildStanding();
         _screens[MenuScreen.Character] = BuildCharacter();
+        _screens[MenuScreen.Quests] = BuildQuests();
         _screens[MenuScreen.Bag] = BuildBag();
         _screens[MenuScreen.Developer] = BuildDeveloper();
         foreach (var s in _screens.Values)
@@ -193,6 +200,7 @@ public partial class Menus : CanvasLayer
         if (screen == MenuScreen.Journal) RefreshJournal();
         if (screen == MenuScreen.Standing) RefreshStanding();
         if (screen == MenuScreen.Character) RefreshCharacter();
+        if (screen == MenuScreen.Quests) RefreshQuests();
         if (screen == MenuScreen.Bag) RefreshBag();
         if (screen == MenuScreen.Developer && _debugBox != null) _debugBox.SetPressedNoSignal(DebugOverlayOn());
         if (screen != MenuScreen.None) FocusFirst(_screens[screen]);
@@ -243,7 +251,7 @@ public partial class Menus : CanvasLayer
         {
             if (_current == MenuScreen.None) Open(MenuScreen.Pause);
             else if (_current == MenuScreen.Pause) { Close(); ResumeRequested?.Invoke(); }
-            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing or MenuScreen.Character or MenuScreen.Bag or MenuScreen.Developer) Open(ReturnScreen());
+            else if (_current is MenuScreen.Controls or MenuScreen.Settings or MenuScreen.Journal or MenuScreen.Standing or MenuScreen.Character or MenuScreen.Quests or MenuScreen.Bag or MenuScreen.Developer) Open(ReturnScreen());
             GetViewport().SetInputAsHandled();
         }
     }
@@ -468,6 +476,7 @@ public partial class Menus : CanvasLayer
         col.AddChild(MakeButton(_loc.Tr("pause.journal"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Journal)));
         col.AddChild(MakeButton(_loc.Tr("pause.standing"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Standing)));
         col.AddChild(MakeButton(_loc.Tr("pause.character"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Character)));
+        col.AddChild(MakeButton(_loc.Tr("pause.quests"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Quests)));
         col.AddChild(MakeButton(_loc.Tr("pause.bag"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Bag)));
         col.AddChild(MakeButton(_loc.Tr("pause.mainMenu"), () => MainMenuRequested?.Invoke()));
         col.AddChild(MakeButton(_loc.Tr("menu.controls"), () => OpenFrom(MenuScreen.Pause, MenuScreen.Controls)));
@@ -612,6 +621,66 @@ public partial class Menus : CanvasLayer
         note.AddThemeFontSizeOverride("font_size", 16);
         _characterList.AddChild(note);
     }
+
+    private Control BuildQuests()
+    {
+        var (screen, col) = Panel(640, 520);
+        col.AddChild(Heading(_loc.Tr("quest.title")));
+        _questList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(560, 0) };
+        _questList.AddThemeConstantOverride("separation", 12);
+        col.AddChild(_questList);
+
+        var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
+        col.AddChild(footer);
+        return screen;
+    }
+
+    /// <summary>Rebuilds the quest list from the live progression. Called each time the screen opens and after a quest is taken.</summary>
+    private void RefreshQuests()
+    {
+        foreach (var child in _questList.GetChildren()) child.QueueFree();
+        if (CharacterProvider() is not { } c)
+        {
+            _questList.AddChild(new Label { Text = _loc.Tr("quest.none") });
+            return;
+        }
+
+        foreach (var def in QuestLog.Catalogue.Values) _questList.AddChild(QuestRow(c, def));
+
+        var note = new Label { Text = _loc.Tr("quest.nextRun"), AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
+        note.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
+        note.AddThemeFontSizeOverride("font_size", 16);
+        _questList.AddChild(note);
+    }
+
+    private HBoxContainer QuestRow(Progression c, QuestDef def)
+    {
+        var row = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        row.AddThemeConstantOverride("separation", 12);
+        var text = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        text.AddChild(new Label { Text = _loc.Tr(QuestNameKey(def.Id)) });
+        string reward = def.Item is { } item ? Inventory.Info(item).Name : "";
+        var progress = new Label { Text = _loc.Tr("quest.progress", c.Quests.Progress(def.Id), def.Count) + "    " + _loc.Tr("quest.reward", def.Experience, reward), AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        progress.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
+        progress.AddThemeFontSizeOverride("font_size", 16);
+        text.AddChild(progress);
+        row.AddChild(text);
+
+        bool done = c.Quests.IsDone(def.Id);
+        bool taken = c.Quests.Active.Contains(def.Id);
+        var button = MakeButton(_loc.Tr(done ? "quest.done" : taken ? "quest.taken" : "quest.take"), () => { QuestTakeRequested?.Invoke(def.Id); RefreshQuests(); });
+        button.Disabled = done || taken;
+        row.AddChild(button);
+        return row;
+    }
+
+    private static string QuestNameKey(QuestId id) => id switch
+    {
+        QuestId.ClearTheHusks => "quest.husks",
+        QuestId.ClearTheSpitters => "quest.spitters",
+        _ => throw new ArgumentOutOfRangeException(nameof(id)),
+    };
 
     private HBoxContainer StatRow(Progression c, Stat stat, string nameKey, string hintKey)
     {

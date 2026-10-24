@@ -140,7 +140,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 146.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 157.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -183,6 +183,17 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 146.
 | `character.might` | Might {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.mightHint` | +5 percent damage from guns and parries a point | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.nextRun` | Points take effect from your next run. A run keeps the stats it began with. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.title` | QUESTS | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.none` | No quests yet. Ask among the Folk. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.husks` | Clear the Husks | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.spitters` | Clear the Spitters | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.progress` | {0} of {1} defeated | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.reward` | Reward: {0} experience and {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.take` | Take | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.taken` | Taken | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.done` | Finished | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.nextRun` | Quests count the kills you make from now on, in every run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pause.quests` | Quests | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.journal` | Journal | Leabhar-latha | Verified | WK | leabhar-latha, diary or journal |
 | `pause.mainMenu` | Main menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `journal.title` | JOURNAL | LEABHAR-LATHA | Verified | WK | capitals of the entry above |

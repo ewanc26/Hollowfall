@@ -97,8 +97,9 @@ public partial class Main : Node3D
     private void AwardKill(EnemyKilled killed)
     {
         int before = _character.Level;
-        if (_character.Award(killed.Kind) == 0) return;
-        if (_character.Level != before) ProgressionStore.TrySave(_character, ProgressionPath);
+        _character.Award(killed.Kind);
+        bool questFinished = _character.RecordKill(killed).Count > 0;
+        if (_character.Level != before || questFinished) ProgressionStore.TrySave(_character, ProgressionPath);
     }
 
     public StoryDirector Story => _story;
@@ -306,6 +307,7 @@ public partial class Main : Node3D
         _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
         _menus.CharacterProvider = () => _character;
         _menus.SpendRequested += stat => { if (_character.Spend(stat)) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.QuestTakeRequested += quest => { if (_character.Quests.Take(quest)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.BagProvider = () => _character.Items;
         _menus.WearRequested += kind => { if (_character.Items.Wear(kind)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.TakeOffRequested += () => { if (_character.Items.TakeOff()) ProgressionStore.TrySave(_character, ProgressionPath); };
