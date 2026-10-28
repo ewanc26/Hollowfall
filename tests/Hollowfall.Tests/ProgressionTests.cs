@@ -47,6 +47,49 @@ public class ProgressionTests
     }
 
     [Fact]
+    public void OnlyTheHollowDropsCoinAndItStopsAtTheCap()
+    {
+        var p = new Progression();
+        Assert.Equal(3, p.AwardCoin(EnemyKind.Husk));
+        Assert.Equal(4, p.AwardCoin(EnemyKind.Spitter));
+        Assert.Equal(5, p.AwardCoin(EnemyKind.CuSith));
+        Assert.Equal(30, p.AwardCoin(EnemyKind.Warden));
+        Assert.Equal(42, p.Coin);
+        Assert.Equal(0, p.AwardCoin(EnemyKind.Brownie));
+        Assert.Equal(0, p.AwardCoin(EnemyKind.Villager));
+        Assert.Equal(0, p.AwardCoin(EnemyKind.Pedlar));
+        Assert.Equal(42, p.Coin);
+
+        Assert.Equal(0, p.GainCoin(0));
+        Assert.Equal(0, p.GainCoin(-9));
+        Assert.Equal(Progression.MaxCoin - 42, p.GainCoin(int.MaxValue));
+        Assert.Equal(Progression.MaxCoin, p.Coin);
+        Assert.Equal(0, p.GainCoin(1));
+    }
+
+    [Fact]
+    public void SpendingCoinNeedsEnoughAndNeverGoesBelowZero()
+    {
+        var p = new Progression();
+        p.GainCoin(10);
+        Assert.False(p.SpendCoin(11));
+        Assert.False(p.SpendCoin(-1));
+        Assert.Equal(10, p.Coin);
+        Assert.True(p.SpendCoin(10));
+        Assert.Equal(0, p.Coin);
+    }
+
+    [Fact]
+    public void CoinSurvivesASaveAndIsClampedOnTheWayIn()
+    {
+        var p = new Progression();
+        p.GainCoin(123);
+        Assert.Equal(123, ProgressionStore.FromJson(ProgressionStore.ToJson(p)).Coin);
+        Assert.Equal(Progression.MaxCoin, ProgressionStore.FromJson("{\"coin\":999999}").Coin);
+        Assert.Equal(0, ProgressionStore.FromJson("{\"coin\":-4}").Coin);
+    }
+
+    [Fact]
     public void GainIgnoresNonPositiveAmountsAndStopsAtTheCap()
     {
         var p = new Progression();
