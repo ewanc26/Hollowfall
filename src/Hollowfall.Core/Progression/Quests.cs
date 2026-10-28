@@ -1,4 +1,5 @@
 using Hollowfall.Core.Combat;
+using Hollowfall.Core.Relations;
 
 namespace Hollowfall.Core.Progression;
 
@@ -12,8 +13,8 @@ public enum QuestId
     ClearTheSpitters,
 }
 
-/// <summary>What a quest asks for, and what it pays.</summary>
-public sealed record QuestDef(QuestId Id, string Name, EnemyKind Target, int Count, int Experience, ItemKind? Item, int ItemCount);
+/// <summary>What a quest asks for, what faction asks it, and what it pays.</summary>
+public sealed record QuestDef(QuestId Id, string Name, Faction Giver, EnemyKind Target, int Count, int Experience, int Coin, ItemKind? Item, int ItemCount);
 
 /// <summary>
 /// Quests are pure data plus a log that counts progress from defeated enemies. A quest is finished once, when its count is reached,
@@ -23,8 +24,8 @@ public sealed class QuestLog
 {
     public static readonly IReadOnlyDictionary<QuestId, QuestDef> Catalogue = new Dictionary<QuestId, QuestDef>
     {
-        [QuestId.ClearTheHusks] = new(QuestId.ClearTheHusks, "Clear the Husks", EnemyKind.Husk, 5, 40, ItemKind.BrownieCream, 1),
-        [QuestId.ClearTheSpitters] = new(QuestId.ClearTheSpitters, "Clear the Spitters", EnemyKind.Spitter, 3, 60, ItemKind.ThornCharm, 1),
+        [QuestId.ClearTheHusks] = new(QuestId.ClearTheHusks, "Clear the Husks", Faction.Brownies, EnemyKind.Husk, 5, 40, 15, ItemKind.BrownieCream, 1),
+        [QuestId.ClearTheSpitters] = new(QuestId.ClearTheSpitters, "Clear the Spitters", Faction.Villagers, EnemyKind.Spitter, 3, 60, 25, ItemKind.ThornCharm, 1),
     };
 
     private readonly Dictionary<QuestId, int> _progress = [];
