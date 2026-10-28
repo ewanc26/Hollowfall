@@ -140,7 +140,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 157.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 160.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -166,6 +166,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 157.
 | `pause.bag` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.title` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.slots` | Slots used: {0} of {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.coin` | Coin {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.none` | Nothing is carried yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.creamHint` | Eat it in a run to heal {0}. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.wear` | Wear | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -187,11 +188,13 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 157.
 | `quest.none` | No quests yet. Ask among the Folk. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.husks` | Clear the Husks | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.spitters` | Clear the Spitters | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.giver` | Given by {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.progress` | {0} of {1} defeated | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `quest.reward` | Reward: {0} experience and {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.reward` | Reward: {0} experience, {1} coin and {2} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.take` | Take | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.taken` | Taken | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.done` | Finished | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.refused` | Refused | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.nextRun` | Quests count the kills you make from now on, in every run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.quests` | Quests | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.journal` | Journal | Leabhar-latha | Verified | WK | leabhar-latha, diary or journal |

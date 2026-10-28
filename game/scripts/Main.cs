@@ -47,6 +47,7 @@ public partial class Main : Node3D
     private WulverView? _wulverView;
     private CatDirector? _cat;
     private VillagerDirector? _villagers;
+    private PedlarDirector? _pedlar;
     private CatView? _catView;
     private int _deathCount, _killCount, _deepestFloor = -1;
     private double _playSeconds;
@@ -93,19 +94,24 @@ public partial class Main : Node3D
         _relations.TrySave(RelationsPath);
     }
 
-    /// <summary>Gives experience for a defeated enemy. The character is saved when a level is gained and when a floor ends, not on every kill.</summary>
+    /// <summary>
+    /// Gives experience and coin for a defeated enemy, and counts it against the quests. The character is saved when a level is
+    /// gained, when coin changes or a quest finishes; otherwise a floor's end saves it.
+    /// </summary>
     private void AwardKill(EnemyKilled killed)
     {
-        int before = _character.Level;
+        int beforeLevel = _character.Level, beforeCoin = _character.Coin;
         _character.Award(killed.Kind);
         bool questFinished = _character.RecordKill(killed).Count > 0;
-        if (_character.Level != before || questFinished) ProgressionStore.TrySave(_character, ProgressionPath);
+        if (_character.Level != beforeLevel || _character.Coin != beforeCoin || questFinished)
+            ProgressionStore.TrySave(_character, ProgressionPath);
     }
 
     public StoryDirector Story => _story;
     public WulverDirector? Wulver => _wulver;
     public WulverView? WulverView => _wulverView;
     public CatDirector? Cat => _cat;
+    public PedlarDirector? Pedlar => _pedlar;
     public CatView? CatView => _catView;
     public PropsView? Props => _props;
     public StoryUi StoryUi => _storyUi;
@@ -267,6 +273,13 @@ public partial class Main : Node3D
                 InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
                 MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
             };
+
+            // The pedlar on the plaza sells folk remedies. What he charges follows the Villagers' standing.
+            _pedlar = new PedlarDirector(_character, () => Combat?.Sim.Relations?.Reputation.Tier(Faction.Villagers) ?? ReputationTier.Neutral, _storyUi, () => ProgressionStore.TrySave(_character, ProgressionPath))
+            {
+                InteractLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+            };
         }
 
         // The weapons in your hands, drawn under the HUD.
@@ -306,6 +319,7 @@ public partial class Main : Node3D
         _menus.JournalProvider = () => (plan.Title, _story.Journal());
         _menus.StandingProvider = () => Combat?.Sim.Relations?.Reputation;
         _menus.CharacterProvider = () => _character;
+        _menus.TierProvider = faction => Combat?.Sim.Relations?.Reputation.Tier(faction) ?? ReputationTier.Neutral;
         _menus.SpendRequested += stat => { if (_character.Spend(stat)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.QuestTakeRequested += quest => { if (_character.Quests.Take(quest)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.BagProvider = () => _character.Items;
@@ -500,6 +514,7 @@ public partial class Main : Node3D
             if (_demo is { } cd && cd.StartsWith("cat")) RunCatDemo(cd);
             if (_cat != null) actions = _cat.Filter(actions, view.Feet, !dead);
             if (_villagers != null) actions = _villagers.Filter(actions, view.Feet, !dead, Combat.Sim.Enemies);
+            if (_pedlar != null) actions = _pedlar.Filter(actions, view.Feet, !dead, Combat.Sim.Enemies);
             if (_demo == "portals") (view, actions) = RunPortalDemo(view, actions);
             if (_demo == "gap") (view, actions) = RunGapDemo(view, actions);
             if (_demo == "sever") (view, actions) = RunSeverDemo(view, actions);
@@ -886,6 +901,7 @@ public partial class Main : Node3D
         if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds, sim.Items.KeysHeld);
         else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
         _hud.SetCream(sim.CreamsLeft);
+        _hud.SetCoin(_character.Coin);
         {
             _hud.SetMap(sim.Map, floor, new Vector2((float)(b.X - Combat.Site.OriginX), (float)(b.Z - Combat.Site.OriginZ)), (float)_player.Yaw);
         }

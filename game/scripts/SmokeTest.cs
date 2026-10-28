@@ -5,6 +5,7 @@ using Hollowfall.Core.Input;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Meshing;
 using Hollowfall.Core.Models;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.Relations;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Story.Dialogue;
@@ -201,6 +202,7 @@ public partial class SmokeTest : Node
             CheckVolumeSlidersPersist(main);
             await CheckMiniMapAsync(main);
             CheckChestOpens(main);
+            CheckPedlar(main);
             CheckTrapStrikes(main);
             CheckRunRecordsSaveAndReload(main);
             await CheckReplaySavedByARealRunAsync(main);
@@ -884,6 +886,42 @@ public partial class SmokeTest : Node
             bool revealed = seenBefore > 0 && seenAfter > seenBefore && map.Version > versionBefore && map.IsSeen(0, cx, cz);
             bool shown = minimap is { Visible: true };
             Report(name, revealed && shown, $"seen {seenBefore} -> {seenAfter}, version {versionBefore} -> {map.Version}, minimap visible={shown}");
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+    }
+
+    /// <summary>The pedlar appears on the plaza, opens his pack and sells a cream for coin, then closes.</summary>
+    private void CheckPedlar(Main main)
+    {
+        const string name = "the pedlar trades on the plaza and takes coin for a cream";
+        try
+        {
+            var sim = main.Combat!.Sim;
+            var spot = Merchant.PedlarSpot(main.Combat.Site);
+            main.Player.PlaceAt(new Vector3((float)spot.X, (float)spot.Y, (float)spot.Z + 1.5f), 0);
+            for (int i = 0; i < 30 && !sim.Enemies.Any(e => e.Kind == EnemyKind.Pedlar); i++) sim.Tick(1.0 / 60, main.Player.View, default);
+            var pedlar = sim.Enemies.FirstOrDefault(e => e.Kind == EnemyKind.Pedlar);
+            if (pedlar == null) { _failed++; GD.PrintErr($"  FAIL {name}: no pedlar on the plaza"); return; }
+
+            main.Player.PlaceAt(new Vector3((float)pedlar.Feet.X, (float)pedlar.Feet.Y, (float)pedlar.Feet.Z + 1.5f), 0);
+            var character = main.Menus.CharacterProvider()!;
+            character.GainCoin(100);
+            int before = character.Coin;
+
+            main.Pedlar!.Filter(new PlayerActions(false, false, false, Interact: true), main.Player.View.Feet, true, sim.Enemies);
+            bool opened = main.StoryUi.DialogueOpen;
+            bool hasCream = main.StoryUi.DialogueChoices.Any(c => c.Contains("Brownie's cream") && c.Contains("coin"));
+            main.StoryUi.PressDialogueChoice(0);
+            bool bought = character.Coin == before - Merchant.PriceFor(ItemKind.BrownieCream, ReputationTier.Neutral)!.Value
+                && character.Items.Count(ItemKind.BrownieCream) == 1;
+            main.StoryUi.Close();
+
+            if (opened && hasCream && bought) { _passed++; GD.Print($"  ok   {name} (coin {before} -> {character.Coin})"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: opened={opened} cream={hasCream} bought={bought} coin={character.Coin}"); }
         }
         catch (Exception e)
         {
