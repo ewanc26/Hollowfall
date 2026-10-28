@@ -29,6 +29,8 @@ public partial class Hud : CanvasLayer
     private Label _floorStairs = null!, _floorKills = null!, _floorTime = null!, _floorKeys = null!;
     private HBoxContainer _creamRow = null!;
     private Label _creamCount = null!;
+    private HBoxContainer _coinRow = null!;
+    private Label _coinCount = null!;
     private PanelContainer _floorPanel = null!;
     private ShaderMaterial _vignette = null!;
     private readonly List<Control> _avoid = [];
@@ -152,6 +154,12 @@ public partial class Hud : CanvasLayer
         _creamCount = Text(_creamRow, Vector2.Zero, 24);
         _creamCount.AddThemeFontOverride("font", UiFonts.DisplayMedium);
         healthRow.AddChild(_creamRow);
+        _coinRow = new HBoxContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+        _coinRow.AddThemeConstantOverride("separation", 6);
+        _coinRow.AddChild(Glyphs.Icon(GameIcons.Coin, 24));
+        _coinCount = Text(_coinRow, Vector2.Zero, 24);
+        _coinCount.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+        healthRow.AddChild(_coinRow);
 
         _hint = new HintBar();
         stack.AddChild(_hint);
@@ -266,6 +274,13 @@ public partial class Hud : CanvasLayer
     {
         _creamRow.Visible = count > 0;
         _creamCount.Text = count.ToString();
+    }
+
+    /// <summary>Shows the coin you carry, beside the health; hidden while you have none.</summary>
+    public void SetCoin(int count)
+    {
+        _coinRow.Visible = count > 0;
+        _coinCount.Text = count.ToString();
     }
 
     public void SetMap(FloorMap? map, int floor, Vector2 cell, float yaw)

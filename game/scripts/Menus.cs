@@ -6,6 +6,7 @@ using Hollowfall.Core.World;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Localization;
 using Hollowfall.Core.Progression;
+using Hollowfall.Core.Relations;
 using Hollowfall.Core.Story;
 using Hollowfall.Core.Ui;
 
@@ -75,6 +76,9 @@ public partial class Menus : CanvasLayer
 
     /// <summary>Supplies the character for the Character screen; null when there is none. Set by the game.</summary>
     public Func<Progression?> CharacterProvider { get; set; } = () => null;
+
+    /// <summary>How a faction regards the player, for the quest givers' access. Set by the game.</summary>
+    public Func<Faction, ReputationTier> TierProvider { get; set; } = _ => ReputationTier.Neutral;
 
     /// <summary>Supplies the bag for the Bag screen; null when there is none. Set by the game.</summary>
     public Func<Inventory?> BagProvider { get; set; } = () => null;
@@ -566,6 +570,7 @@ public partial class Menus : CanvasLayer
         }
 
         _bagList.AddChild(new Label { Text = _loc.Tr("bag.slots", bag.SlotsUsed, Inventory.Slots) });
+        if (CharacterProvider() is { } character) _bagList.AddChild(new Label { Text = _loc.Tr("bag.coin", character.Coin) });
         _bagList.AddChild(BagRow(bag, ItemKind.BrownieCream));
         _bagList.AddChild(BagRow(bag, ItemKind.ThornCharm));
         var note = new Label { Text = _loc.Tr("bag.wearHint"), AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
@@ -661,8 +666,12 @@ public partial class Menus : CanvasLayer
         row.AddThemeConstantOverride("separation", 12);
         var text = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         text.AddChild(new Label { Text = _loc.Tr(QuestNameKey(def.Id)) });
+        var giver = new Label { Text = _loc.Tr("quest.giver", FactionGraph.Info(def.Giver).Name) };
+        giver.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 1f));
+        giver.AddThemeFontSizeOverride("font_size", 16);
+        text.AddChild(giver);
         string reward = def.Item is { } item ? Inventory.Info(item).Name : "";
-        var progress = new Label { Text = _loc.Tr("quest.progress", c.Quests.Progress(def.Id), def.Count) + "    " + _loc.Tr("quest.reward", def.Experience, reward), AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        var progress = new Label { Text = _loc.Tr("quest.progress", c.Quests.Progress(def.Id), def.Count) + "    " + _loc.Tr("quest.reward", def.Experience, def.Coin, reward), AutowrapMode = TextServer.AutowrapMode.WordSmart };
         progress.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
         progress.AddThemeFontSizeOverride("font_size", 16);
         text.AddChild(progress);
@@ -670,8 +679,9 @@ public partial class Menus : CanvasLayer
 
         bool done = c.Quests.IsDone(def.Id);
         bool taken = c.Quests.Active.Contains(def.Id);
-        var button = MakeButton(_loc.Tr(done ? "quest.done" : taken ? "quest.taken" : "quest.take"), () => { QuestTakeRequested?.Invoke(def.Id); RefreshQuests(); });
-        button.Disabled = done || taken;
+        bool refused = TierProvider(def.Giver) == ReputationTier.Hated;
+        var button = MakeButton(_loc.Tr(done ? "quest.done" : taken ? "quest.taken" : refused ? "quest.refused" : "quest.take"), () => { QuestTakeRequested?.Invoke(def.Id); RefreshQuests(); });
+        button.Disabled = done || taken || refused;
         row.AddChild(button);
         return row;
     }
