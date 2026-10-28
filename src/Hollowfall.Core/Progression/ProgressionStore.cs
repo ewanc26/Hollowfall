@@ -6,12 +6,12 @@ namespace Hollowfall.Core.Progression;
 /// <summary>
 /// Your character saved as <c>progression.json</c> in the data folder. Read defensively: a damaged or hand-edited file gives a
 /// fresh character rather than stopping the game, and every value is clamped on the way in. Saving is atomic. Version 1 files
-/// (no bag) still load, with an empty bag.
+/// (no bag or quests) and version 2 files (no coin) still load, with an empty bag and no coin.
 /// </summary>
 public static class ProgressionStore
 {
     public const int MaxFileBytes = 4 * 1024;
-    public const int Version = 2;
+    public const int Version = 3;
 
     public static string ToJson(Progression progression)
     {
@@ -26,6 +26,7 @@ public static class ProgressionStore
             ["experience"] = progression.Experience,
             ["vigour"] = progression.Vigour,
             ["might"] = progression.Might,
+            ["coin"] = progression.Coin,
             ["items"] = items,
             ["charm"] = progression.Items.Charm is { } worn ? worn.ToString() : null,
             ["quests"] = quests,
@@ -44,7 +45,7 @@ public static class ProgressionStore
         catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException or FormatException) { return progression; }
         if (root is null) return progression;
 
-        progression.Restore(Number(root, "experience"), Number(root, "vigour"), Number(root, "might"));
+        progression.Restore(Number(root, "experience"), Number(root, "vigour"), Number(root, "might"), Number(root, "coin"));
         progression.Items.Restore(ReadItems(root), ReadCharm(root));
         ReadQuests(root, progression.Quests);
         return progression;
