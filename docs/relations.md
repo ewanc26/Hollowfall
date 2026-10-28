@@ -167,6 +167,12 @@ encounter: a room holding only passive creatures does not lock, and clearing an 
 outside each cottage's door. They appear once the player comes within two chunks of the village, stay until the run restarts, and are
 never part of an encounter. The Wulver never stands within a village yard (or 8 blocks beyond it).
 
+The **pedlar** waits on the dungeon's surface plaza, opposite the player's arrival, once the player comes back up into the daylight
+(`Merchant.PedlarSpot`, `CombatSim.PopulatePedlar`). He is a Villager for standing and memory, passive, and never part of an encounter.
+Stand beside him and press Interact: the dialogue panel becomes his pack. He sells the bag's items at a price set by the Villagers'
+standing (neutral pays the list, friends pay less, the wary and hostile more, the hated are refused), and a purchase only spends coin
+once the item has fitted in the bag. His model is built in Core (`pedlar`): a wide hat, a pack, a staff and a lantern.
+
 ## Tuning constants
 
 | Constant | Value | Where |
@@ -190,6 +196,9 @@ never part of an encounter. The Wulver never stands within a village yard (or 8 
 The pause menu has a **Standing** screen: each faction with its tier and a bar, and the most recent changes. A toast appears when a tier
 changes ("The Folk now regard you as Wary" - here, "The Brownies now regard you as Wary"). A small pip above a creature in view, once
 you have noticed it, shows how to read it: green friendly, yellow wary, red hostile, blue allied. The Hollow's own show no pip.
+
+The **Quests** screen lists the errands the Brownies and the Villagers will give you, their progress and their rewards in experience,
+coin and items. A faction that hates you will not offer its quest. The **Bag** screen shows the coin you carry beside your items.
 `StandingBoard` (Core) decides the rows, the toast text, the recent-change lines and the pip colours; the game only draws them.
 Several toasts that arrive together (a kill moves several factions) stack instead of replacing each other. The toast also announces
 an omen and a brownie's boon. For screenshots, `HOLLOWFALL_MENU=standing` opens the screen and `HOLLOWFALL_DEMO=folk` lines the
@@ -210,6 +219,14 @@ The cistern pool is a model too (`cistern_pool`), laid once per pool at a water-
 
 ## Later phases
 
-Phase 2 (in progress, issue #3): character progression and stats. Built so far: experience from the Hollow (10 for a Husk, 12 for a Spitter, 14 for a Cù-sìth, 60 for a Warden; creatures give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour (+10 maximum health per point) and Might (+5 percent damage per point) to spend them on. Done: the run reads Vigour (maximum health) and Might (guns and parries) once at its start, and the replay records them (format 3). Still to do: a screen to spend points, and Might on melee, meteor and the Warden's explosions. Phase 3 (in progress, issue #4): inventory and equipment. Built: the bag, the worn charm, and the cream a friendly Brownie leaves (`Progression/Inventory.cs`). The cream heals 40 in a run, the thorn charm takes 10 percent less damage, and a Bag screen in the pause menu wears and takes off charms. Chest loot is still used on the spot (not yet items). The replay records creams and the worn charm (format 4). Phase 4: quests and
-merchants, using standing for prices and access. The relationship system is built so each of those reads `Reputation` and `Mind` rather
-than adding new state.
+Phase 2 (issue #3, built): experience from the Hollow (10 for a Husk, 12 for a Spitter, 14 for a Cù-sìth, 60 for a Warden; creatures
+give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour
+(+10 maximum health per point) and Might (+5 percent damage per point). The run reads both stats once at its start, the Character
+screen spends points, and the replay records them. Might still applies only to guns and parries, not to melee, meteors or the
+Warden's explosions. Phase 3 (in progress, issue #4): inventory and equipment. Built: the bag, the worn charm, and the cream a
+friendly Brownie leaves (`Progression/Inventory.cs`). The cream heals 40 in a run, the thorn charm takes 10 percent less damage,
+and the Bag screen wears and takes off charms. Chest loot is still used on the spot (not yet items), and there is one equipment
+slot. Phase 4 (issue #5, built): quests and the pedlar. The quest log is saved in `progression.json`, the Quests screen takes the
+Brownies' and the Villagers' errands and reports progress, and finishing one pays experience, coin and an item. The pedlar sells
+the bag's items at prices set by the Villagers' standing, and the HUD and Bag screen show the coin you carry. More quest variety
+and more than one merchant remain open on #5.

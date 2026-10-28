@@ -22,6 +22,7 @@ public static class Gibs
         EnemyKind.Hare => 6,
         EnemyKind.CuSith => 9,
         EnemyKind.Villager => 12,
+        EnemyKind.Pedlar => 12,
         _ => 22,
     };
 
@@ -41,6 +42,7 @@ public static class Gibs
         EnemyKind.Hare => [0x9a7a52, 0x9a7a52, 0xd8c7a4, 0xd8c7a4, 0xffb830],
         EnemyKind.CuSith => [0x8189a0, 0x8189a0, 0x434d58, 0xd9cfb0, 0xff3a2a],
         EnemyKind.Villager => [0x5a6b8a, 0x5a6b8a, 0x3a2a20, 0xd9b08c, 0xb0201e],
+        EnemyKind.Pedlar => [0x4d3824, 0x7a5a3a, 0x6b4a2f, 0xe0b894, 0xffb830],
         _ => [0x4a4f5a, 0x34303c, 0x8189a0, 0x9a1626, 0xc9a227],
     };
 

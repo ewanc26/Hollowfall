@@ -89,6 +89,7 @@ public sealed class CombatSim
     private const int VillageReach = 2;
     private readonly HashSet<(int X, int Z)> _villagesPopulated = [];
     private (int X, int Z)? _villageChunk;
+    private bool _pedlarSpawned;
     private readonly List<Projectile> _projectiles = [];
     private readonly List<MortarShell> _shells = [];
     private readonly List<CombatEvent> _events = [];
@@ -258,6 +259,7 @@ public sealed class CombatSim
     {
         Time += dt;
         PopulateVillages(view);
+        PopulatePedlar(view);
         Style.Tick(dt);
         Style.NotifyMoving(view.Airborne || view.Sliding);
         Vitals.Tick(dt, Style.HardDamageSpeed);
@@ -315,6 +317,20 @@ public sealed class CombatSim
         UpdateShells(dt, view);
         CheckEncounterClears();
         _enemies.RemoveAll(e => e.Dead);
+    }
+
+    /// <summary>
+    /// The pedlar waits on the plaza above the dungeon. He appears when the player comes back up into the daylight and stays
+    /// until the run restarts, so a player who dies below finds him again on the surface.
+    /// </summary>
+    private void PopulatePedlar(PlayerView view)
+    {
+        if (_pedlarSpawned || Relations == null || view.Feet.Y < _site.SurfaceY - 2) return;
+        var spot = Merchant.PedlarSpot(_site);
+        double dx = view.Feet.X - spot.X, dz = view.Feet.Z - spot.Z;
+        if (dx * dx + dz * dz > 40 * 40) return;
+        SpawnEnemy(EnemyKind.Pedlar, spot, SurfaceFloor);
+        _pedlarSpawned = true;
     }
 
     /// <summary>The folk of each village stand at their doors once the player comes near it; they stay until the run restarts.</summary>
@@ -596,6 +612,7 @@ public sealed class CombatSim
         _enemies.Clear();
         _villagesPopulated.Clear();
         _villageChunk = null;
+        _pedlarSpawned = false;
         _projectiles.Clear();
         _shells.Clear();
         if (Relations != null)

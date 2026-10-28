@@ -9,7 +9,7 @@ namespace Hollowfall.Tests;
 /// <summary>The look, sound and screen text of the Folk, the Bean Nighe and the hare.</summary>
 public class CreatureAssetTests
 {
-    private static readonly EnemyKind[] Kinds = [EnemyKind.Brownie, EnemyKind.Selkie, EnemyKind.Kelpie, EnemyKind.BeanNighe, EnemyKind.Hare, EnemyKind.Villager];
+    private static readonly EnemyKind[] Kinds = [EnemyKind.Brownie, EnemyKind.Selkie, EnemyKind.Kelpie, EnemyKind.BeanNighe, EnemyKind.Hare, EnemyKind.Villager, EnemyKind.Pedlar];
 
     public static TheoryData<EnemyKind> Creatures => [.. Kinds];
 

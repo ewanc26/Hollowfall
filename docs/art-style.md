@@ -6,7 +6,7 @@ Everything in Hollowfall that is not a voxel is a **low-poly model built in code
 
 - **Flat shading only.** Every face of a model has one normal and one colour; no smoothing, no textures on models (blocks do wear textures, see below).
 - **Convex primitives.** `Box`, `Prism` (cylinders, cones, pyramids by `sides` and `taper`), `Wedge`, `Gem` (octahedron) and `Blob` (icosahedron).
-- **Triangle budgets** (tested): Warden 520, Wulver 450, Husk and Spitter 460, the cat 420, the fire pit 320, any other model 260, the whole catalogue under 3000 (it is 2900 now).
+- **Triangle budgets** (tested): Warden 520, Wulver 450, Husk and Spitter 460, the cat 420, the fire pit 320, any other model 260, the whole catalogue under 4800 (it is 4568 now).
 - **One shared palette** (`ModelCatalog.Palette`). Enemies are told apart by silhouette and hue: rust Husk, violet Spitter, steel and crimson Warden, grey Cù-sìth with red eyes.
 - **Glow is for meaning.** Eyes, cores, gems and flames are in the glow buffer, drawn unlit. While an enemy winds up an attack its glow flashes bright yellow, the cue to parry.
 - **Hit boxes match the art.** An enemy's model is as tall and wide as its `EnemySpec`, and a head shot lands on the head.
@@ -21,6 +21,7 @@ A model is a set of named parts, each with a pivot at its joint. Geometry is pos
 | Spitter | `body`, `mouth`, `tent_0` to `tent_3` | none |
 | Cù-sìth | `body`, `head`, `tail`, `leg_fl`, `leg_fr`, `leg_bl`, `leg_br` | head and tail from the body; legs from the body |
 | Villager | `torso`, `head`, `arm_l`, `arm_r`, `leg_l`, `leg_r` | head and arms from the torso; legs from the model; a glowing lantern on `arm_r` |
+| Pedlar | `torso`, `head`, `arm_l`, `arm_r`, `leg_l`, `leg_r`, `staff` | head and arms from the torso; legs from the model; a glowing lantern on `arm_r`; `staff` pivots at the left hand |
 | Revolver | `body`, `cylinder`, `hammer`, `gem` | none |
 | Shotgun | `body`, `gem` | none |
 | Spike trap | `plate`, `spikes` | none |

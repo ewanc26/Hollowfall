@@ -318,6 +318,9 @@ public sealed class Mind
         var before = Disposition;
         var stance = Dispositions.EffectiveStance(Species, tier, Memory.Gratitude);
         Disposition = Dispositions.Decide(new DispositionInput(Species, stance, Traits, Provoked, Scared));
+        // A trader keeps his pitch: he may refuse to serve a hated Delver, but he does not run from a customer. Once hurt or
+        // frightened he is a pacifist like any other, and the ordinary fear rules take over.
+        if (Species.Kind == EnemyKind.Pedlar && !Provoked && !Scared) Disposition = Disposition.Neutral;
         if (Disposition == Disposition.Allied && before != Disposition.Allied) events |= MindEvents.Allied;
 
         if (Species.Kind == EnemyKind.Villager) _brain.StepVillager(p, Traits, Memory.Anger, Memory.Fear);

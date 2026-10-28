@@ -148,7 +148,7 @@ public class ModelCatalogTests
             Assert.True(model.TriangleCount <= budget, $"{model.Id} has {model.TriangleCount} triangles (budget {budget})");
         }
         int total = ModelCatalog.All.Sum(m => m.TriangleCount);
-        Assert.True(total < 4500, $"the whole catalogue stays tiny (now {total} triangles)");
+        Assert.True(total < 4800, $"the whole catalogue stays tiny (now {total} triangles)");
     }
 
     [Fact]
@@ -165,6 +165,7 @@ public class ModelCatalogTests
     [InlineData(EnemyKind.Warden)]
     [InlineData(EnemyKind.CuSith)]
     [InlineData(EnemyKind.Villager)]
+    [InlineData(EnemyKind.Pedlar)]
     public void EnemyModelsMatchTheirHitBoxes(EnemyKind kind)
     {
         var model = ModelCatalog.ForEnemy(kind);
