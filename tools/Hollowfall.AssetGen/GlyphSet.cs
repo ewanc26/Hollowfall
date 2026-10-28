@@ -182,6 +182,11 @@ public static class GlyphSet
             <circle cx="20" cy="22" r="13" fill="none" stroke="{Amber}" stroke-width="6"/>
             {Stroke("M30 31 L56 57 M46 47 L40 53 M52 53 L46 59", Amber, 6)}
             """));
+        yield return ("icon_coin", Svg(64, 64, $"""
+            <ellipse cx="25" cy="40" rx="17" ry="11" fill="#a77f18" stroke="#5c4309" stroke-width="3"/>
+            <ellipse cx="38" cy="28" rx="17" ry="11" fill="{Amber}" stroke="#5c4309" stroke-width="3"/>
+            {Stroke("M38 21 V34", "#5c4309", 3)}
+            """));
 
         // Style ranks: n stacked chevrons, hotter as they climb.
         string[] rankColours = [Yellow, Yellow, "#ffd04a", Amber, Orange, "#ff6a1a", Red, "#ff2fb4"];

@@ -20,6 +20,9 @@ public enum EnemyKind
 
     // ---- the village folk (appended last; crofters who keep to their doors) ----
     Villager,
+
+    // ---- the pedlar who waits on the plaza with a pack of folk remedies (appended after the villagers) ----
+    Pedlar,
 }
 
 public enum EnemyState
@@ -61,6 +64,7 @@ public sealed record EnemySpec(
         EnemyKind.Hare => new(EnemyKind.Hare, 6, 5.0, 0, 0, 0.5, 1.5, 0, 0, 0, 0, 0.2, 0.55),
         EnemyKind.CuSith => new(EnemyKind.CuSith, 22, 5.6, 1.4, 12, 0.3, 0.9, 0, 0, 0, 0, 0.3, 0.9),
         EnemyKind.Villager => new(EnemyKind.Villager, 24, 2.4, 1.2, 8, 0.5, 1.6, 0, 0, 0, 0, 0.3, 1.75),
+        EnemyKind.Pedlar => new(EnemyKind.Pedlar, 30, 2.2, 0, 0, 0.5, 1.6, 0, 0, 0, 0, 0.32, 1.8),
         _ => new(EnemyKind.Warden, 260, 2.8, 2.2, 35, 0.7, 2.0, 18, 5, 11, 3, 0.5, 2.3),
     };
 }

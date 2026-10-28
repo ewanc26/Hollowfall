@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4212;
-    private const uint ExpectedGoldenChecksum = 3285020802; // changed on purpose: the sim version byte went up to 13 for the Warden gate deferral
+    private const uint ExpectedGoldenChecksum = 3496423115; // changed on purpose: the sim version byte went up to 14 for the pedlar
 
     [Fact]
     public void FileSizesStaySane()
