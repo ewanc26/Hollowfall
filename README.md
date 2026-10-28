@@ -14,7 +14,7 @@ Playable, and still growing. Seeded terrain and multi-floor dungeons generate, a
 
 - **Combat:** three enemy types and a boss, a revolver and a shotgun, parrying, a style meter and floor ranks. Close hits heal you, being hit locks away part of your health, and style rewards kills, headshots, parries and movement.
 - **Portals:** a linked teal and violet pair that carries your speed (Meteor), cuts what stands in it (Sever), and is how you cross the gaps between rooms.
-- **A living dungeon:** chests with seeded loot, keys, spike traps, fire pits, a minimap, and folk (brownies, selkies, kelpies, a Bean Nighe, hares) with their own opinion of you.
+- **A living dungeon:** chests with seeded loot, keys, spike traps, fire pits, a minimap, folk (brownies, selkies, kelpies, a Bean Nighe, hares) with their own opinion of you, and a pedlar on the plaza who trades for coin.
 - **Story and flavour:** a short story told in notes and title cards, Scottish folklore and Gàidhlig, adaptive music and sound synthesised in code, textures drawn in code, and a few hidden things.
 - **Replays:** every run is recorded, and your best run of a floor races you as a ghost.
 
@@ -59,7 +59,7 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. The game 
 | Slam (drop straight down from the air; cracks, then breaks, brick floor) | X | D-pad up |
 | Block mortar (arcing shell that digs a sphere of brick, earth and stone, in 10 cm cubes) | T | D-pad left |
 | Use Brownie's cream (heals 40 when hurt) | H | D-pad right |
-| Open chests (a key for locked ones), read notes, speak to what you find | F | Left stick click |
+| Open chests (a key for locked ones), read notes, speak to what you find, trade with the pedlar | F | Left stick click |
 | Respawn | R | Y |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
 | Pause menu | Esc | Start |
@@ -79,7 +79,7 @@ Everything the game saves lives in one folder, `~/.ewanc26/hollowfall`:
 | `records.json` | Your best grade and time on each floor of each seed |
 | `story.json` | Notes you have read, and what you have said to those you have met |
 | `relations.json` | Your standing with each group, per seed |
-| `progression.json` | Your experience, level and stat points, across runs |
+| `progression.json` | Your experience, level, stat points, coin, bag, worn charm and quests, across runs |
 | `replays/` | The best run of each floor, for the ghost |
 
 `HOLLOWFALL_HOME` moves the folder. A first run copies anything an earlier version saved in Godot's own user folder and leaves the old files where they were.
@@ -96,9 +96,11 @@ The HUD is kept clean: health, style, hints, a floor panel (floor, kills, time a
 
 **Chests, keys and traps.** Chests hold loot picked from the seed: blood, a style burst, a cleanse of hard damage, a short perk (more blood from hits, a longer parry window) or a spare key. Treasure and boss chests are locked, spend a key and give better loot. Spike traps warn before they strike, and a jump clears them.
 
+**Coin and the pedlar.** Husks, Spitters, Cù-sìth and Wardens drop coin, and the pedlar waiting on the plaza above the dungeon sells a Brownie's cream for 10 and a thorn charm for 40 at neutral standing. Prices follow the Villagers' opinion of you (friends pay down to 70 percent, the wary and hostile up to 150), and the hated are not served at all. Coin, the bag and your quests are kept across runs in `progression.json`; the HUD shows the coin you carry.
+
 **Gaps.** Rooms are not all joined by corridors. Every room has at least one gap: two walled hallways with a door at the room, three steps up to a lip, and a pit you cannot cross on foot. Fire the teal portal at the far hallway, the violet one at the wall beside you, and step through. The pit is bare stone, spikes or water; a fall costs a little health (never the last point) and puts you back at the edge, so it never traps you. A few deeper links are shaft gaps: aim up into a tunnel above a sealed block. Corridors and secret doors remain, and the dungeon is always finishable (tests prove it with the real portal placement and walking physics).
 
-**Folk and standing.** Not everything in the dungeon is hostile. Brownies, selkies, kelpies, a Bean Nighe and the odd hare share the dungeon with the Hollow's Husks, Spitters and Wardens, and each group has its own opinion of you. Hurt or kill one in front of its kin and they turn on you; treat them well and a brownie warms a hearth, a selkie fights at your side. The pause menu's **Standing** screen shows where you stand with each group (Hated to Revered), a toast says when it changes, and a small coloured pip over a creature you have noticed shows how to read it. See [docs/relations.md](docs/relations.md).
+**Folk and standing.** Not everything in the dungeon is hostile. Brownies, selkies, kelpies, a Bean Nighe, the odd hare and the pedlar on the plaza share the world with the Hollow's Husks, Spitters and Wardens, and each group has its own opinion of you. Hurt or kill one in front of its kin and they turn on you; treat them well and a brownie warms a hearth, a selkie fights at your side. The pause menu's **Standing** screen shows where you stand with each group (Hated to Revered), a toast says when it changes, and a small coloured pip over a creature you have noticed shows how to read it. See [docs/relations.md](docs/relations.md).
 
 **Ghosts.** Every run is recorded as compact fixed-step inputs, and the best run of a floor is saved. On the same seed and floor it races you as a translucent ghost. Runs replay deterministically, so a stored run can be verified. See [docs/features.md](docs/features.md).
 
