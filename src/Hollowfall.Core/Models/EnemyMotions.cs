@@ -33,6 +33,7 @@ public static class EnemyMotions
         EnemyKind.Hare => [Motion.Idle, Motion.Walk, Motion.Stunned],
         EnemyKind.CuSith => [Motion.Idle, Motion.Walk, Motion.Windup, Motion.Strike, Motion.Stunned],
         EnemyKind.Villager => [Motion.Idle, Motion.Walk, Motion.Flee, Motion.Warn, Motion.Windup, Motion.Strike, Motion.Stunned],
+        EnemyKind.Pedlar => [Motion.Idle, Motion.Walk, Motion.Flee, Motion.Warn, Motion.Stunned],
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -63,6 +64,7 @@ public static class EnemyMotions
         EnemyKind.Hare => Hare(b),
         EnemyKind.CuSith => Hound(b),
         EnemyKind.Villager => Biped(b, swingDegrees: 26, armFactor: 0.8, bob: 0.03),
+        EnemyKind.Pedlar => Biped(b, swingDegrees: 22, armFactor: 0.6, bob: 0.04),
         _ => Warden(b),
     };
 

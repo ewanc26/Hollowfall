@@ -104,6 +104,8 @@ public static class ModelCatalog
         // ---- fire pits and something warm beside one (append further models above this line, not below) ----
         FirePit,
         Cat,
+        // ---- the pedlar who trades on the dungeon plaza (append further models above this line, not below) ----
+        Pedlar,
     ];
 
     public static LowPolyModel ForEnemy(EnemyKind kind) => kind switch
@@ -117,6 +119,7 @@ public static class ModelCatalog
         EnemyKind.Hare => Hare,
         EnemyKind.CuSith => CuSith,
         EnemyKind.Villager => Villager,
+        EnemyKind.Pedlar => Pedlar,
         _ => Warden,
     };
 
@@ -486,6 +489,7 @@ public static class ModelCatalog
     private static readonly Lazy<LowPolyModel> BeanNigheModel = new(BuildBeanNighe);
     private static readonly Lazy<LowPolyModel> HareModel = new(BuildHare);
     private static readonly Lazy<LowPolyModel> VillagerModel = new(BuildVillager);
+    private static readonly Lazy<LowPolyModel> PedlarModel = new(BuildPedlar);
     private static readonly Lazy<LowPolyModel> CisternPoolModel = new(BuildCisternPool);
 
     public static LowPolyModel Brownie => BrownieModel.Value;
@@ -494,6 +498,8 @@ public static class ModelCatalog
     public static LowPolyModel BeanNighe => BeanNigheModel.Value;
     public static LowPolyModel Hare => HareModel.Value;
     public static LowPolyModel Villager => VillagerModel.Value;
+
+    public static LowPolyModel Pedlar => PedlarModel.Value;
 
     /// <summary>The shallow pool laid on the floor of a round cistern room, centred on the model origin.</summary>
     public static LowPolyModel CisternPool => CisternPoolModel.Value;
@@ -558,6 +564,43 @@ public static class ModelCatalog
         }
 
         return m.Anchor("eye", V(0, 1.62, -0.13)).Build();
+    }
+
+    // Pedlar: a hooded traveller with a wide hat, a pack on his back, a staff and a lantern; the only merchant on the plaza.
+    private static LowPolyModel BuildPedlar()
+    {
+        var m = new ModelBuilder("pedlar");
+
+        m.Part("torso", V(0, 0.86, 0))
+            .Box(V(0, 0.28, 0), V(0.42, 0.52, 0.26), Palette.HomespunDark)
+            .Box(V(0, 0.12, -0.14), V(0.3, 0.3, 0.02), Palette.Homespun)
+            .Box(V(0, 0.34, 0.2), V(0.36, 0.42, 0.22), Palette.Wood)
+            .Box(V(0, 0.58, 0.2), V(0.3, 0.06, 0.18), Palette.Bone);
+
+        m.Part("head", V(0, 1.44, 0), "torso")
+            .Box(V(0, 0.1, 0), V(0.24, 0.26, 0.24), Palette.Skin)
+            .Box(V(0, 0.22, 0), V(0.34, 0.05, 0.34), Palette.HomespunDark)
+            .Box(V(0, 0.28, 0), V(0.2, 0.11, 0.2), Palette.HomespunDark)
+            .Box(V(0, 0.16, -0.125), V(0.22, 0.03, 0.02), Palette.Hair);
+
+        foreach (double side in new[] { -1.0, 1.0 })
+        {
+            string tag = side < 0 ? "l" : "r";
+            var arm = m.Part($"arm_{tag}", V(0.26 * side, 1.3, 0), "torso")
+                .Box(V(0, -0.2, 0), V(0.12, 0.4, 0.12), Palette.Homespun)
+                .Box(V(0, -0.44, 0), V(0.12, 0.1, 0.12), Palette.Skin);
+            if (side > 0) arm.Box(V(0, -0.6, 0), V(0.1, 0.14, 0.1), Palette.EyeAmber, glow: true);
+            m.Part($"leg_{tag}", V(0.1 * side, 0.86, 0))
+                .Box(V(0, -0.4, 0), V(0.15, 0.8, 0.16), Palette.HomespunDark)
+                .Box(V(0, -0.82, -0.02), V(0.16, 0.08, 0.22), Palette.Wood);
+        }
+
+        // A staff in the left hand, tall enough to lean on. Its pivot is in model space, as the part bounds are measured there.
+        m.Part("staff", V(-0.3, 0.86, 0), "arm_l")
+            .Box(V(0, -0.25, 0), V(0.06, 1.25, 0.06), Palette.Wood)
+            .Box(V(0, 0.38, 0), V(0.1, 0.08, 0.1), Palette.Gold);
+
+        return m.Anchor("eye", V(0, 1.66, -0.13)).Build();
     }
 
     // Selkie: a seal-woman in a dark sealskin cloak, flippered feet and long hair; her eyes glow the colour of the sea.
