@@ -1,4 +1,5 @@
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.Terrain;
 
 namespace Hollowfall.Core.Combat;
@@ -29,8 +30,6 @@ public sealed class Interactables
     public const double TrapStrike = 0.6;
     public const double TrapDamage = 22;
     public const double TrapHalfSize = 0.55;
-    public const double ChestHeal = 30;
-    public const double LockedChestHeal = 60;
 
     private readonly List<ChestState> _chests = [];
     private readonly List<(int Index, Spawn Spawn)> _keys = [];
@@ -38,10 +37,8 @@ public sealed class Interactables
     private readonly HashSet<int> _collected = [];
     private readonly HashSet<int> _struck = [];
     private readonly Func<double, double> _hurt;
-    private readonly Func<double, double> _heal;
     private readonly Action<CombatEvent> _emit;
-    private readonly Func<double>? _cleanse;
-    private readonly Func<double, double>? _boostStyle;
+    private readonly Func<ItemKind, int, bool>? _store;
     private double _time;
 
     /// <summary>Timed perks from loot; the sim reads them through small hooks.</summary>
@@ -50,13 +47,12 @@ public sealed class Interactables
     public IReadOnlyList<ChestState> Chests => _chests;
     public int KeysHeld { get; private set; }
 
-    public Interactables(IReadOnlyList<Spawn> spawns, long seed, Func<double, double> hurt, Func<double, double> heal, Action<CombatEvent> emit,
-        Func<double>? cleanse = null, Func<double, double>? boostStyle = null)
+    /// <param name="store">Puts a chest's item in the bag; returns false if the bag has no room. A chest opens either way.</param>
+    public Interactables(IReadOnlyList<Spawn> spawns, long seed, Func<double, double> hurt, Action<CombatEvent> emit,
+        Func<ItemKind, int, bool>? store = null)
     {
-        _cleanse = cleanse;
-        _boostStyle = boostStyle;
+        _store = store;
         _hurt = hurt;
-        _heal = heal;
         _emit = emit;
         for (int i = 0; i < spawns.Count; i++)
         {
@@ -165,16 +161,18 @@ public sealed class Interactables
         }
         chest.Opened = true;
         var loot = chest.Loot;
-        double healed = 0, applied;
-        switch (loot.Kind)
+        // A key is spent on the spot: an item you had to select to open the chest next to it would only get in the way.
+        if (loot.Kind == LootKind.Key)
         {
-            case LootKind.Health: healed = applied = _heal(loot.Amount); break;
-            case LootKind.Cleanse: applied = _cleanse?.Invoke() ?? 0; break;
-            case LootKind.StyleBoost: applied = _boostStyle?.Invoke(loot.Amount) ?? 0; break;
-            case LootKind.Key: KeysHeld += (int)loot.Amount; applied = loot.Amount; break;
-            default: Perks.Grant(loot); applied = loot.Seconds; break;
+            KeysHeld += (int)loot.Amount;
+            _emit(new ChestOpened(chest.Index, 0, chest.Locked, loot, loot.Amount));
+            return;
         }
-        _emit(new ChestOpened(chest.Index, healed, chest.Locked, loot, applied));
+
+        var item = LootTable.ItemFor(loot.Kind);
+        int count = LootTable.ItemCount(loot);
+        bool stored = item is { } kind && _store != null && _store(kind, count);
+        _emit(new ChestOpened(chest.Index, 0, chest.Locked, loot, 0, item, stored ? count : 0, !stored));
     }
 
     private static double Dist(Vec3 feet, Spawn s)

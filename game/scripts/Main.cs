@@ -94,6 +94,19 @@ public partial class Main : Node3D
         _relations.TrySave(RelationsPath);
     }
 
+    /// <summary>Puts a chest's item in the bag all at once; a bag that cannot take the whole stack takes none of it.</summary>
+    private bool StoreLoot(ItemKind kind, int count)
+    {
+        int added = _character.Items.Add(kind, count);
+        if (added == count && count > 0)
+        {
+            ProgressionStore.TrySave(_character, ProgressionPath);
+            return true;
+        }
+        _character.Items.Remove(kind, added);
+        return false;
+    }
+
     /// <summary>
     /// Gives experience and coin for a defeated enemy, and counts it against the quests. The character is saved when a level is
     /// gained, when coin changes or a quest finishes; otherwise a floor's end saves it.
@@ -187,7 +200,7 @@ public partial class Main : Node3D
         {
             Combat = new CombatView { Name = "Combat" };
             _character = ProgressionStore.Load(ProgressionPath); // read before the run starts: its stats are fixed for the whole run
-            var sim = new CombatSim(World, site, _character.Stats);
+            var sim = new CombatSim(World, site, _character.Stats, StoreLoot);
             sim.EnableRelations(); // the Folk, wanderers and vermin; standing with each is kept per seed in relations.json
             _relations = RelationsStore.Load(RelationsPath);
             Combat.Initialize(sim, site, _view);
@@ -196,7 +209,7 @@ public partial class Main : Node3D
             Combat.EventRaised += e => { if (e is EnemyKilled killed) AwardKill(killed); };
             Combat.EventRaised += e => { if (e is FloorCompleted) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => { if (e is BoonGiven && _character.ReceiveBoon()) ProgressionStore.TrySave(_character, ProgressionPath); };
-            Combat.EventRaised += e => { if (e is CreamUsed && _character.Items.Remove(ItemKind.BrownieCream) > 0) ProgressionStore.TrySave(_character, ProgressionPath); };
+            Combat.EventRaised += e => { if (e is ItemUsed used && _character.Items.Remove(used.Kind) > 0) ProgressionStore.TrySave(_character, ProgressionPath); };
             Combat.EventRaised += e => _audio.OnEvent(e, Combat.Sim);
             Combat.EventRaised += e => { if (MusicEvents.For(e, site.FloorCount - 1, site.Floors[^1].BossRoom?.Id ?? -1) is { } stinger) _music.Trigger(stinger); };
             Combat.EventRaised += e => _hud?.OnEvent(e);
@@ -324,7 +337,8 @@ public partial class Main : Node3D
         _menus.QuestTakeRequested += quest => { if (_character.Quests.Take(quest)) ProgressionStore.TrySave(_character, ProgressionPath); };
         _menus.BagProvider = () => _character.Items;
         _menus.WearRequested += kind => { if (_character.Items.Wear(kind)) ProgressionStore.TrySave(_character, ProgressionPath); };
-        _menus.TakeOffRequested += () => { if (_character.Items.TakeOff()) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.TakeOffRequested += slot => { if (_character.Items.TakeOff(slot)) ProgressionStore.TrySave(_character, ProgressionPath); };
+        _menus.ReadyRequested += kind => { if (_character.Items.SetReady(kind)) ProgressionStore.TrySave(_character, ProgressionPath); };
         AddChild(_menus);
         if (_wulver != null)
         {
@@ -836,11 +850,15 @@ public partial class Main : Node3D
                 _hud.ShowBanner(_loc.Tr("banner.key"), 1.2);
                 break;
             case ChestOpened o:
-                _hud.ShowBanner(
-                    o.Loot is { } loot
-                        ? $"{_loc.Tr(o.WasLocked ? "banner.lockedChest" : "banner.chest")}  {LootTable.Announce(loot, o.Applied)}"
-                        : o.WasLocked ? _loc.Tr("banner.lockedChestHealed", $"{o.Healed:F0}") : _loc.Tr("banner.chestHealed", $"{o.Healed:F0}"),
-                    2.2);
+                {
+                    string prefix = _loc.Tr(o.WasLocked ? "banner.lockedChest" : "banner.chest");
+                    string body = o.Item is { } item
+                        ? _loc.Tr(o.BagFull ? "banner.bagFull" : "banner.item", Inventory.Info(item).Name, o.Items)
+                        : o.Loot is { } loot
+                            ? LootTable.Announce(loot, o.Applied)
+                            : _loc.Tr("banner.chestHealed", $"{o.Healed:F0}");
+                    _hud.ShowBanner($"{prefix}  {body}", 2.2);
+                }
                 break;
             case ChestLocked:
                 _hud.ShowBanner(_loc.Tr("banner.locked"), 1.8);
@@ -900,7 +918,7 @@ public partial class Main : Node3D
         _weapons.SetPortals(sim.Portals.Teal != null, sim.Portals.Violet != null);
         if (floor >= 0) _hud.SetFloorInfo(floor, Combat.Site.FloorCount, sim.KillsOn(floor), sim.EnemiesOn(floor), sim.ElapsedOn(floor), sim.TargetsFor(floor).ParTimeSeconds, sim.Items.KeysHeld);
         else _hud.SetFloorInfo(-1, 0, 0, 0, 0, 0);
-        _hud.SetCream(sim.CreamsLeft);
+        _hud.SetItem(sim.ReadyItem, sim.UsesLeft);
         _hud.SetCoin(_character.Coin);
         {
             _hud.SetMap(sim.Map, floor, new Vector2((float)(b.X - Combat.Site.OriginX), (float)(b.Z - Combat.Site.OriginZ)), (float)_player.Yaw);

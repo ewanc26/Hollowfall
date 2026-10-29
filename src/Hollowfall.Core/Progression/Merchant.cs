@@ -27,7 +27,8 @@ public enum Purchase
 public static class Merchant
 {
     /// <summary>What a pedlar sells. Appended to, never reordered.</summary>
-    public static readonly IReadOnlyList<ItemKind> Wares = [ItemKind.BrownieCream, ItemKind.ThornCharm];
+    public static readonly IReadOnlyList<ItemKind> Wares =
+        [ItemKind.BrownieCream, ItemKind.ThornCharm, ItemKind.WardenSeal, ItemKind.HareFoot];
 
     /// <summary>How far, in blocks along the ground, you may stand and still trade.</summary>
     public const double Reach = 3.0;
@@ -46,6 +47,8 @@ public static class Merchant
     {
         ItemKind.BrownieCream => 10,
         ItemKind.ThornCharm => 40,
+        ItemKind.WardenSeal => 60,
+        ItemKind.HareFoot => 50,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
