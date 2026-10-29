@@ -84,23 +84,24 @@ computed from the floor itself (enemy count and path length) instead of being ha
 
 ## Chest loot
 
-There is no ammo and no inventory, so a chest pays off on the spot. What is inside is a pure function of the seed and the chest's
-position (`LootTable.Roll`), never of the order you open things, so a seed always holds the same loot. Rarity follows the chest's tier
-for its floor: ordinary chests are common, a treasure room's chest is rare and a boss's hoard epic, and rare and epic chests are the locked ones
-that cost a key. Better chests roll from a table that favours perks and style, and every effect is stronger and lasts longer.
+There is no ammo, but there is now a bag. What is inside a chest is a pure function of the seed and the chest's position
+(`LootTable.Roll`), never of the order you open things, so a seed always holds the same loot. Rarity follows the chest's tier for its
+floor: ordinary chests are common, a treasure room's chest is rare and a boss's hoard epic, and rare and epic chests are the locked
+ones that cost a key. Every chest but a key chest puts its loot in the bag; the run's ready item is the one consumable you chose to
+bring, and new loot is used from the next run. A full bag leaves the loot behind.
 
-| Loot | Common | Rare | Epic |
-|---|---|---|---|
-| Vial of blood (health, up to the ceiling) | 30 | 60 | 90 |
-| Cleansing drop (clears all hard damage) | yes | yes | yes |
-| Style shard (parry-sized style points) | x2 | x4 | x8 |
-| Bloodlust (blood from hits multiplied) | x1.5, 20 s | x2, 30 s | x3, 45 s |
-| Open guard (longer parry window) | +100 ms, 25 s | +180 ms, 40 s | +280 ms, 60 s |
-| Spare key | yes | never | never |
+| Loot | Becomes | Common | Rare | Epic |
+|---|---|---|---|---|
+| Health | Vial of blood, heals 30 | 1 | 2 | 3 |
+| Cleanse | Cleansing drop, clears all hard damage | 1 | 1 | 1 |
+| Style | Style shard, x2 parry points | 1 | 2 | 3 |
+| Bloodlust | Bloodlust draught, x1.5 for 20 s | 1 | 2 | 3 |
+| Open guard | Open guard tonic, +100 ms for 25 s | 1 | 2 | 3 |
+| Spare key | stays a key, used on the spot | yes | never | never |
 
 Weights are in `LootTable` (a locked chest never gives a key, since it cost one). Perks are timed, additive hooks: `Interactables.Perks`
 feeds `PlayerVitals.HitHealScale` and the parry window, and does nothing when no perk is active. Opening a chest releases a floating pickup
-model and the HUD banner names the loot.
+model and the HUD banner names what went into the bag.
 
 ## Portals
 

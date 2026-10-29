@@ -182,13 +182,16 @@ the stairs, floor timer pauses. **Effort:** large.
 
 **Pitch.** Something to carry, so a friendly brownie's gift is worth keeping.
 
-**Rules.** The bag has 12 slots of up to 9 of each item. A **Brownie's cream** heals 40 when used in a run (H, or D-pad right),
-and only when you are hurt below your ceiling; it is used up on use. A full bag leaves the cream behind. Creams found during a
-run are not usable until the next run. The **thorn charm** can be worn in the one charm slot (Bag screen, Wear or Take off) and
-takes 10 percent less damage. Worn charms and carried creams are read when a run starts, so changes take effect from the next run.
+**Rules.** The bag has 12 slots of up to 9 of each item. One consumable is the run's **ready item** (Bag screen, Ready); H, or
+D-pad right, spends one use, and a remedy that would do nothing right now is not spent. Creams heal 40, vials of blood heal 30,
+cleansing drops wash away hard damage, style shards burst into style, bloodlust draughts raise blood from hits and open guard
+tonices widen the parry window. Chest loot becomes these items rather than applying on the spot: every chest but a key chest puts its loot in the bag, and
+a full bag leaves it behind. New loot is usable from the next run. The **thorn charm** (charm slot) takes 10 percent less damage;
+the **Warden's seal** (relic slot) adds 20 maximum health and the **hare's foot** (relic slot) adds 10 percent damage. Equipment
+and the ready item are read when a run starts, so changes take effect from the next run.
 
-**Build on.** `Inventory`, `RunStats` (creams and charm recorded in the replay, format 4), `CreamUsed` in `CombatSim`. **Tests:**
-`ItemUseTests`. **Not yet:** chest loot still heals on the spot rather than becoming items.
+**Build on.** `Inventory`, `RunStats` (uses, ready item, charm, relic and their counts recorded in the replay, format 5), `ItemUsed`
+in `CombatSim`, `LootTable.ItemFor`. **Tests:** `ItemUseTests`, `LootTests`, `InteractablesTests`, `InventoryTests`.
 
 ## 4. Pillar three: Chain
 
@@ -299,7 +302,9 @@ Portal-aware sound and the non-colour cue (2.6) go in when audio and accessibili
   feature every voxel game has. Controlled digging (3.1 to 3.3) keeps the fun and the performance.
 - **A grappling hook.** Great, but not ours; the portal fling covers the same space with our own twist.
 - **Co-op.** The deterministic core would make it possible, but it multiplies everything else; revisit after verified replays.
-- **Inventory, crafting and gear.** They dilute the push-forward loop, so chest loot (see the game loop) is used on the spot: a heal, a style burst or a short perk. Pacts are the only meta layer.
+- **Inventory, crafting and gear.** The original plan used chest loot on the spot to keep the push-forward loop pure. Issue #4
+  deliberately reversed that: loot now goes into the bag, one consumable is chosen as the run's ready item, and two equipment slots
+  carry persistent gear. Crafting is still out, and Pacts remain the larger meta layer to build.
 - **Voice or story.** A seeded name and a few lines per boss are enough; the game's identity is its rules.
 
 ## 7. Risks and open questions

@@ -223,10 +223,11 @@ Phase 2 (issue #3, built): experience from the Hollow (10 for a Husk, 12 for a S
 give none), levels to 20 on a curve of 30 times (level minus one) squared, one stat point per level after the first, and Vigour
 (+10 maximum health per point) and Might (+5 percent damage per point). The run reads both stats once at its start, the Character
 screen spends points, and the replay records them. Might still applies only to guns and parries, not to melee, meteors or the
-Warden's explosions. Phase 3 (in progress, issue #4): inventory and equipment. Built: the bag, the worn charm, and the cream a
-friendly Brownie leaves (`Progression/Inventory.cs`). The cream heals 40 in a run, the thorn charm takes 10 percent less damage,
-and the Bag screen wears and takes off charms. Chest loot is still used on the spot (not yet items), and there is one equipment
-slot. Phase 4 (issue #5, built): quests and the pedlar. The quest log is saved in `progression.json`, the Quests screen takes the
+Warden's explosions. Phase 3 (issue #4, built): inventory and equipment. The bag holds creams, vials of blood, cleansing drops,
+style shards, bloodlust draughts, open guard tonics, a thorn charm, a Warden's seal and a hare's foot (`Progression/Inventory.cs`). One
+consumable is marked ready and rides into a run; a charm and a relic slot give the thorn charm, the seal and the hare's foot their
+effects. Chest loot now goes into the bag rather than healing on the spot, and a full bag leaves it behind. The Bag screen chooses
+the ready item and wears or takes off equipment. Phase 4 (issue #5, built): quests and the pedlar. The quest log is saved in `progression.json`, the Quests screen takes the
 Brownies' and the Villagers' errands and reports progress, and finishing one pays experience, coin and an item. The pedlar sells
 the bag's items at prices set by the Villagers' standing, and the HUD and Bag screen show the coin you carry. More quest variety
 and more than one merchant remain open on #5.

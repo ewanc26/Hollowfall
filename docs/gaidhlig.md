@@ -140,7 +140,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 160.
+Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -168,11 +168,13 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 160.
 | `bag.slots` | Slots used: {0} of {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.coin` | Coin {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.none` | Nothing is carried yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.creamHint` | Eat it in a run to heal {0}. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.wear` | Wear | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.takeOff` | Take off | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.worn` | worn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.wearHint` | Worn charms take effect from your next run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.ready` | Ready | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.readyMark` | ready | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.readyHint` | The ready item is what the quick-use button spends in a run; only one comes with you. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.wearHint` | Worn charms and relics take effect from your next run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.title` | CHARACTER | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.none` | No character yet. Defeat something to begin. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.level` | Level {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -248,7 +250,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 160.
 | `action.pause` | Pause menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.slam` | Slam | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.fireMortar` | Fire block mortar | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `action.useCream` | Use Brownie's cream | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.useItem` | Use quick item | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.title` | SETTINGS | ROGHAINNEAN | Verified | FF | capitals of Firefox gd's 'Roghainnean' |
 | `settings.language` | Language | Cànan | Verified | FF WK | Firefox gd's 'Language' header is Cànan; cànan, a language |
 | `settings.mouseSensitivity` | Mouse sensitivity | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -316,6 +318,8 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 160.
 | `banner.lockedChest` | LOCKED CHEST | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.chestHealed` | CHEST  +{0} health | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.lockedChestHealed` | LOCKED CHEST OPENED  +{0} health | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `banner.item` | {0}  +{1} to your bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `banner.bagFull` | {0}  your bag is full | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.locked` | locked: find the key on this floor | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.spikes` | SPIKES  -{0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.noPortal` | can't place a portal there ({0}) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
