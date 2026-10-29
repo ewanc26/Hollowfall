@@ -187,6 +187,12 @@ public static class GlyphSet
             <ellipse cx="38" cy="28" rx="17" ry="11" fill="{Amber}" stroke="#5c4309" stroke-width="3"/>
             {Stroke("M38 21 V34", "#5c4309", 3)}
             """));
+        yield return ("icon_relic", Svg(64, 64, $"""
+            <path d="M32 4 L56 26 L32 60 L8 26 Z" fill="#4a3521" stroke="#2a1c10" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M32 14 L46 27 L32 48 L18 27 Z" fill="{Amber}"/>
+            <path d="M18 27 H46 M32 14 V48" stroke="#5c4309" stroke-width="2"/>
+            <circle cx="32" cy="27" r="4" fill="{Ink}"/>
+            """));
 
         // Style ranks: n stacked chevrons, hotter as they climb.
         string[] rankColours = [Yellow, Yellow, "#ffd04a", Amber, Orange, "#ff6a1a", Red, "#ff2fb4"];
