@@ -58,7 +58,7 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. The game 
 | Close portals (sever anything standing in them) | C | D-pad down |
 | Slam (drop straight down from the air; cracks, then breaks, brick floor) | X | D-pad up |
 | Block mortar (arcing shell that digs a sphere of brick, earth and stone, in 10 cm cubes) | T | D-pad left |
-| Use Brownie's cream (heals 40 when hurt) | H | D-pad right |
+| Use the ready item (a cream, drop, shard, draught or tonic) | H | D-pad right |
 | Open chests (a key for locked ones), read notes, speak to what you find, trade with the pedlar | F | Left stick click |
 | Respawn | R | Y |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
@@ -79,7 +79,7 @@ Everything the game saves lives in one folder, `~/.ewanc26/hollowfall`:
 | `records.json` | Your best grade and time on each floor of each seed |
 | `story.json` | Notes you have read, and what you have said to those you have met |
 | `relations.json` | Your standing with each group, per seed |
-| `progression.json` | Your experience, level, stat points, coin, bag, worn charm and quests, across runs |
+| `progression.json` | Your experience, level, stat points, coin, bag, worn charm and relic, ready item and quests, across runs |
 | `replays/` | The best run of each floor, for the ghost |
 
 `HOLLOWFALL_HOME` moves the folder. A first run copies anything an earlier version saved in Godot's own user folder and leaves the old files where they were.
@@ -94,9 +94,11 @@ The HUD is kept clean: health, style, hints, a floor panel (floor, kills, time a
 
 **Meteor.** Leave a portal at 18 blocks per second or more and for 0.6 seconds you are the weapon: touching an enemy within 1.2 blocks hits it for speed x 2.5 damage (at most 120), awards the Meteor style bonus (180 points, doubled after a fall of more than 20 blocks), costs you 30% of your speed and never hurts you. Hitting a wall ends the window. The numbers live in `MeteorTuning`.
 
-**Chests, keys and traps.** Chests hold loot picked from the seed: blood, a style burst, a cleanse of hard damage, a short perk (more blood from hits, a longer parry window) or a spare key. Treasure and boss chests are locked, spend a key and give better loot. Spike traps warn before they strike, and a jump clears them.
+**Chests, keys and traps.** Chests hold loot picked from the seed: a vial of blood, a cleansing drop, a style shard, a bloodlust draught, an open guard tonic or a spare key. Everything but a key goes into your bag; better chests hold more of it, and a full bag leaves the loot behind. Treasure and boss chests are locked, spend a key and give better loot. Spike traps warn before they strike, and a jump clears them.
 
-**Coin and the pedlar.** Husks, Spitters, Cù-sìth and Wardens drop coin, and the pedlar waiting on the plaza above the dungeon sells a Brownie's cream for 10 and a thorn charm for 40 at neutral standing. Prices follow the Villagers' opinion of you (friends pay down to 70 percent, the wary and hostile up to 150), and the hated are not served at all. Coin, the bag and your quests are kept across runs in `progression.json`; the HUD shows the coin you carry.
+**Items and kit.** The pause menu's **Bag** screen shows what you carry. Mark one consumable **Ready**: that is what the quick-use button spends in a run, and only that one comes with you. Creams heal 40, vials of blood heal 30, cleansing drops clear hard damage, style shards burst into style, draughts raise blood from hits and tonics widen the parry window. You have a charm slot and a relic slot; the thorn charm takes 10 percent off each blow, the Warden's seal adds 20 maximum health and the hare's foot adds 10 percent damage. Worn equipment and the ready item are read when a run starts, so changes take effect next run. The HUD shows the ready item and its uses beside your health.
+
+**Coin and the pedlar.** Husks, Spitters, Cù-sìth and Wardens drop coin, and the pedlar waiting on the plaza above the dungeon sells a Brownie's cream for 10, a thorn charm for 40, a Warden's seal for 60 and a hare's foot for 50 at neutral standing. Prices follow the Villagers' opinion of you (friends pay down to 70 percent, the wary and hostile up to 150), and the hated are not served at all. Coin, the bag and your quests are kept across runs in `progression.json`; the HUD shows the coin you carry.
 
 **Gaps.** Rooms are not all joined by corridors. Every room has at least one gap: two walled hallways with a door at the room, three steps up to a lip, and a pit you cannot cross on foot. Fire the teal portal at the far hallway, the violet one at the wall beside you, and step through. The pit is bare stone, spikes or water; a fall costs a little health (never the last point) and puts you back at the edge, so it never traps you. A few deeper links are shaft gaps: aim up into a tunnel above a sealed block. Corridors and secret doors remain, and the dungeon is always finishable (tests prove it with the real portal placement and walking physics).
 
