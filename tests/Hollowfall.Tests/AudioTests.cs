@@ -2,6 +2,7 @@ using Hollowfall.Core.Audio;
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Input;
 using Hollowfall.Core.Portals;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.Terrain;
 using Relations = Hollowfall.Core.Relations;
 
@@ -133,7 +134,7 @@ public class SoundMapTests
             new ReputationChanged(Relations.Faction.Brownies, Relations.ReputationTier.Neutral, Relations.ReputationTier.Wary),
             new EntityProvoked(1, Relations.Faction.Brownies), new EntityProvoked(1, Relations.Faction.Selkies), new EntityProvoked(1, Relations.Faction.Kelpies),
             new EntityProvoked(1, Relations.Faction.Wanderers), new EntityProvoked(1, Relations.Faction.Vermin),
-            new OmenSensed(1), new BoonGiven(1, "warmth", 5), new EntityAllied(1, Relations.Faction.Selkies), new CreamUsed(40),
+            new OmenSensed(1), new BoonGiven(1, "warmth", 5), new EntityAllied(1, Relations.Faction.Selkies), new ItemUsed(ItemKind.BrownieCream, 40),
         };
         var used = events.Select(SoundMap.For).Where(s => s != null).Select(s => s!.Value).ToHashSet();
         // Floor completion needs a result object; UI, footsteps and story sounds (reading a note, a title card) are played by the host directly.

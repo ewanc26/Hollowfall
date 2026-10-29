@@ -42,7 +42,7 @@ public static class SoundMap
         OmenSensed or OmenFulfilled => SoundId.OmenToll,
         BoonGiven or OfferingAccepted => SoundId.BoonChime,
         EntityAllied => SoundId.AllyJoin,
-        CreamUsed => SoundId.CreamSip,
+        ItemUsed => SoundId.CreamSip,
         _ => null,
     };
 

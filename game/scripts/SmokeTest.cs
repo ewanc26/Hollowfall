@@ -938,16 +938,21 @@ public partial class SmokeTest : Node
             var combat = main.Combat ?? throw new InvalidOperationException("no dungeon, so no combat view");
             var sim = combat.Sim;
             sim.Respawn(); // full health, no enemies, nothing in the way
-            var chest = sim.Items.Chests.FirstOrDefault(c => !c.Locked && !c.Opened) ?? throw new InvalidOperationException("no unlocked chest in this dungeon");
+            var chest = sim.Items.Chests.FirstOrDefault(c => !c.Locked && !c.Opened && LootTable.ItemFor(c.Loot.Kind) != null)
+                ?? throw new InvalidOperationException("no unopened item chest in this dungeon");
             var spawn = chest.Spawn;
+            var item = LootTable.ItemFor(chest.Loot.Kind)!.Value;
+            var character = main.Menus.CharacterProvider() ?? throw new InvalidOperationException("no character");
+            int before = character.Items.Count(item);
             var view = Stand(new Vec3(spawn.X + 1.5, spawn.Y, spawn.Z + 0.5)); // a block away from the chest's middle
 
             combat.Step(1.0 / 60, view, default);
             bool closedWithoutInteract = !chest.Opened;
             combat.Step(1.0 / 60, view, new PlayerActions(false, false, false, Interact: true));
             bool opened = chest.Opened && combat.LastEvents.OfType<ChestOpened>().Any(o => o.SpawnIndex == chest.Index && !o.WasLocked);
-            if (!(closedWithoutInteract && opened)) GD.PrintErr($"    chest: closedWithoutInteract={closedWithoutInteract} opened={opened}");
-            return closedWithoutInteract && opened;
+            bool stored = character.Items.Count(item) == before + LootTable.ItemCount(chest.Loot);
+            if (!(closedWithoutInteract && opened && stored)) GD.PrintErr($"    chest: closedWithoutInteract={closedWithoutInteract} opened={opened} stored={stored} before={before}");
+            return closedWithoutInteract && opened && stored;
         });
     }
 

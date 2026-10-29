@@ -170,8 +170,8 @@ public class ReplayTests
         Assert.Equal(ExpectedGoldenChecksum, ReplayCodec.Fnv32(bytes));
     }
 
-    private const int ExpectedGoldenLength = 4212;
-    private const uint ExpectedGoldenChecksum = 3496423115; // changed on purpose: the sim version byte went up to 14 for the pedlar
+    private const int ExpectedGoldenLength = 4514;
+    private const uint ExpectedGoldenChecksum = 2275110642; // changed on purpose: the format now records the quick item and relic
 
     [Fact]
     public void FileSizesStaySane()

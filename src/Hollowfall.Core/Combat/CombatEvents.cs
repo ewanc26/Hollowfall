@@ -1,3 +1,5 @@
+using Hollowfall.Core.Progression;
+
 namespace Hollowfall.Core.Combat;
 
 public enum ParryKind
@@ -48,7 +50,11 @@ public sealed record PlayerDied : CombatEvent;
 public sealed record KeyCollected(int SpawnIndex) : CombatEvent;
 
 /// <summary><see cref="Loot"/> is what was inside; <see cref="Applied"/> is what it did (health healed, hard damage removed, style points, keys, or perk seconds).</summary>
-public sealed record ChestOpened(int SpawnIndex, double Healed, bool WasLocked, Loot? Loot = null, double Applied = 0) : CombatEvent;
+/// <summary>
+/// A chest opened. <see cref="Applied"/> is what a key added; an item chest reports what went into the bag and how many, or
+/// that the bag was too full to take it."</summary>
+public sealed record ChestOpened(int SpawnIndex, double Healed, bool WasLocked, Loot? Loot = null, double Applied = 0,
+    ItemKind? Item = null, int Items = 0, bool BagFull = false) : CombatEvent;
 
 public sealed record ChestLocked(int SpawnIndex) : CombatEvent;
 
@@ -103,4 +109,5 @@ public sealed record OfferingAccepted(int Id, Relations.Faction Faction) : Comba
 // ---- items (append new events below) ----
 
 /// <summary>The player ate a jar of cream and healed <paramref name="Healed"/>. The host takes the jar out of the bag.</summary>
-public sealed record CreamUsed(double Healed) : CombatEvent;
+/// <summary>A quick-use item was spent. <see cref="Applied"/> is what it did: health, hard damage, style or seconds of a perk.</summary>
+public sealed record ItemUsed(ItemKind Kind, double Applied) : CombatEvent;

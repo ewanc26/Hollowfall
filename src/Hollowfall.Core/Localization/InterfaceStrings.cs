@@ -60,11 +60,13 @@ public static class InterfaceStrings
             T("bag.slots", "Slots used: {0} of {1}"),
             T("bag.coin", "Coin {0}"),
             T("bag.none", "Nothing is carried yet."),
-            T("bag.creamHint", "Eat it in a run to heal {0}."),
             T("bag.wear", "Wear"),
             T("bag.takeOff", "Take off"),
             T("bag.worn", "worn"),
-            T("bag.wearHint", "Worn charms take effect from your next run."),
+            T("bag.ready", "Ready"),
+            T("bag.readyMark", "ready"),
+            T("bag.readyHint", "The ready item is what the quick-use button spends in a run; only one comes with you."),
+            T("bag.wearHint", "Worn charms and relics take effect from your next run."),
 
             // ---- the character (progression) ----
             T("character.title", "CHARACTER"),
@@ -150,7 +152,7 @@ public static class InterfaceStrings
             T(ActionKey(GameAction.Pause), "Pause menu"),
             T(ActionKey(GameAction.Slam), "Slam"),
             T(ActionKey(GameAction.FireMortar), "Fire block mortar"),
-            T(ActionKey(GameAction.UseCream), "Use Brownie's cream"),
+            T(ActionKey(GameAction.UseItem), "Use quick item"),
 
             // ---- settings ----
             G("settings.title", "SETTINGS", "ROGHAINNEAN", ReviewStatus.Verified, "FF", "capitals of Firefox gd's 'Roghainnean'"),
@@ -230,6 +232,8 @@ public static class InterfaceStrings
             T("banner.lockedChest", "LOCKED CHEST"),
             T("banner.chestHealed", "CHEST  +{0} health"),
             T("banner.lockedChestHealed", "LOCKED CHEST OPENED  +{0} health"),
+            T("banner.item", "{0}  +{1} to your bag"),
+            T("banner.bagFull", "{0}  your bag is full"),
             T("banner.locked", "locked: find the key on this floor"),
             T("banner.spikes", "SPIKES  -{0}"),
             T("banner.noPortal", "can't place a portal there ({0})"),

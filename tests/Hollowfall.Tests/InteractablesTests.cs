@@ -1,5 +1,6 @@
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Progression;
 
 namespace Hollowfall.Tests;
 
@@ -9,13 +10,14 @@ public class InteractablesTests
 
     private sealed class Rig
     {
-        public double Health = 50;
         public double Damaged;
+        public Inventory Bag = new();
         public List<CombatEvent> Events = [];
         public Interactables Items;
 
         public Rig(params Spawn[] spawns) =>
-            Items = new Interactables(spawns, 7, d => { Damaged += d; return d; }, h => { double got = Math.Min(h, 100 - Health); Health += got; return got; }, Events.Add);
+            Items = new Interactables(spawns, 7, d => { Damaged += d; return d; }, Events.Add,
+                (kind, count) => Bag.Add(kind, count) == count);
 
         public void Tick(Vec3 feet, double seconds = Dt, bool interact = false)
         {
@@ -49,7 +51,7 @@ public class InteractablesTests
     }
 
     [Fact]
-    public void AnOrdinaryChestOpensForFreeAndHeals()
+    public void AnOrdinaryChestOpensForFreeAndPutsItsLootInTheBag()
     {
         // Use a chest whose seeded loot is health (others are covered in LootTests).
         int x = Enumerable.Range(10, 500).First(i => LootTable.Roll(7, At(SpawnKind.Loot, i, tier: 1)).Kind == LootKind.Health);
@@ -57,9 +59,24 @@ public class InteractablesTests
         r.Tick(Beside(x, offset: 1.5), interact: true);
         var opened = Assert.Single(r.Events.OfType<ChestOpened>());
         Assert.False(opened.WasLocked);
-        Assert.Equal(Interactables.ChestHeal, opened.Healed);
-        Assert.Equal(LootKind.Health, opened.Loot!.Value.Kind);
-        Assert.Equal(80, r.Health);
+        Assert.Equal(0, opened.Healed);
+        Assert.Equal(ItemKind.VialOfBlood, opened.Item);
+        Assert.Equal(1, opened.Items);
+        Assert.Equal(1, r.Bag.Count(ItemKind.VialOfBlood));
+        Assert.True(r.Items.Chests[0].Opened);
+    }
+
+    [Fact]
+    public void AFilledBagLeavesTheChestOpenButTakesNothing()
+    {
+        int x = Enumerable.Range(10, 500).First(i => LootTable.Roll(7, At(SpawnKind.Loot, i, tier: 1)).Kind == LootKind.Health);
+        var r = new Rig(At(SpawnKind.Loot, x, tier: 1));
+        while (r.Bag.SlotsUsed < Inventory.Slots) r.Bag.Add(ItemKind.ThornCharm, Inventory.MaxStack);
+        r.Tick(Beside(x, offset: 1.5), interact: true);
+        var opened = Assert.Single(r.Events.OfType<ChestOpened>());
+        Assert.True(opened.BagFull);
+        Assert.Equal(0, opened.Items);
+        Assert.Equal(0, r.Bag.Count(ItemKind.VialOfBlood));
         Assert.True(r.Items.Chests[0].Opened);
     }
 
@@ -93,7 +110,6 @@ public class InteractablesTests
     {
         int x = Enumerable.Range(10, 500).First(i => LootTable.Roll(7, At(SpawnKind.Loot, i, tier: 2)).Kind == LootKind.Health);
         var r = new Rig(At(SpawnKind.Key, 20, 20), At(SpawnKind.Loot, x, tier: 2));
-        r.Health = 10;
         Assert.True(r.Items.Chests[0].Locked);
         r.Tick(Beside(x), interact: true);
         Assert.Single(r.Events.OfType<ChestLocked>());
@@ -105,7 +121,8 @@ public class InteractablesTests
         var opened = Assert.Single(r.Events.OfType<ChestOpened>());
         Assert.True(opened.WasLocked);
         Assert.Equal(LootRarity.Rare, opened.Loot!.Value.Rarity);
-        Assert.Equal(Interactables.LockedChestHeal, opened.Healed);
+        Assert.Equal(2, opened.Items);
+        Assert.Equal(2, r.Bag.Count(ItemKind.VialOfBlood));
         Assert.Equal(0, r.Items.KeysHeld);
     }
 
@@ -176,12 +193,14 @@ public class InteractablesTests
                     if (world.Generator.Dungeons!.GetSite(rx, rz) is not { } site) continue;
                     var chest = site.Spawns.FirstOrDefault(s => s.Kind == SpawnKind.Loot && s.Tier < s.Floor + 2);
                     if (chest.Kind != SpawnKind.Loot) continue;
-                    var sim = new CombatSim(world, site);
+                    var bag = new Inventory();
+                    var sim = new CombatSim(world, site, default, (k, c) => bag.Add(k, c) == c);
                     var feet = new Vec3(chest.X + 1.5, chest.Y, chest.Z + 0.5);
                     var view = new PlayerView(feet, feet + new Vec3(0, 1.6, 0), new Vec3(0, 0, -1), false, false);
                     sim.Tick(Dt, view, new PlayerActions(false, false, false, Interact: true));
                     Assert.Contains(sim.DrainEvents(), e => e is ChestOpened);
                     Assert.True(sim.Items.Chests.First(c => c.Spawn == chest).Opened);
+                    Assert.Equal(1, bag.SlotsUsed);
                     return;
                 }
         }

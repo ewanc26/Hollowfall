@@ -1,5 +1,6 @@
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Input;
+using Hollowfall.Core.Progression;
 
 namespace Hollowfall.Core.Ui;
 
@@ -138,9 +139,24 @@ public static class GameIcons
     public const string Cream = "icon_cream";
     public const string Charm = "icon_charm";
     public const string Coin = "icon_coin";
+    public const string Relic = "icon_relic";
 
     public static IReadOnlyList<string> All { get; } =
-        [PortalTeal, PortalViolet, Revolver, Shotgun, Parry, Health, Blood, Style, Skull, Time, Kills, Stairs, Key, Cream, Charm, Coin];
+        [PortalTeal, PortalViolet, Revolver, Shotgun, Parry, Health, Blood, Style, Skull, Time, Kills, Stairs, Key, Cream, Charm, Coin, Relic];
+
+    /// <summary>The glyph that stands for an item in the HUD and the bag.</summary>
+    public static string ForItem(ItemKind kind) => kind switch
+    {
+        ItemKind.BrownieCream => Cream,
+        ItemKind.ThornCharm => Charm,
+        ItemKind.CleansingDrop => Health,
+        ItemKind.VialOfBlood => Blood,
+        ItemKind.StyleShard => Style,
+        ItemKind.BloodlustDraught => Blood,
+        ItemKind.OpenGuardTonic => Parry,
+        ItemKind.WardenSeal or ItemKind.HareFoot => Relic,
+        _ => Cream,
+    };
 
     /// <summary>The chevron emblem for a style rank (one chevron for the lowest, eight for the highest), or null for no rank.</summary>
     public static string? RankIcon(StyleRank rank) => rank == StyleRank.None ? null : $"rank_{(int)rank}";
