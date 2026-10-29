@@ -1,6 +1,7 @@
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Models;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.World;
 
 namespace Hollowfall.Tests;
@@ -26,16 +27,15 @@ public class LootTests
         throw new InvalidOperationException($"no {kind} chest at tier {tier}");
     }
 
-    /// <summary>Real vitals, style and interactables wired the way the sim does.</summary>
+    /// <summary>Interactables wired to a real bag, the way the sim does.</summary>
     private sealed class Rig
     {
-        public PlayerVitals Vitals = new();
-        public StyleMeter Style = new();
+        public Inventory Bag = new();
         public List<CombatEvent> Events = [];
         public Interactables Items;
 
         public Rig(params Spawn[] spawns) =>
-            Items = new Interactables(spawns, Seed, Vitals.Damage, Vitals.Heal, Events.Add, Vitals.Cleanse, m => Style.Award(StyleBonus.Parry, extraMultiplier: m));
+            Items = new Interactables(spawns, Seed, _ => 0, Events.Add, (kind, count) => Bag.Add(kind, count) == count);
 
         public void Open(Spawn s, double seconds = Dt)
         {
@@ -126,8 +126,8 @@ public class LootTests
             Assert.True(common.Amount < rare.Amount && rare.Amount < epic.Amount, $"{kind} amount grows with rarity");
             Assert.True(common.Seconds <= rare.Seconds && rare.Seconds <= epic.Seconds, $"{kind} lasts longer with rarity");
         }
-        Assert.Equal(Interactables.ChestHeal, LootTable.Make(LootKind.Health, LootRarity.Common).Amount);
-        Assert.Equal(Interactables.LockedChestHeal, LootTable.Make(LootKind.Health, LootRarity.Rare).Amount);
+        Assert.Equal(30, LootTable.Make(LootKind.Health, LootRarity.Common).Amount);
+        Assert.Equal(60, LootTable.Make(LootKind.Health, LootRarity.Rare).Amount);
     }
 
     [Fact]
@@ -135,6 +135,22 @@ public class LootTests
     {
         double Share(int tier) => Grid(tier, 4000).Count(c => LootTable.Roll(Seed, c).Kind is LootKind.Bloodlust or LootKind.WideParry or LootKind.StyleBoost) / 4000.0;
         Assert.True(Share(1) < Share(2) && Share(2) < Share(3));
+    }
+
+    [Fact]
+    public void EveryLootKindButAKeyBecomesABagItemAndBetterChestsGiveMore()
+    {
+        foreach (var kind in LootTable.AllKinds)
+        {
+            var item = LootTable.ItemFor(kind);
+            if (kind == LootKind.Key) Assert.Null(item);
+            else Assert.NotNull(item);
+        }
+        var health = LootTable.Make(LootKind.Health, LootRarity.Common);
+        Assert.Equal(1, LootTable.ItemCount(health));
+        Assert.Equal(2, LootTable.ItemCount(health with { Rarity = LootRarity.Rare }));
+        Assert.Equal(3, LootTable.ItemCount(health with { Rarity = LootRarity.Epic }));
+        Assert.Equal(1, LootTable.ItemCount(LootTable.Make(LootKind.Cleanse, LootRarity.Epic)));
     }
 
     [Fact]
@@ -152,60 +168,54 @@ public class LootTests
     // ---- every outcome applies ----------------------------------------------------------------
 
     [Fact]
-    public void HealthLootHealsByItsAmountUpToTheCeiling()
+    public void HealthLootBecomesAVialInTheBagAndRarityGivesMore()
     {
         var s = ChestHolding(LootKind.Health, 1);
         var rig = new Rig(s);
-        rig.Vitals.Damage(60);
-        double before = rig.Vitals.Health;
         rig.Open(s);
         var e = rig.Opened;
         Assert.Equal(LootKind.Health, e.Loot!.Value.Kind);
-        Assert.Equal(e.Healed, rig.Vitals.Health - before, 6);
-        Assert.Equal(Math.Min(30, rig.Vitals.Ceiling - before), e.Healed, 6);
+        Assert.Equal(ItemKind.VialOfBlood, e.Item);
+        Assert.Equal(1, e.Items);
+        Assert.Equal(0, e.Healed);
+        Assert.Equal(1, rig.Bag.Count(ItemKind.VialOfBlood));
 
         var locked = ChestHolding(LootKind.Health, 2);
         var rig2 = new Rig(locked, Key(30));
-        rig2.Vitals.Damage(90);
-        double health = rig2.Vitals.Health;
         rig2.Open(Key(30));
         rig2.Open(locked);
-        Assert.True(rig2.Vitals.Health - health > 0);
         Assert.Equal(LootRarity.Rare, rig2.Opened.Loot!.Value.Rarity);
+        Assert.Equal(2, rig2.Opened.Items);
+        Assert.Equal(2, rig2.Bag.Count(ItemKind.VialOfBlood));
     }
 
     private static Spawn Key(int x) => new(SpawnKind.Key, x, 40, 10, 0, 1, 1);
 
     [Fact]
-    public void CleanseLootClearsHardDamage()
+    public void CleanseLootBecomesADropAndLeavesHardDamageAlone()
     {
         var s = ChestHolding(LootKind.Cleanse, 1);
         var rig = new Rig(s);
-        rig.Vitals.Damage(60);
-        Assert.True(rig.Vitals.HardDamage > 0);
-        double hard = rig.Vitals.HardDamage;
         rig.Open(s);
-        Assert.Equal(0, rig.Vitals.HardDamage);
-        Assert.Equal(100, rig.Vitals.Ceiling);
-        Assert.Equal(hard, rig.Opened.Applied, 6);
-        Assert.Equal(0, rig.Opened.Healed);
+        Assert.Equal(ItemKind.CleansingDrop, rig.Opened.Item);
+        Assert.Equal(1, rig.Bag.Count(ItemKind.CleansingDrop));
+        Assert.Equal(0, rig.Opened.Applied);
     }
 
     [Fact]
-    public void StyleLootAddsStylePointsScaledByRarity()
+    public void StyleLootBecomesShardsWhoseCountGrowsWithRarity()
     {
-        double Gained(int tier)
+        int Shards(int tier)
         {
             var s = ChestHolding(LootKind.StyleBoost, tier);
             var rig = tier > 1 ? new Rig(s, Key(30)) : new Rig(s);
             if (tier > 1) rig.Open(Key(30));
             rig.Open(s);
-            var e = rig.Events.OfType<ChestOpened>().Single();
-            Assert.Equal(rig.Style.Points, e.Applied, 6);
-            return rig.Style.Points;
+            Assert.Equal(ItemKind.StyleShard, rig.Opened.Item);
+            Assert.Equal(rig.Opened.Items, rig.Bag.Count(ItemKind.StyleShard));
+            return rig.Opened.Items;
         }
-        double common = Gained(1), rare = Gained(2), epic = Gained(3);
-        Assert.Equal(StyleMeter.BaseValue(StyleBonus.Parry) * 2, common, 3);
+        int common = Shards(1), rare = Shards(2), epic = Shards(3);
         Assert.True(common < rare && rare < epic);
     }
 
@@ -223,36 +233,25 @@ public class LootTests
     }
 
     [Fact]
-    public void BloodlustMultipliesBloodFromHitsThenWearsOff()
+    public void BloodlustLootBecomesADraughtAndDoesNothingOnTheSpot()
     {
         var s = ChestHolding(LootKind.Bloodlust, 1);
         var rig = new Rig(s);
         Assert.Equal(1, rig.Items.Perks.HealScale);
         rig.Open(s);
-        var perk = rig.Opened.Loot!.Value;
-        Assert.Equal(perk.Amount, rig.Items.Perks.HealScale);
-        Assert.Equal(perk.Seconds, rig.Items.Perks.BloodlustLeft, 1);
-
-        rig.Vitals.Damage(80);
-        rig.Vitals.HitHealScale = rig.Items.Perks.HealScale;
-        double scaled = rig.Vitals.HealFromHit(HitZone.Torso, 1);
-        Assert.Equal(10 * perk.Amount, scaled, 6);
-
-        rig.Open(s, perk.Seconds + 1); // already opened: just lets time pass
+        Assert.Equal(ItemKind.BloodlustDraught, rig.Opened.Item);
+        Assert.Equal(1, rig.Bag.Count(ItemKind.BloodlustDraught));
         Assert.Equal(1, rig.Items.Perks.HealScale);
-        rig.Vitals.HitHealScale = rig.Items.Perks.HealScale;
-        Assert.Equal(10, rig.Vitals.HealFromHit(HitZone.Torso, 1), 6);
     }
 
     [Fact]
-    public void WideParryAddsToTheParryWindowThenWearsOff()
+    public void WideParryLootBecomesATonicAndDoesNothingOnTheSpot()
     {
         var s = ChestHolding(LootKind.WideParry, 1);
         var rig = new Rig(s);
         rig.Open(s);
-        var perk = rig.Opened.Loot!.Value;
-        Assert.Equal(perk.Amount, rig.Items.Perks.ParryWindowBonus);
-        rig.Open(s, perk.Seconds + 1);
+        Assert.Equal(ItemKind.OpenGuardTonic, rig.Opened.Item);
+        Assert.Equal(1, rig.Bag.Count(ItemKind.OpenGuardTonic));
         Assert.Equal(0, rig.Items.Perks.ParryWindowBonus);
     }
 
@@ -335,24 +334,24 @@ public class LootTests
     }
 
     [Fact]
-    public void ACleanseChestInTheSimulationClearsHardDamage()
+    public void ACleanseChestInTheSimulationLeavesHardDamageForTheDrop()
     {
         var (world, site, chest) = RealChests().First(c => LootTable.Roll(c.World.Seed, c.Chest).Kind == LootKind.Cleanse);
         var (sim, view) = Near(world, site, chest);
         sim.Vitals.Damage(40);
         Assert.True(sim.Vitals.HardDamage > 0);
+        double hard = sim.Vitals.HardDamage;
         sim.Tick(Dt, view, new PlayerActions(false, false, false, Interact: true));
-        Assert.Equal(0, sim.Vitals.HardDamage);
+        Assert.Equal(hard, sim.Vitals.HardDamage, 6);
     }
 
     [Fact]
-    public void AStyleChestInTheSimulationAddsStyle()
+    public void AStyleChestInTheSimulationLeavesTheStyleForAShard()
     {
         var (world, site, chest) = RealChests().First(c => LootTable.Roll(c.World.Seed, c.Chest).Kind == LootKind.StyleBoost);
         var (sim, view) = Near(world, site, chest);
         sim.Tick(Dt, view, new PlayerActions(false, false, false, Interact: true));
-        Assert.True(sim.Style.Points > 100);
-        Assert.True(sim.Style.TotalScore > 100);
+        Assert.Equal(0, sim.Style.Points, 6);
     }
 
     [Fact]

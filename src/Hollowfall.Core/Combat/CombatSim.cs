@@ -12,7 +12,7 @@ namespace Hollowfall.Core.Combat;
 public readonly record struct PlayerView(Vec3 Feet, Vec3 Eye, Vec3 Forward, bool Airborne, bool Sliding, Vec3 Velocity = default, bool Crossed = false);
 
 /// <summary>Buttons pressed this tick (edges, not holds: the host applies fire-rate by calling once per press).</summary>
-public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false, bool FireMortar = false, bool UseCream = false);
+public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun, bool Parry, bool PortalTeal = false, bool PortalViolet = false, bool Interact = false, bool ClosePortals = false, bool FireMortar = false, bool UseItem = false);
 
 /// <summary>
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
@@ -90,6 +90,7 @@ public sealed class CombatSim
     private readonly HashSet<(int X, int Z)> _villagesPopulated = [];
     private (int X, int Z)? _villageChunk;
     private bool _pedlarSpawned;
+    private int _uses;
     private readonly List<Projectile> _projectiles = [];
     private readonly List<MortarShell> _shells = [];
     private readonly List<CombatEvent> _events = [];
@@ -99,7 +100,6 @@ public sealed class CombatSim
     private double _parryWindow, _parryCooldown;
     private readonly MeteorTracker _meteor = new();
     private int _nextId = 1;
-    private int _creams;
     private readonly HashSet<int> _populated = [];
 
     /// <summary>
@@ -122,8 +122,11 @@ public sealed class CombatSim
     /// <summary>The character's stats for this run, read once when it starts (see RunStats). Vigour sets the maximum health; Might scales the guns and parries.</summary>
     public RunStats Stats { get; }
 
-    /// <summary>Jars of cream the run still has: the bag's count when the run started, less those used.</summary>
-    public int CreamsLeft => _creams;
+    /// <summary>The quick-use item this run brought, or null when it brought none.</summary>
+    public ItemKind? ReadyItem => Stats.ReadyItem;
+
+    /// <summary>Uses of the quick-use item the run still has: its count when the run started, less those spent.</summary>
+    public int UsesLeft => _uses;
 
     /// <summary>Seconds left in the open parry window (0 when closed), which a Wide Parry perk lengthens.</summary>
     public double ParryWindowLeft => _parryWindow;
@@ -143,16 +146,16 @@ public sealed class CombatSim
     public int CurrentFloor { get; private set; } = -1;
     public bool Dead => Vitals.Dead;
 
-    public CombatSim(VoxelWorld world, DungeonSite site, RunStats stats = default)
+    /// <param name="store">Puts a chest's item in the character's bag. Null keeps the item out of the run (as for a replay or a test).</param>
+    public CombatSim(VoxelWorld world, DungeonSite site, RunStats stats = default, Func<ItemKind, int, bool>? store = null)
     {
         _world = world;
         _site = site;
         Stats = stats;
-        _creams = stats.ClampedCreams;
+        _uses = stats.ClampedUses;
         Vitals = new PlayerVitals(stats.MaxHealth);
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
-        _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, Vitals.Heal, _events.Add,
-            cleanse: Vitals.Cleanse, boostStyle: m => Style.Award(StyleBonus.Parry, extraMultiplier: m));
+        _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, _events.Add, store);
         Map = new FloorMap(site);
         _floors = new FloorProgress[site.FloorCount];
         for (int k = 0; k < site.FloorCount; k++)
@@ -309,7 +312,7 @@ public sealed class CombatSim
         if (actions.FireRevolver) Fire(WeaponSpec.Revolver, view);
         if (actions.FireShotgun) Fire(WeaponSpec.Shotgun, view);
         if (actions.FireMortar) FireMortar(view);
-        if (actions.UseCream) UseCream();
+        if (actions.UseItem) UseItem();
 
         UpdateWarden(dt, view);
         foreach (var e in _enemies.ToList()) UpdateEnemy(e, dt, view);
@@ -1391,12 +1394,45 @@ public sealed class CombatSim
         if (Vitals.Dead) _events.Add(new PlayerDied());
     }
 
-    /// <summary>Eats a jar of cream to heal, if the run has one and the player is hurt. A jar is not used up at full health.</summary>
-    private void UseCream()
+    /// <summary>
+    /// Spends one use of the run's quick item. A remedy that would do nothing right now is not spent: cream at full health,
+    /// a cleansing drop with no hard damage, or any item while dead.
+    /// </summary>
+    private void UseItem()
     {
-        if (_creams <= 0 || Vitals.Dead || Vitals.Health >= Vitals.Ceiling) return;
-        _creams--;
-        _events.Add(new CreamUsed(Vitals.Heal(Inventory.CreamHeal)));
+        if (_uses <= 0 || Vitals.Dead || ReadyItem is not { } kind) return;
+        double applied;
+        switch (kind)
+        {
+            case ItemKind.BrownieCream:
+                if (Vitals.Health >= Vitals.Ceiling) return;
+                applied = Vitals.Heal(Inventory.CreamHeal);
+                break;
+            case ItemKind.VialOfBlood:
+                if (Vitals.Health >= Vitals.Ceiling) return;
+                applied = Vitals.Heal(Inventory.VialHeal);
+                break;
+            case ItemKind.CleansingDrop:
+                applied = Vitals.Cleanse();
+                if (applied <= 0) return;
+                break;
+            case ItemKind.StyleShard:
+                applied = Style.Award(StyleBonus.Parry, extraMultiplier: Inventory.StyleShardMultiplier);
+                break;
+            case ItemKind.BloodlustDraught:
+                _items.Perks.Grant(new Loot(LootKind.Bloodlust, LootRarity.Common, Inventory.BloodlustScale, Inventory.BloodlustSeconds));
+                Vitals.HitHealScale = _items.Perks.HealScale;
+                applied = Inventory.BloodlustSeconds;
+                break;
+            case ItemKind.OpenGuardTonic:
+                _items.Perks.Grant(new Loot(LootKind.WideParry, LootRarity.Common, Inventory.OpenGuardBonus, Inventory.OpenGuardSeconds));
+                applied = Inventory.OpenGuardSeconds;
+                break;
+            default:
+                return;
+        }
+        _uses--;
+        _events.Add(new ItemUsed(kind, applied));
     }
 
     private void UpdateProjectiles(double dt, PlayerView view)

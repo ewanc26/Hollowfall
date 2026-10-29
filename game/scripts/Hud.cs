@@ -5,6 +5,7 @@ using Hollowfall.Core.Input;
 using Hollowfall.Core.Localization;
 using Hollowfall.Core.Ui;
 using Hollowfall.Core.Portals;
+using Hollowfall.Core.Progression;
 
 namespace Hollowfall.Game;
 
@@ -27,8 +28,9 @@ public partial class Hud : CanvasLayer
     private Control _crossCluster = null!;
     private MiniMap _map = null!;
     private Label _floorStairs = null!, _floorKills = null!, _floorTime = null!, _floorKeys = null!;
-    private HBoxContainer _creamRow = null!;
-    private Label _creamCount = null!;
+    private HBoxContainer _itemRow = null!;
+    private TextureRect _itemIcon = null!;
+    private Label _itemCount = null!;
     private HBoxContainer _coinRow = null!;
     private Label _coinCount = null!;
     private PanelContainer _floorPanel = null!;
@@ -148,12 +150,19 @@ public partial class Hud : CanvasLayer
         healthRow.AddChild(Glyphs.Icon(GameIcons.Health, 24));
         _health = Text(healthRow, Vector2.Zero, 24);
         _health.AddThemeFontOverride("font", UiFonts.DisplayMedium);
-        _creamRow = new HBoxContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
-        _creamRow.AddThemeConstantOverride("separation", 6);
-        _creamRow.AddChild(Glyphs.Icon(GameIcons.Cream, 24));
-        _creamCount = Text(_creamRow, Vector2.Zero, 24);
-        _creamCount.AddThemeFontOverride("font", UiFonts.DisplayMedium);
-        healthRow.AddChild(_creamRow);
+        _itemRow = new HBoxContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+        _itemRow.AddThemeConstantOverride("separation", 6);
+        _itemIcon = new TextureRect
+        {
+            CustomMinimumSize = new Vector2(24, 24),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _itemRow.AddChild(_itemIcon);
+        _itemCount = Text(_itemRow, Vector2.Zero, 24);
+        _itemCount.AddThemeFontOverride("font", UiFonts.DisplayMedium);
+        healthRow.AddChild(_itemRow);
         _coinRow = new HBoxContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
         _coinRow.AddThemeConstantOverride("separation", 6);
         _coinRow.AddChild(Glyphs.Icon(GameIcons.Coin, 24));
@@ -268,12 +277,13 @@ public partial class Hud : CanvasLayer
         _floorTime.AddThemeColorOverride("font_color", elapsed <= par ? Colors.White : new Color(1f, 0.55f, 0.45f));
     }
 
-    /// <summary>Shows what the player has seen of the floor, or hides the map on the surface.</summary>
-    /// <summary>Shows the jars of cream the run still has, beside the health; hidden when there are none.</summary>
-    public void SetCream(int count)
+    /// <summary>Shows the run's quick item and how many uses are left, beside the health; hidden when there is none.</summary>
+    public void SetItem(ItemKind? kind, int count)
     {
-        _creamRow.Visible = count > 0;
-        _creamCount.Text = count.ToString();
+        _itemRow.Visible = kind != null && count > 0;
+        if (kind is not { } item) return;
+        _itemIcon.Texture = Glyphs.Get(GameIcons.ForItem(item));
+        _itemCount.Text = count.ToString();
     }
 
     /// <summary>Shows the coin you carry, beside the health; hidden while you have none.</summary>
@@ -283,6 +293,7 @@ public partial class Hud : CanvasLayer
         _coinCount.Text = count.ToString();
     }
 
+    /// <summary>Shows what the player has seen of the floor, or hides the map on the surface.</summary>
     public void SetMap(FloorMap? map, int floor, Vector2 cell, float yaw)
     {
         _map.Visible = map != null && floor >= 0;

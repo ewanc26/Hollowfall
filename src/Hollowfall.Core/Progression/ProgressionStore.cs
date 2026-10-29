@@ -6,12 +6,12 @@ namespace Hollowfall.Core.Progression;
 /// <summary>
 /// Your character saved as <c>progression.json</c> in the data folder. Read defensively: a damaged or hand-edited file gives a
 /// fresh character rather than stopping the game, and every value is clamped on the way in. Saving is atomic. Version 1 files
-/// (no bag or quests) and version 2 files (no coin) still load, with an empty bag and no coin.
+/// (no bag or quests), version 2 files (no coin) and version 3 files (no relic or ready item) still load, with the missing parts empty.
 /// </summary>
 public static class ProgressionStore
 {
     public const int MaxFileBytes = 4 * 1024;
-    public const int Version = 3;
+    public const int Version = 4;
 
     public static string ToJson(Progression progression)
     {
@@ -29,6 +29,8 @@ public static class ProgressionStore
             ["coin"] = progression.Coin,
             ["items"] = items,
             ["charm"] = progression.Items.Charm is { } worn ? worn.ToString() : null,
+            ["relic"] = progression.Items.Relic is { } relic ? relic.ToString() : null,
+            ["ready"] = progression.Items.Ready.ToString(),
             ["quests"] = quests,
         }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
     }
@@ -46,7 +48,7 @@ public static class ProgressionStore
         if (root is null) return progression;
 
         progression.Restore(Number(root, "experience"), Number(root, "vigour"), Number(root, "might"), Number(root, "coin"));
-        progression.Items.Restore(ReadItems(root), ReadCharm(root));
+        progression.Items.Restore(ReadItems(root), ReadItem(root, "charm", ItemUse.Charm), ReadItem(root, "relic", ItemUse.Relic), ReadItem(root, "ready", ItemUse.Consumable));
         ReadQuests(root, progression.Quests);
         return progression;
     }
@@ -112,9 +114,10 @@ public static class ProgressionStore
         }
     }
 
-    /// <summary>The worn charm from the file, or null if there is none or the name is not known.</summary>
-    private static ItemKind? ReadCharm(JsonObject root) =>
-        root["charm"] is JsonValue v && v.TryGetValue<string>(out var name) && Enum.TryParse<ItemKind>(name, out var kind) && Enum.IsDefined(kind)
+    /// <summary>A slot's item from the file, or null if it is missing, unknown or of the wrong kind.</summary>
+    private static ItemKind? ReadItem(JsonObject root, string key, ItemUse use) =>
+        root[key] is JsonValue v && v.TryGetValue<string>(out var name) && Enum.TryParse<ItemKind>(name, out var kind) &&
+        Enum.IsDefined(kind) && Inventory.Info(kind).Use == use
             ? kind
             : null;
 }

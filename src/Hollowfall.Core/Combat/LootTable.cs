@@ -1,9 +1,10 @@
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Progression;
 using Hollowfall.Core.Terrain;
 
 namespace Hollowfall.Core.Combat;
 
-/// <summary>What a chest can hold. There is no ammo in Hollowfall, so loot is health, a short perk, style or a key.</summary>
+/// <summary>What a chest can hold. There is no ammo in Hollowfall, so loot becomes a healing vial, a cleansing drop, style, a short perk or a key.</summary>
 public enum LootKind
 {
     /// <summary>Heals, up to the current ceiling.</summary>
@@ -34,8 +35,9 @@ public enum LootRarity
 }
 
 /// <summary>
-/// One chest's contents. <see cref="Amount"/> is health points, a style multiplier, a heal scale, a parry window bonus in seconds
-/// or a key count, by kind; <see cref="Seconds"/> is how long a perk lasts (zero for everything instant).
+/// One chest's contents. <see cref="Amount"/> is a style multiplier, a heal scale, a parry window bonus in seconds or a key
+/// count, by kind; <see cref="Seconds"/> is how long a perk lasts (zero for everything instant). The bag item each kind becomes
+/// is <see cref="LootTable.ItemFor"/>; its effect lives on the item, not on this roll.
 /// </summary>
 public readonly record struct Loot(LootKind Kind, LootRarity Rarity, double Amount, double Seconds)
 {
@@ -62,7 +64,7 @@ public static class LootTable
         [12, 14, 26, 24, 24, 0],
     ];
 
-    private static readonly double[] HealthAmount = [Interactables.ChestHeal, Interactables.LockedChestHeal, 90];
+    private static readonly double[] HealthAmount = [30, 60, 90];
     private static readonly double[] StyleMultiplier = [2, 4, 8]; // times a parry's base points
     private static readonly double[] BloodlustScale = [1.5, 2, 3];
     private static readonly double[] BloodlustSeconds = [20, 30, 45];
@@ -106,6 +108,24 @@ public static class LootTable
             _ => new Loot(kind, rarity, 1, 0),
         };
     }
+
+    /// <summary>The bag item a chest's loot becomes, or null for a key, which is used on the spot.</summary>
+    public static ItemKind? ItemFor(LootKind kind) => kind switch
+    {
+        LootKind.Health => ItemKind.VialOfBlood,
+        LootKind.Cleanse => ItemKind.CleansingDrop,
+        LootKind.StyleBoost => ItemKind.StyleShard,
+        LootKind.Bloodlust => ItemKind.BloodlustDraught,
+        LootKind.WideParry => ItemKind.OpenGuardTonic,
+        _ => null,
+    };
+
+    /// <summary>How many items a chest holds. Better chests hold more of the same remedy; a cleansing drop is one whatever the chest.</summary>
+    public static int ItemCount(Loot loot) => loot.Kind switch
+    {
+        LootKind.Cleanse or LootKind.Key => 1,
+        _ => (int)loot.Rarity + 1,
+    };
 
     public static string Name(LootKind kind) => kind switch
     {

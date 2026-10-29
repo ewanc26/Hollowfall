@@ -86,7 +86,8 @@ public sealed class Progression
     public double DamageScale => 1 + _might * MightPerPoint;
 
     /// <summary>The stats as a run reads them when it starts (and records them in its replay).</summary>
-    public RunStats Stats => new(_vigour, _might, Items.Count(ItemKind.BrownieCream), Items.Charm);
+    public RunStats Stats => new(_vigour, _might, Items.Count(Items.Ready),
+        Items.Count(Items.Ready) > 0 ? Items.Ready : null, Items.Charm, Items.Relic);
 
     /// <summary>The experience a defeated enemy is worth.</summary>
     public static int ExperienceFor(EnemyKind kind) => kind switch

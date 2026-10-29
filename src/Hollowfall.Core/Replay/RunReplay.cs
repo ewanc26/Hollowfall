@@ -11,8 +11,11 @@ namespace Hollowfall.Core.Replay;
 /// </summary>
 public sealed class RunReplay
 {
-    /// <summary>The file format. Bump when the byte layout changes.</summary>
-    public const int FormatVersion = 4;
+    /// <summary>The file format. Bump when the byte layout changes. Format 5 records the quick item, its uses and the relic, and moves the frame control bits clear of the action flags.</summary>
+    public const int FormatVersion = 5;
+
+    /// <summary>The format that recorded only a cream count and the worn charm, before other consumables and the relic slot.</summary>
+    public const int FormatVersionWithCream = 4;
 
     /// <summary>The format before the bag's cream and worn charm were recorded. Those files still load, with neither.</summary>
     public const int FormatVersionWithoutItems = 3;
@@ -24,7 +27,7 @@ public sealed class RunReplay
     /// The simulation rules the run was recorded under. Bump this whenever <c>CombatSim</c> behaviour changes in a way that alters a
     /// replay's outcome; older files still load (a ghost only needs the recorded positions) but are flagged as unverifiable.
     /// </summary>
-    public const int SimVersion = 14;
+    public const int SimVersion = 15;
 
     public const int TicksPerSecond = 60;
     public const double Dt = 1.0 / TicksPerSecond;
@@ -96,8 +99,10 @@ public static class ReplayCodec
         o.Add((byte)replay.SimVersionRecorded);
         PutVar(o, (uint)replay.Stats.ClampedVigour);
         PutVar(o, (uint)replay.Stats.ClampedMight);
-        PutVar(o, (uint)replay.Stats.ClampedCreams);
+        PutVar(o, (uint)replay.Stats.ClampedUses);
+        PutVar(o, replay.Stats.Consumable is { } consumable ? (uint)consumable + 1 : 0);
         PutVar(o, replay.Stats.Charm is { } charm ? (uint)charm + 1 : 0);
+        PutVar(o, replay.Stats.Relic is { } relic ? (uint)relic + 1 : 0);
         var seed = Encoding.UTF8.GetBytes(replay.Seed.Length > RunReplay.MaxSeedLength ? replay.Seed[..RunReplay.MaxSeedLength] : replay.Seed);
         PutVar(o, (uint)seed.Length);
         o.AddRange(seed);
@@ -132,7 +137,7 @@ public static class ReplayCodec
             uint mask = 0;
             for (int i = 0; i < 10; i++) if (delta[i] != 0) mask |= 1u << i;
             PutVar(o, (uint)count);
-            PutVar(o, (uint)f.Flags | (f.Respawns > 0 ? 1u << 10 : 0) | (mask << 11));
+            PutVar(o, (uint)f.Flags | (f.Respawns > 0 ? (uint)ReplayFrame.RespawnBit : 0) | (mask << ReplayFrame.MaskShift));
             if (f.Respawns > 0) PutVar(o, (uint)f.Respawns);
             for (int i = 0; i < 10; i++) if ((mask & (1u << i)) != 0) PutVar(o, Zig(delta[i]));
             prev = f;
@@ -226,6 +231,16 @@ public static class ReplayCodec
 
     private static int Unzig(uint v) => (int)(v >> 1) ^ -(int)(v & 1);
 
+    /// <summary>An item code from the file: 0 is none, otherwise the kind plus one. A kind in the wrong slot is damaged data.</summary>
+    private static (ItemKind? Kind, bool Invalid) ReadKind(uint code, ItemUse use)
+    {
+        if (code == 0) return (null, false);
+        if (code - 1 > (uint)Enum.GetValues<ItemKind>().Length) return (null, true);
+        var kind = (ItemKind)(int)(code - 1);
+        if (!Enum.IsDefined(kind) || Inventory.Info(kind).Use != use) return (null, true);
+        return (kind, false);
+    }
+
     private static RunReplay? Decode(ReadOnlySpan<byte> data)
     {
         if (data.Length is < 16 or > MaxFileBytes) return null;
@@ -243,7 +258,8 @@ public static class ReplayCodec
         var r = new Reader(data[..^4]);
         if (!r.Take(4).SequenceEqual(Magic)) return null;
         int format = r.Byte();
-        if (format is not (RunReplay.FormatVersion or RunReplay.FormatVersionWithoutItems or RunReplay.FormatVersionWithoutStats)) return null;
+        if (format is not (RunReplay.FormatVersion or RunReplay.FormatVersionWithCream or RunReplay.FormatVersionWithoutItems or RunReplay.FormatVersionWithoutStats)) return null;
+        bool oldLayout = format < RunReplay.FormatVersion;
         int sim = r.Byte();
         var stats = new RunStats();
         if (format >= RunReplay.FormatVersionWithoutItems)
@@ -254,11 +270,26 @@ public static class ReplayCodec
         }
         if (format == RunReplay.FormatVersion)
         {
+            uint uses = r.Var(), consumable = r.Var(), charm = r.Var(), relic = r.Var();
+            if (r.Failed || uses > Inventory.MaxStack * Inventory.Slots) return null;
+            var quick = ReadKind(consumable, ItemUse.Consumable);
+            var worn = ReadKind(charm, ItemUse.Charm);
+            var carried = ReadKind(relic, ItemUse.Relic);
+            if (quick.Invalid || worn.Invalid || carried.Invalid) return null;
+            stats = stats with
+            {
+                Uses = quick.Kind is null ? 0 : (int)uses,
+                Consumable = quick.Kind,
+                Charm = worn.Kind,
+                Relic = carried.Kind,
+            };
+        }
+        else if (format == RunReplay.FormatVersionWithCream)
+        {
             uint creams = r.Var(), charm = r.Var();
-            var worn = charm == 0 ? (ItemKind?)null : (ItemKind)(int)(charm - 1);
-            if (r.Failed || creams > Inventory.MaxStack * Inventory.Slots || charm > Enum.GetValues<ItemKind>().Length) return null;
-            if (worn is { } w && Inventory.Info(w).Use != ItemUse.Charm) return null;
-            stats = stats with { Creams = (int)creams, Charm = worn };
+            var worn = ReadKind(charm, ItemUse.Charm);
+            if (r.Failed || creams > Inventory.MaxStack * Inventory.Slots || worn.Invalid) return null;
+            stats = stats with { Uses = (int)creams, Consumable = ItemKind.BrownieCream, Charm = worn.Kind };
         }
         uint seedLen = r.Var();
         if (r.Failed || seedLen is 0 or > RunReplay.MaxSeedLength * 4) return null;
@@ -281,14 +312,17 @@ public static class ReplayCodec
         {
             uint repeat = r.Var(), control = r.Var();
             if (r.Failed || repeat == 0 || repeat > ticks - n) return null;
-            int flags = (int)(control & 0x3FF);
+            int flagMask = oldLayout ? 0x3FF : ReplayFrame.AllFlags;
+            uint respawnMask = oldLayout ? 1u << 10 : (uint)ReplayFrame.RespawnBit;
+            int maskShift = oldLayout ? 11 : ReplayFrame.MaskShift;
+            int flags = (int)(control & (uint)flagMask);
             int respawns = 0;
-            if ((control & (1u << 10)) != 0)
+            if ((control & respawnMask) != 0)
             {
                 respawns = (int)r.Var();
                 if (respawns is < 1 or > ReplayFrame.MaxRespawns || repeat != 1) return null;
             }
-            uint mask = control >> 11;
+            uint mask = control >> maskShift;
             if (mask > 0x3FF) return null;
 
             v[0] = cur.Fx; v[1] = cur.Fy; v[2] = cur.Fz; v[3] = cur.Ex; v[4] = cur.Ey; v[5] = cur.Ez; v[6] = cur.Dx; v[7] = cur.Dy; v[8] = cur.Dz; v[9] = cur.Speed;

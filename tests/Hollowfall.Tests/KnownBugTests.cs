@@ -84,7 +84,7 @@ public class KnownBugTests
     public void ATrapDoesNotHurtAPlayerOnTheFloorBelow()
     {
         double damaged = 0;
-        var items = new Interactables([new Spawn(SpawnKind.Trap, 10, 40, 10, 0, 1, 1)], 7, d => { damaged += d; return d; }, d => d, _ => { });
+        var items = new Interactables([new Spawn(SpawnKind.Trap, 10, 40, 10, 0, 1, 1)], 7, d => { damaged += d; return d; }, _ => { });
         var below = Stand(10.5, 32, 10.5); // one floor down, same x and z
         for (int i = 0; i < 400; i++) items.Tick(Dt, below, false);
         Assert.Equal(0, damaged);
@@ -102,7 +102,7 @@ public class KnownBugTests
             if (clock - struckAt < Spared) return 0;
             damaged += d;
             return d;
-        }, d => d, _ => { });
+        }, _ => { });
         var on = Stand(10.5, 40, 10.5);
         // Only the first strike: it lasts 0.6 s, so stop shortly after it ends.
         for (int i = 0; i < 400 && (struckAt < 0 || clock - struckAt < Interactables.TrapStrike - 0.1); i++) { clock += Dt; items.Tick(Dt, on, false); }
@@ -144,7 +144,7 @@ public class KnownBugTests
     }
 
     [Fact]
-    public void ReplaysAreRecordedUnderTheCurrentSimVersion() => Assert.Equal(14, Hollowfall.Core.Replay.RunReplay.SimVersion);
+    public void ReplaysAreRecordedUnderTheCurrentSimVersion() => Assert.Equal(15, Hollowfall.Core.Replay.RunReplay.SimVersion);
 
     [Fact]
     public void KillsInARoomThatMustBeFoughtAgainDoNotSurviveARespawn()

@@ -83,9 +83,14 @@ public partial class Menus : CanvasLayer
     /// <summary>Supplies the bag for the Bag screen; null when there is none. Set by the game.</summary>
     public Func<Inventory?> BagProvider { get; set; } = () => null;
 
-    /// <summary>The player wears a charm from the bag, or takes the worn one off.</summary>
+    /// <summary>The player wears a piece of equipment from the bag.</summary>
     public event Action<ItemKind>? WearRequested;
-    public event Action? TakeOffRequested;
+
+    /// <summary>The player takes the equipment in a slot off.</summary>
+    public event Action<ItemUse>? TakeOffRequested;
+
+    /// <summary>The player makes a consumable the run's quick item.</summary>
+    public event Action<ItemKind>? ReadyRequested;
 
     /// <summary>Raised when the player spends a point on a stat. The host spends it and saves the character.</summary>
     public event Action<Stat>? SpendRequested;
@@ -549,9 +554,11 @@ public partial class Menus : CanvasLayer
     {
         var (screen, col) = Panel(640, 520);
         col.AddChild(Heading(_loc.Tr("bag.title")));
+        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 360), SizeFlagsVertical = Control.SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        col.AddChild(scroll);
         _bagList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(560, 0) };
         _bagList.AddThemeConstantOverride("separation", 12);
-        col.AddChild(_bagList);
+        scroll.AddChild(_bagList);
 
         var footer = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         footer.AddChild(MakeButton(_loc.Tr("menu.back"), () => Open(ReturnScreen())));
@@ -559,7 +566,7 @@ public partial class Menus : CanvasLayer
         return screen;
     }
 
-    /// <summary>Rebuilds the bag screen from the live bag. Called each time the screen opens and after a charm is worn or taken off.</summary>
+    /// <summary>Rebuilds the bag screen from the live bag. Called each time the screen opens and after equipment or the ready item changes.</summary>
     private void RefreshBag()
     {
         foreach (var child in _bagList.GetChildren()) child.QueueFree();
@@ -571,9 +578,10 @@ public partial class Menus : CanvasLayer
 
         _bagList.AddChild(new Label { Text = _loc.Tr("bag.slots", bag.SlotsUsed, Inventory.Slots) });
         if (CharacterProvider() is { } character) _bagList.AddChild(new Label { Text = _loc.Tr("bag.coin", character.Coin) });
-        _bagList.AddChild(BagRow(bag, ItemKind.BrownieCream));
-        _bagList.AddChild(BagRow(bag, ItemKind.ThornCharm));
-        var note = new Label { Text = _loc.Tr("bag.wearHint"), AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
+        var kinds = Enum.GetValues<ItemKind>().Where(k => bag.Count(k) > 0 || bag.Worn(Inventory.Info(k).Use) == k).ToList();
+        if (kinds.Count == 0) _bagList.AddChild(new Label { Text = _loc.Tr("bag.none") });
+        foreach (var kind in kinds) _bagList.AddChild(BagRow(bag, kind));
+        var note = new Label { Text = _loc.Tr("bag.readyHint") + " " + _loc.Tr("bag.wearHint"), AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
         note.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
         note.AddThemeFontSizeOverride("font_size", 16);
         _bagList.AddChild(note);
@@ -584,22 +592,30 @@ public partial class Menus : CanvasLayer
         var (name, use, blurb) = Inventory.Info(kind);
         var row = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         row.AddThemeConstantOverride("separation", 12);
-        row.AddChild(Glyphs.Icon(kind == ItemKind.BrownieCream ? GameIcons.Cream : GameIcons.Charm, 32));
-        bool worn = bag.Charm == kind;
-        row.AddChild(new Label { Text = $"{name} x{bag.Count(kind)}" + (worn ? $" ({_loc.Tr("bag.worn")})" : ""), CustomMinimumSize = new Vector2(230, 0) });
-        var hint = new Label { Text = kind == ItemKind.BrownieCream ? _loc.Tr("bag.creamHint", Inventory.CreamHeal) : blurb, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        row.AddChild(Glyphs.Icon(GameIcons.ForItem(kind), 32));
+        bool worn = bag.Worn(use) == kind;
+        bool ready = use == ItemUse.Consumable && bag.Ready == kind;
+        string mark = worn ? $" ({_loc.Tr("bag.worn")})" : ready ? $" ({_loc.Tr("bag.readyMark")})" : "";
+        row.AddChild(new Label { Text = $"{name} x{bag.Count(kind)}" + mark, CustomMinimumSize = new Vector2(230, 0) });
+        var hint = new Label { Text = blurb, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, AutowrapMode = TextServer.AutowrapMode.WordSmart };
         hint.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.66f));
         hint.AddThemeFontSizeOverride("font_size", 16);
         row.AddChild(hint);
-        if (use == ItemUse.Charm)
+        if (use == ItemUse.Consumable)
         {
-            if (worn) row.AddChild(MakeButton(_loc.Tr("bag.takeOff"), () => { TakeOffRequested?.Invoke(); RefreshBag(); }));
-            else
-            {
-                var wear = MakeButton(_loc.Tr("bag.wear"), () => { WearRequested?.Invoke(kind); UiSound?.Invoke(Hollowfall.Core.Audio.SoundId.CharmWear); RefreshBag(); });
-                wear.Disabled = bag.Count(kind) == 0;
-                row.AddChild(wear);
-            }
+            var makeReady = MakeButton(_loc.Tr("bag.ready"), () => { ReadyRequested?.Invoke(kind); RefreshBag(); });
+            makeReady.Disabled = ready || bag.Count(kind) == 0;
+            row.AddChild(makeReady);
+        }
+        else if (worn)
+        {
+            row.AddChild(MakeButton(_loc.Tr("bag.takeOff"), () => { TakeOffRequested?.Invoke(use); RefreshBag(); }));
+        }
+        else
+        {
+            var wear = MakeButton(_loc.Tr("bag.wear"), () => { WearRequested?.Invoke(kind); UiSound?.Invoke(Hollowfall.Core.Audio.SoundId.CharmWear); RefreshBag(); });
+            wear.Disabled = bag.Count(kind) == 0;
+            row.AddChild(wear);
         }
         return row;
     }

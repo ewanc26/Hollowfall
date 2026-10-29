@@ -67,18 +67,8 @@ public class RunStatsTests
     [Fact]
     public void AReplayFromBeforeStatsLoadsAsAPlainCharacter()
     {
-        var frames = new List<ReplayFrame> { new(102400, 20480, -51200, 0, 1659, 0, 1000, 0, 32767, 0, 0) };
-        var replay = new RunReplay("old", 0, 0, 0, 0, new FloorRecord(OverallGrade.C, 1, 1), frames);
-        byte[] v3 = ReplayCodec.Encode(replay);
-
-        // Rebuild the same run in format 2: drop the four item and stat bytes after the sim version (all zero here), set the version and re-checksum.
-        var payload = new List<byte>(v3[..^4]);
-        payload[4] = RunReplay.FormatVersionWithoutStats;
-        payload.RemoveRange(6, 4);
-        uint sum = ReplayCodec.Fnv32(payload);
-        payload.AddRange(BitConverter.GetBytes(sum));
-
-        Assert.True(ReplayCodec.TryDecode(payload.ToArray(), out var old));
+        byte[] file = LegacyReplay.OneFrame(RunReplay.FormatVersionWithoutStats, "old", new RunStats());
+        Assert.True(ReplayCodec.TryDecode(file, out var old));
         Assert.Equal(new RunStats(), old!.Stats);
         Assert.Equal("old", old.Seed);
     }
