@@ -208,6 +208,7 @@ public partial class Main : Node3D
             sim.EnableRelations(); // the Folk, wanderers and vermin; standing with each is kept per seed in relations.json
             _relations = RelationsStore.Load(RelationsPath);
             Combat.Initialize(sim, site, _view);
+            _player.Sim = sim; // the pacts that touch the player's body (Open Hand's exit boost) ask it this way
             Combat.EventRaised += OnCombatEvent;
             Combat.EventRaised += e => { if (e is ReputationChanged or FloorCompleted) SaveRelations(); };
             Combat.EventRaised += e => { if (e is EnemyKilled killed) AwardKill(killed); };

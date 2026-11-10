@@ -24,6 +24,9 @@ public enum PactKind
 
     /// <summary>A third portal slot that rotates in, the newest replacing the oldest; placing costs 5 health below Brutal.</summary>
     TwinGate,
+
+    /// <summary>Portal exits give a speed boost for a moment; revolver damage is 25% lower.</summary>
+    OpenHand,
 }
 
 /// <summary>The pacts' numbers and the deterministic offer. Kept in one place so playtesting changes numbers, not logic.</summary>
@@ -38,12 +41,17 @@ public static class Pacts
     public const double GravediggerSlamRadiusBonus = 1.5;
     public const double ShowmanStyleBonus = 0.25;
     public const double TwinGatePlacementHealthCost = 5;
+    public const double OpenHandBoost = 0.35;
+
+    /// <summary>How long a portal exit's speed boost lasts, in seconds.</summary>
+    public const double OpenHandBoostSeconds = 0.8;
 
     // Burdens: always at full strength once the pact is taken.
     public const double BloodswornHardDamageFraction = 0.50;
     public const double HollowHeartHealthLoss = 30;
     public const double GravediggerStyleDecay = 1.2;
     public const double ShowmanStaleness = 1.4;
+    public const double OpenHandRevolverPenalty = 0.25;
 
     /// <summary>The style rank from which placing a portal under the Twin Gate stops costing health.</summary>
     public const StyleRank TwinGateCostFreeRank = StyleRank.Brutal;
@@ -58,6 +66,13 @@ public static class Pacts
         >= StyleRank.Savage => 1.0,
         _ => 0.5,
     };
+
+    /// <summary>
+    /// The speed Open Hand lends after a portal exit, as a multiple of walking speed. The host owns the player's
+    /// body (the simulation never moves it), so this is the one number the host multiplies in for
+    /// <see cref="OpenHandBoostSeconds"/> after a crossing.
+    /// </summary>
+    public static double OpenHandBoostMultiplier(StyleRank rank) => 1 + OpenHandBoost * Strength(rank);
 
     /// <summary>
     /// The pacts offered after a floor: up to <see cref="OfferSize"/> distinct pacts the run has not yet taken, drawn from the world

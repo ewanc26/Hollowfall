@@ -315,6 +315,38 @@ public class PactTests
     }
 
     [Fact]
+    public void OpenHandCutsRevolverDamageOnlyAndLendsExitSpeedByRank()
+    {
+        // The burden: only the revolver pays it, always at full strength.
+        var a = CombatSimTests.MakeArena();
+        a.Sim.TakePact(PactKind.OpenHand);
+        var husk = Place(a, EnemyKind.Husk, 8);
+        a.Sim.Tick(Dt, a.View(), new PlayerActions(true, false, false));
+        var hit = a.Sim.DrainEvents().OfType<EnemyHit>().Single(h => h.Id == husk.Id);
+        // Whatever zone the eye's aim lands in, the burden's cut is the whole story: the pact's revolver hits are 75% of a free one's.
+        double zoneMult = hit.Zone == HitZone.Head ? WeaponSpec.Revolver.HeadMultiplier : hit.Zone == HitZone.Limb ? WeaponSpec.Revolver.LimbMultiplier : 1;
+        Assert.Equal(WeaponSpec.Revolver.Damage * zoneMult * (1 - Pacts.OpenHandRevolverPenalty), hit.Damage, 6);
+        Assert.True(husk.Health < husk.Spec.Health);
+
+        // The shotgun is untouched by it.
+        var b = CombatSimTests.MakeArena();
+        b.Sim.TakePact(PactKind.OpenHand);
+        var second = Place(b, EnemyKind.Husk, 4);
+        b.Sim.Tick(Dt, b.View(), new PlayerActions(false, true, false));
+        var pellets = b.Sim.DrainEvents().OfType<EnemyHit>().Where(h => h.Id == second.Id).ToList();
+        Assert.All(pellets, h =>
+        {
+            double zoneMult = h.Zone == HitZone.Head ? WeaponSpec.Shotgun.HeadMultiplier : h.Zone == HitZone.Limb ? WeaponSpec.Shotgun.LimbMultiplier : 1;
+            Assert.Equal(WeaponSpec.Shotgun.Damage * zoneMult, h.Damage, 6); // the shotgun never pays the pact's price
+        });
+
+        // The boon's multiplier climbs the strength ladder: the host multiplies walking speed by it after a crossing.
+        Assert.Equal(1 + Pacts.OpenHandBoost * 0.5, Pacts.OpenHandBoostMultiplier(StyleRank.Brutal), 6); // below Savage
+        Assert.Equal(1 + Pacts.OpenHandBoost * 1.0, Pacts.OpenHandBoostMultiplier(StyleRank.Savage), 6);
+        Assert.Equal(1 + Pacts.OpenHandBoost * 2.0, Pacts.OpenHandBoostMultiplier(StyleRank.Legendary), 6);
+    }
+
+    [Fact]
     public void TwinGateRotatesTheOldestSlotOutThroughAClose()
     {
         var a = CombatSimTests.MakeArena();

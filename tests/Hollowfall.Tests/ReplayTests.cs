@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4515;
-    private const uint ExpectedGoldenChecksum = 3376231928; // sim 17: the Twin Gate pact changes a run's rules, not its bytes
+    private const uint ExpectedGoldenChecksum = 1517340987; // sim 18: the Open Hand burden changes a run's outcome, not its bytes
 
     [Fact]
     public void FileSizesStaySane()

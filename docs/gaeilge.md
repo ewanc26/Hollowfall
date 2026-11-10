@@ -307,6 +307,9 @@ Bí gasta. Faigh sláinte trí ghortú. | NeedsReview | FGB WKI | composed from 
 | `pact.twinGate.name` | Twin Gate |  | Untranslated |  |  |
 | `pact.twinGate.boon` | A third portal slot: the newest rotates in, the oldest rotates out |  | Untranslated |  |  |
 | `pact.twinGate.burden` | Placing a portal costs 5 health while below Brutal |  | Untranslated |  |  |
+| `pact.openHand.name` | Open Hand |  | Untranslated |  |  |
+| `pact.openHand.boon` | Portal exits lend extra speed for a moment |  | Untranslated |  |  |
+| `pact.openHand.burden` | Revolver damage 25% lower |  | Untranslated |  |  |
 | `rank.rowdy` | ROWDY | BORRACH | NeedsReview | FGB | FGB borrach, insolent or elated; the rowdy sense needs a speaker |
 | `rank.fierce` | FIERCE | FIÁIN | NeedsReview | FGB | FGB fiáin, wild; whether it carries the fierce rank sense needs a speaker |
 | `rank.brutal` | BRUTAL | BRÚIDIÚIL | Likely | FGB | FGB brúidiúil, brutal or cruel |
@@ -316,7 +319,7 @@ Bí gasta. Faigh sláinte trí ghortú. | NeedsReview | FGB WKI | composed from 
 | `rank.apocalyptic` | APOCALYPTIC | APACAILIPT | NeedsReview | WKI | coined from the WKI Irish for an apocalypse; the adjective's form needs a speaker |
 | `rank.legendary` | LEGENDARY | MIOTASACH | NeedsReview | FGB | coined from miotas, a myth, for legendary; needs a speaker |
 
-Counts: Verified 26, Likely 110, NeedsReview 54, no Gaeilge yet 23.
+Counts: Verified 26, Likely 110, NeedsReview 54, no Gaeilge yet 26.
 
 <!-- END GENERATED IRISH TABLES -->
 

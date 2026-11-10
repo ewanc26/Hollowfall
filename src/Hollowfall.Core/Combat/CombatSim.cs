@@ -813,7 +813,9 @@ public sealed class CombatSim
 
             var zone = target.ZoneAt(end.Y);
             double mult = zone == HitZone.Head ? weapon.HeadMultiplier : zone == HitZone.Limb ? weapon.LimbMultiplier : 1.0;
-            double damage = weapon.Damage * mult * Stats.DamageScale;
+            // Open Hand's burden, always at full strength: only the revolver pays it.
+            double pactScale = weapon.Name == WeaponSpec.Revolver.Name && Has(PactKind.OpenHand) ? 1 - Pacts.OpenHandRevolverPenalty : 1;
+            double damage = weapon.Damage * mult * Stats.DamageScale * pactScale;
 
             if (weapon.Pellets > 1 && distance <= ShotgunParryReach && target.Telegraphing && !parried)
             {
