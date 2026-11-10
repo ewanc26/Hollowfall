@@ -216,6 +216,18 @@ full, at Legendary it doubles. Examples:
 **Why it is ours.** Roguelike boons are usually flat. Tying them to the decaying style meter means the best build is the one you
 can keep alive, and a pact you cannot sustain is a trap, which is an interesting thing for the player to read.
 
+**Status: first slice built** (`Combat/Pacts.cs`, the pacts' hooks in `CombatSim`, and the offer panel in the game). The four
+pacts that touch only existing mechanics are in: **Bloodsworn** (parry heals 20 more and refunds the spent parry window's
+cooldown; burden: hard damage takes half of damage taken, up from 35%), **Hollow Heart** (blood heals 1.5x; burden: maximum
+health 30 lower), **Gravedigger** (slam shock radius +1.5 and floors break in one slam; burden: style decays 20% faster) and
+**Showman** (all style points 25% higher; burden: weapons go stale 40% faster). Strength scales exactly as designed - half below
+Savage, full from Savage, double at Legendary, re-read every step so the pacts rise and fall with the meter. After each floor
+the panel offers up to three untaken pacts drawn from the seed and the floor (never the same pact twice in a run, never an empty
+offer while one remains); taken pacts persist to later floors and across respawns, and the choice is recorded in the replay
+(format 6) so verification reproduces it (`RunReplay.SimVersion` is 16). The panel's words are in the string table, English only
+until a speaker checks them. **Twin Gate** and **Open Hand** are not built: Twin Gate waits until `PortalSystem` becomes a list
+of pairs (see risks), and Open Hand's portal-exit speed boost needs new host-side movement code. **Tests:** `PactTests`.
+
 **Build on.** `StyleMeter.Rank`, `PlayerVitals` constants made into parameters, a `RunState` (pacts, floor). **Tests:** strength
 scaling by rank, pact offers deterministic for a seed, burdens always apply, stacking limits. **Effort:** medium to large.
 

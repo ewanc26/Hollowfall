@@ -23,6 +23,9 @@ public static class InterfaceStrings
     /// <summary>The key for a style rank, e.g. <c>rank.rowdy</c>.</summary>
     public static string RankKey(StyleRank r) => "rank." + Camel(r.ToString());
 
+    /// <summary>The key for a pact's words, e.g. <c>pact.hollowHeart.name</c>.</summary>
+    public static string PactKey(PactKind pact, string part) => "pact." + Camel(pact.ToString()) + "." + part;
+
     private static string Camel(string s) => char.ToLowerInvariant(s[0]) + s[1..];
 
     public static IReadOnlyList<LocEntry> All { get; } = Build();
@@ -240,6 +243,25 @@ public static class InterfaceStrings
             G("banner.noPortal", "can't place a portal there ({0})", "chan urrainn dhut portail a chur an sin ({0})", ReviewStatus.Likely, "WK", "cha(n) urrainn dhut, you cannot; a chur an sin, to put it there; composed"),
             G("banner.meteor", "METEOR", "MEATAN", ReviewStatus.Likely, "WK", "meatan, meteor; capitals for the banner"),
             G("banner.meteor2", "METEOR x2", "MEATAN x2", ReviewStatus.Likely, "WK", "as banner.meteor; the x2 is kept"),
+            // ---- pacts (offered between floors; English only until a speaker checks the lines) ----
+            T("pact.title", "THE DUNGEON OFFERS A PACT"),
+            T("pact.strength", "its strength follows your style rank"),
+            T("pact.boon", "Boon"),
+            T("pact.burden", "Burden"),
+            T("pact.decline", "Take none"),
+            T("pact.hint", "{0} to take one, {1} to leave them"),
+            T("pact.bloodsworn.name", "Bloodsworn"),
+            T("pact.bloodsworn.boon", "Parries heal 20 more and the spent parry window's cooldown is refunded"),
+            T("pact.bloodsworn.burden", "Hard damage takes half of damage taken, up from 35%"),
+            T("pact.hollowHeart.name", "Hollow Heart"),
+            T("pact.hollowHeart.boon", "Blood heals 1.5x"),
+            T("pact.hollowHeart.burden", "Maximum health 30 lower"),
+            T("pact.gravedigger.name", "Gravedigger"),
+            T("pact.gravedigger.boon", "Slam shockwaves reach 1.5 blocks further and break floors in one hit"),
+            T("pact.gravedigger.burden", "Style decays 20% faster"),
+            T("pact.showman.name", "Showman"),
+            T("pact.showman.boon", "All style points 25% higher"),
+            T("pact.showman.burden", "Weapons go stale 40% faster"),
         };
 
         var rankGaelic = new Dictionary<StyleRank, (string Gaelic, ReviewStatus Status, string Note)>

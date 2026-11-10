@@ -10,6 +10,7 @@ namespace Hollowfall.Core.Replay;
 public sealed class ReplayRecorder
 {
     private readonly List<ReplayFrame> _frames = [];
+    private readonly List<PactKind?> _pactPicks = [];
     private int _pendingRespawns;
 
     /// <summary>True once the run outgrew <see cref="RunReplay.MaxTicks"/>; later floors are not saved.</summary>
@@ -33,12 +34,22 @@ public sealed class ReplayRecorder
     public void NoteRespawn() => _pendingRespawns = Math.Min(_pendingRespawns + 1, ReplayFrame.MaxRespawns);
 
     /// <summary>
+    /// Records the pact chosen when the offer after <paramref name="floor"/> was answered (null when it was declined). Pacts happen
+    /// outside the step, like respawns, and are given back to the simulation as each floor completes when the replay is played.
+    /// </summary>
+    public void NotePact(int floor, PactKind? pact)
+    {
+        while (_pactPicks.Count <= floor) _pactPicks.Add(null);
+        _pactPicks[floor] = pact;
+    }
+
+    /// <summary>
     /// The run so far as a finished replay of <paramref name="floor"/>, which must have been completed on the step just captured.
     /// Null if the run was truncated or nothing was recorded.
     /// </summary>
     public RunReplay? Finish(string seed, int regionX, int regionZ, int floor, FloorRecord result, Progression.RunStats stats = default)
     {
         if (Truncated || _frames.Count == 0 || string.IsNullOrEmpty(seed) || floor is < 0 or >= RunReplay.MaxFloors) return null;
-        return new RunReplay(seed.Length > RunReplay.MaxSeedLength ? seed[..RunReplay.MaxSeedLength] : seed, regionX, regionZ, floor, _frames.Count - 1, result, [.. _frames]) { Stats = stats };
+        return new RunReplay(seed.Length > RunReplay.MaxSeedLength ? seed[..RunReplay.MaxSeedLength] : seed, regionX, regionZ, floor, _frames.Count - 1, result, [.. _frames]) { Stats = stats, PactPicks = [.. _pactPicks] };
     }
 }

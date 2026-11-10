@@ -70,6 +70,9 @@ public partial class ReplayDirector : Node3D
     /// <summary>Call whenever the host respawns the simulation.</summary>
     public void NoteRespawn() => _recorder.NoteRespawn();
 
+    /// <summary>Call when the offer after a completed floor is answered: the pact taken (or null, declined), like a respawn, is applied between steps when the replay is played.</summary>
+    public void NotePact(int floor, PactKind? pact) => _recorder.NotePact(floor, pact);
+
     /// <summary>Saves the run that just completed a floor if it beats the stored one. Call from the floor-completed event.</summary>
     public void OnFloorCompleted(FloorCompleted e)
     {

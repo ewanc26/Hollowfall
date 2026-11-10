@@ -42,11 +42,14 @@ public sealed class PlayerVitals
         Health = max;
     }
 
-    /// <summary>The most health this character can have in this run.</summary>
-    public double Max { get; }
+    /// <summary>The most health this character can have in this run. A pact's burden can lower it mid-run (never below <see cref="Pacts.MinMaxHealth"/>).</summary>
+    public double Max { get; private set; }
 
     public double Health { get; private set; }
     public double HardDamage { get; private set; }
+
+    /// <summary>How much of the damage taken becomes hard damage (a pact's burden raises it from <see cref="HardDamageShare"/>).</summary>
+    public double HardDamageFraction { get; set; } = HardDamageShare;
 
     /// <summary>The most health you can have right now: the maximum less hard damage.</summary>
     public double Ceiling => Max - HardDamage;
@@ -68,7 +71,7 @@ public sealed class PlayerVitals
         double taken = Math.Min(amount, Health);
         Health -= taken;
 
-        HardDamage = Math.Min(Max - 1, HardDamage + taken * HardDamageShare);
+        HardDamage = Math.Min(Max - 1, HardDamage + taken * HardDamageFraction);
         _hardDamageDelay = HardDamageBaseDelay + taken * HardDamageDelayPerPoint;
         return taken;
     }
@@ -106,14 +109,30 @@ public sealed class PlayerVitals
     }
 
     /// <summary>A finishing blow at point-blank range gibs the enemy and soaks you in blood.</summary>
-    public double HealFromGib(double distance) => distance <= BloodRange ? Heal(120) : 0;
+    /// <summary>A finishing blow at point-blank range gibs the enemy and soaks you in blood (pact and perk scales both apply).</summary>
+    public double HealFromGib(double distance) => distance <= BloodRange ? Heal(120 * _hitHealScale) : 0;
 
-    /// <summary>Full heal to the ceiling, plus a moment of invulnerability.</summary>
-    public double Parry()
+    /// <summary>Full heal to the ceiling plus a pact's bonus (past the ceiling, never past the maximum), and a moment of invulnerability.</summary>
+    public double Parry(double bonus = 0)
     {
-        double healed = Heal(Ceiling - Health);
+        double healed = 0;
+        if (!Dead)
+        {
+            healed = Math.Max(0, Math.Min(Ceiling - Health + bonus, Max - Health));
+            Health += healed;
+        }
         _invulnerableFor = ParryInvulnerability;
         return healed;
+    }
+
+    /// <summary>A burden lowers the maximum health by <paramref name="amount"/>, never below <see cref="Pacts.MinMaxHealth"/>; current health and hard damage follow it down.</summary>
+    public double ReduceMax(double amount)
+    {
+        double before = Max;
+        Max = Math.Max(Pacts.MinMaxHealth, Max - amount);
+        Health = Math.Min(Health, Max);
+        HardDamage = Math.Min(HardDamage, Max - 1);
+        return before - Max;
     }
 
     /// <summary>Advances timers. <paramref name="drainSpeed"/> is the style-based speed-up of hard damage recovery.</summary>

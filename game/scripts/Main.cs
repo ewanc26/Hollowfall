@@ -48,6 +48,10 @@ public partial class Main : Node3D
     private CatDirector? _cat;
     private VillagerDirector? _villagers;
     private PedlarDirector? _pedlar;
+    private PactDirector? _pacts;
+
+    /// <summary>The pact offers between floors (docs/features.md 4.1), or null with no dungeon or in a demo that fakes its floors.</summary>
+    public PactDirector? Pacts => _pacts;
     private CatView? _catView;
     private int _deathCount, _killCount, _deepestFloor = -1;
     private double _playSeconds;
@@ -244,6 +248,17 @@ public partial class Main : Node3D
             MenuLabel = () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
             Loc = _loc,
         };
+
+        // Pacts: three offered after each completed floor (docs/features.md 4.1), drawn from the seed. A demo that feeds a
+        // fake floor-completed event would open this too, so it is wired for real play and the pact demo only.
+        if (Combat != null && _demo is null or "pacts")
+        {
+            _pacts = new PactDirector(Combat.Sim, _storyUi, _loc,
+                (floor, kind) => _replay?.NotePact(floor, kind),
+                () => BindingNames.Display(Settings.Bindings.Get(GameAction.Interact, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle),
+                () => BindingNames.Display(Settings.Bindings.Get(GameAction.Pause, _player.UsingGamepad ? Slot.Gamepad : Slot.KeyboardMouse), PromptStyle));
+            Combat.EventRaised += e => { if (e is FloorCompleted f) _pacts.OnFloorCompleted(f); };
+        }
 
         // The Wulver: a hidden figure on a hill, found with a little exploring.
         if (Combat != null && WulverPlacer.Place(World, site) is { } wulverSpot)
@@ -523,6 +538,7 @@ public partial class Main : Node3D
             if (_demo == "ending" && ++_demoFrame == 10) _story.ShowEnding();
             if (_demo == "captions") RunCaptionDemo();
             if (_demo == "floor") RunFloorDemo();
+            if (_demo == "pacts" && ++_demoFrame == 40) _pacts?.Offer(0, Combat!.Sim.PactOffer(0));
             if (_demo is { } d && d.StartsWith("wulver")) RunWulverDemo(d);
             if (_demo == "folk") RunFolkDemo();
             actions = _story.Filter(actions, view.Feet, !dead);

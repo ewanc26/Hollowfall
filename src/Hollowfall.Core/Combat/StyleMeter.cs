@@ -98,6 +98,15 @@ public sealed class StyleMeter
 
     public double Points { get; private set; }
 
+    /// <summary>Multiplier on the passive per-second decay (a pact's burden raises it from 1).</summary>
+    public double DecayScale { get; set; } = 1.0;
+
+    /// <summary>Multiplier on every award's points (a pact's boon raises it from 1).</summary>
+    public double AwardScale { get; set; } = 1.0;
+
+    /// <summary>Multiplier on how quickly a used weapon goes stale (a pact's burden raises it from 1).</summary>
+    public double StalenessScale { get; set; } = 1.0;
+
     /// <summary>Everything earned this floor, ignoring decay. Used for the end-of-floor style rank.</summary>
     public double TotalScore { get; private set; }
 
@@ -164,7 +173,7 @@ public sealed class StyleMeter
     {
         foreach (var other in _freshness.Keys.ToList())
             if (other != weapon) _freshness[other] = Math.Min(1.0, _freshness[other] + 0.02);
-        _freshness[weapon] = Math.Max(0.0, _freshness.GetValueOrDefault(weapon, 1.0) - 0.04);
+        _freshness[weapon] = Math.Max(0.0, _freshness.GetValueOrDefault(weapon, 1.0) - 0.04 * StalenessScale);
     }
 
     /// <summary>Awards a bonus. Returns the points granted after multipliers.</summary>
@@ -173,7 +182,7 @@ public sealed class StyleMeter
         double mult = MovementMultiplier * extraMultiplier;
         if (weapon != null) mult *= FreshnessMultiplier(FreshnessOf(weapon));
 
-        double points = BasePoints[bonus] * mult;
+        double points = BasePoints[bonus] * mult * AwardScale;
         if (points <= 0) return 0;
 
         Points = Math.Min(MaxPoints, Points + points);
@@ -218,7 +227,7 @@ public sealed class StyleMeter
     public void Tick(double dt)
     {
         _clock += dt;
-        Points = Math.Max(0, Points - Decay[(int)Rank] * dt);
+        Points = Math.Max(0, Points - Decay[(int)Rank] * DecayScale * dt);
     }
 
     public void Reset()

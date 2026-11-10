@@ -143,7 +143,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 0.
+Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 18.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -329,6 +329,24 @@ Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 0.
 | `banner.noPortal` | can't place a portal there ({0}) | chan urrainn dhut portail a chur an sin ({0}) | Likely | WK | cha(n) urrainn dhut, you cannot; a chur an sin, to put it there; composed |
 | `banner.meteor` | METEOR | MEATAN | Likely | WK | meatan, meteor; capitals for the banner |
 | `banner.meteor2` | METEOR x2 | MEATAN x2 | Likely | WK | as banner.meteor; the x2 is kept |
+| `pact.title` | THE DUNGEON OFFERS A PACT | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.strength` | its strength follows your style rank | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.boon` | Boon | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.burden` | Burden | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.decline` | Take none | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.hint` | {0} to take one, {1} to leave them | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.bloodsworn.name` | Bloodsworn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.bloodsworn.boon` | Parries heal 20 more and the spent parry window's cooldown is refunded | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.bloodsworn.burden` | Hard damage takes half of damage taken, up from 35% | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.hollowHeart.name` | Hollow Heart | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.hollowHeart.boon` | Blood heals 1.5x | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.hollowHeart.burden` | Maximum health 30 lower | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.gravedigger.name` | Gravedigger | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.gravedigger.boon` | Slam shockwaves reach 1.5 blocks further and break floors in one hit | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.gravedigger.burden` | Style decays 20% faster | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.showman.name` | Showman | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.showman.boon` | All style points 25% higher | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.showman.burden` | Weapons go stale 40% faster | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `rank.rowdy` | ROWDY | RUGDA | Likely | WK | rugda, rough or rude; the rowdy sense needs a speaker |
 | `rank.fierce` | FIERCE | FIADHAICH | Verified | WK | fiadhaich, fierce or wild |
 | `rank.brutal` | BRUTAL | BRÙIDEIL | Verified | WK | brùideil, brutal or cruel |
