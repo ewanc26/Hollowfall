@@ -270,6 +270,9 @@ public static class InterfaceStrings
             T("pact.twinGate.name", "Twin Gate"),
             T("pact.twinGate.boon", "A third portal slot: the newest rotates in, the oldest rotates out"),
             T("pact.twinGate.burden", "Placing a portal costs 5 health while below Brutal"),
+            T("pact.openHand.name", "Open Hand"),
+            T("pact.openHand.boon", "Portal exits lend extra speed for a moment"),
+            T("pact.openHand.burden", "Revolver damage 25% lower"),
         };
 
         var rankGaelic = new Dictionary<StyleRank, (string Gaelic, ReviewStatus Status, string Note)>

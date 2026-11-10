@@ -232,14 +232,16 @@ health 30 lower), **Gravedigger** (slam shock radius +1.5 and floors break in on
 Savage, full from Savage, double at Legendary, re-read every step so the pacts rise and fall with the meter. After each floor
 the panel offers up to three untaken pacts drawn from the seed and the floor (never the same pact twice in a run, never an empty
 offer while one remains); taken pacts persist to later floors and across respawns, and the choice is recorded in the replay
-(format 6) so verification reproduces it (`RunReplay.SimVersion` is 17). The panel's words are in the string table, English only
+(format 6) so verification reproduces it (`RunReplay.SimVersion` is 18). The panel's words are in the string table, English only
 until a speaker checks them. **Twin Gate** is built: `PortalSystem` keeps the placed openings as a list — two slots, one per
 colour, and each opening links to the next — and the pact opens a third slot that rotates in: each placement takes a slot, the
 newest replaces the oldest once all three hold, and the pushed-off opening leaves through the same `PortalClosed` the sever cut
 listens to. Close, the Warden's swap and the stand-in-your-hole deferral all work on every placed opening; its burden charges
 5 health per placement while below Brutal. Take it mid-run and nothing changes until a third portal is actually placed, so
-existing two-portal play is untouched. **Open Hand** is not built: its portal-exit speed boost needs new host-side movement
-code. **Tests:** `PactTests`, and the Twin Gate cases in `PortalTests`.
+existing two-portal play is untouched. **Open Hand** is built too: portal exits lend extra walking speed for 0.8 seconds — the
+boost lives in the host's player body (which the simulation never moves), scaled by the rank and re-read each step — and its
+burden cuts revolver damage by 25% in the simulation. Both pacts' words are English-only until a speaker checks them.
+`RunReplay.SimVersion` is 18 — a chosen pact changes a run's outcome, and the pact picks are still recorded (format 6).
 
 **Build on.** `StyleMeter.Rank`, `PlayerVitals` constants made into parameters, a `RunState` (pacts, floor). **Tests:** strength
 scaling by rank, pact offers deterministic for a seed, burdens always apply, stacking limits. **Effort:** medium to large.

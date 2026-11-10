@@ -48,6 +48,12 @@ public partial class PlayerController : Node3D
     /// <summary>Raised when the player goes through a portal, so the view can react.</summary>
     public event Action<Crossing>? Crossed;
 
+    /// <summary>The run's simulation, for the pacts that touch the player's own body; null outside a run.</summary>
+    public CombatSim? Sim { get; set; }
+
+    /// <summary>Seconds of Open Hand's speed boost left after a portal exit; the host owns the body, so the timer lives here.</summary>
+    private double _boostLeft;
+
     public void Initialize(VoxelWorld world, Vector3 feet, double yaw)
     {
         _world = world;
@@ -183,18 +189,25 @@ public partial class PlayerController : Node3D
         }
 
         bool jump = InputMapper.Pressed(GameAction.Jump);
+        // Open Hand's boon (docs/features.md 4.1): for a moment after a portal exit the body walks faster, at the
+        // strength the current style rank bought. Burdens aside, the pact lives here entirely — the simulation
+        // never moves the player, so the boost is a host matter and the replays record its effect in the views.
+        double speed = PlayerBody.WalkSpeed * (_boostLeft > 0 ? Pacts.OpenHandBoostMultiplier(Sim?.Style.Rank ?? StyleRank.None) : 1);
+        _boostLeft = Math.Max(0, _boostLeft - delta);
+
         if (_world.Glue is { } glue)
         {
             if (glue.Step(Body, delta, mx, mz, jump)) _yaw = glue.YawAfterCrossing(_yaw);
             return;
         }
-        if (portals != null && PortalWalker.Step(Body, portals, delta, mx, mz, jump, _world.GetBlock, Forward) is { } crossing)
+        if (portals != null && PortalWalker.Step(Body, portals, delta, mx, mz, jump, _world.GetBlock, Forward, speed) is { } crossing)
         {
             // Turn to face where the portal sends us, keeping the view upright.
             var f = crossing.Forward.Normalized();
             _yaw = Math.Atan2(-f.X, -f.Z);
             _pitch = InputMath.ClampPitch(Math.Asin(Math.Clamp(f.Y, -1, 1)));
             _crossedThisStep = true;
+            if (Sim?.PactsTaken.Contains(PactKind.OpenHand) ?? false) _boostLeft = Pacts.OpenHandBoostSeconds;
             Crossed?.Invoke(crossing);
         }
         else if (portals == null)
