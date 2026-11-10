@@ -23,7 +23,7 @@ public partial class CombatView : Node3D
     private readonly Dictionary<int, ProjectileView> _projectiles = [];
     private readonly HashSet<(int, int, int)> _pools = [];
     private Vector3 _playerPosition;
-    private readonly Dictionary<PortalColor, PortalView> _portals = [];
+    private readonly Dictionary<Portal, PortalView> _portals = [];
     private readonly Dictionary<Portal, PortalView> _openingViews = [];
     private readonly List<Tracer> _tracers = [];
     private WorldView _world = null!;
@@ -126,19 +126,21 @@ public partial class CombatView : Node3D
         EventRaised?.Invoke(e);
     }
 
-    /// <summary>Makes the portal views match the sim's portals: new ones appear, replaced or cleared ones go.</summary>
+    /// <summary>Makes the portal views match the sim's placed openings: new ones appear, replaced, rotated or cleared ones go. Keyed by portal, not colour, because under the Twin Gate there can be more than two.</summary>
     public void RefreshPortals()
     {
-        foreach (var color in new[] { PortalColor.Teal, PortalColor.Violet })
+        var current = Sim.Portals.Placed;
+        foreach (var portal in _portals.Keys.Where(p => !current.Contains(p)).ToList())
         {
-            var portal = Sim.Portals.Get(color);
-            if (_portals.TryGetValue(color, out var existing) && existing.Portal == portal) continue;
-            if (existing != null) { existing.QueueFree(); _portals.Remove(color); }
-            if (portal == null) continue;
-
-            var view = new PortalView(portal) { Name = $"Portal_{color}" };
+            _portals[portal].QueueFree();
+            _portals.Remove(portal);
+        }
+        foreach (var portal in current)
+        {
+            if (_portals.ContainsKey(portal)) continue;
+            var view = new PortalView(portal) { Name = $"Portal_{portal.Color}" };
             AddChild(view);
-            _portals[color] = view;
+            _portals[portal] = view;
         }
     }
 

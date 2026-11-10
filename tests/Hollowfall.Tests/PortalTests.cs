@@ -408,6 +408,112 @@ public class PortalTests
         Assert.True(segs.Count <= 4);
     }
 
+    // ---- the Twin Gate pact's ring (docs/features.md 4.1) -------------------------------------
+
+    /// <summary>Places onto the east wall at the given z, so several openings sit far enough apart never to overlap.</summary>
+    private static PlaceResult Fire(PortalSystem s, PortalColor c, double z) =>
+        s.Place(c, new Vec3(0.5, 11.6, z), East, East, Room());
+
+    [Fact]
+    public void WithoutThePactPlacingKeepsOnePortalPerColourAndDisplacesIt()
+    {
+        var s = new PortalSystem();
+        var first = Fire(s, PortalColor.Teal, 0.5);
+        Assert.True(first.Placed);
+        Assert.Single(s.Placed);
+        Assert.Null(first.Displaced);
+
+        var second = Fire(s, PortalColor.Teal, 12);
+        Assert.True(second.Placed);
+        Assert.Single(s.Placed);
+        Assert.Same(first.Portal, second.Displaced); // replaced, as it always was
+        Assert.Null(s.Violet);
+    }
+
+    [Fact]
+    public void ThePactHoldsThreeOpeningsAndTheNewestReplacesTheOldest()
+    {
+        var s = new PortalSystem { TwinGate = true };
+        var a = Fire(s, PortalColor.Teal, 0.5);
+        var b = Fire(s, PortalColor.Violet, 12);
+        var c = Fire(s, PortalColor.Teal, -12);
+        Assert.All(new[] { a, b, c }, r => Assert.True(r.Placed, r.Failure.ToString()));
+        Assert.Null(a.Displaced); // nothing to push off three empty slots
+        Assert.Null(b.Displaced);
+        Assert.Null(c.Displaced);
+        Assert.Equal(3, s.Placed.Count);
+
+        // The fourth placement rotates the oldest out, whatever colour it was.
+        var d = Fire(s, PortalColor.Violet, 7);
+        Assert.True(d.Placed);
+        Assert.Same(a.Portal, d.Displaced);
+        Assert.Equal(3, s.Placed.Count);
+        Assert.DoesNotContain(a.Portal!, s.Placed);
+    }
+
+    [Fact]
+    public void TheRingLinksEachOpeningToTheOnePlacedAfterIt()
+    {
+        var s = new PortalSystem { TwinGate = true };
+        var a = Fire(s, PortalColor.Teal, 0.5).Portal!;
+        var b = Fire(s, PortalColor.Violet, 12).Portal!;
+        var c = Fire(s, PortalColor.Teal, -12).Portal!;
+
+        Assert.Same(b, s.Other(a));
+        Assert.Same(c, s.Other(b));
+        Assert.Same(a, s.Other(c)); // the ring closes
+        Assert.Equal([a, b, c], s.Openings.ToArray());
+    }
+
+    [Fact]
+    public void WithTwoOpeningsTheRingIsTheClassicPairEitherWay()
+    {
+        // Without the pact the pair is the two slots there have always been.
+        var s = new PortalSystem();
+        var a = Fire(s, PortalColor.Teal, 0.5).Portal!;
+        var b = Fire(s, PortalColor.Violet, 12).Portal!;
+        Assert.Same(b, s.Other(a));
+        Assert.Same(a, s.Other(b));
+
+        // With the pact and only two placed, the ring is the same pair: taking the pact mid-run changes nothing
+        // until a third portal actually rotates in.
+        var t = new PortalSystem { TwinGate = true };
+        var x = Fire(t, PortalColor.Teal, 0.5).Portal!;
+        var y = Fire(t, PortalColor.Violet, 12).Portal!;
+        Assert.Same(y, t.Other(x));
+        Assert.Same(x, t.Other(y));
+    }
+
+    [Fact]
+    public void SwapPlacedRotatesAllTheFramesRoundTheRing()
+    {
+        var s = new PortalSystem { TwinGate = true };
+        var a = Fire(s, PortalColor.Teal, 0.5).Portal!;
+        var b = Fire(s, PortalColor.Violet, 12).Portal!;
+        var c = Fire(s, PortalColor.Teal, -12).Portal!;
+
+        s.SwapPlaced();
+        Assert.Equal([a.Color, b.Color, c.Color], s.Placed.Select(p => p.Color)); // each keeps its colour
+        Assert.Equal(b.Frame.Center, s.Placed[0].Frame.Center); // the frames move one slot on: a's frame ends where b's was...
+        Assert.Equal(c.Frame.Center, s.Placed[1].Frame.Center);
+        Assert.Equal(a.Frame.Center, s.Placed[2].Frame.Center); // ...and c's frame comes round to where a's was
+    }
+
+    [Fact]
+    public void ClosingUnderThePactGivesUpTheOldestSlotOfTheColour()
+    {
+        var s = new PortalSystem { TwinGate = true };
+        Fire(s, PortalColor.Teal, 0.5);
+        Fire(s, PortalColor.Violet, 12);
+        var third = Fire(s, PortalColor.Teal, -12);
+
+        Assert.Same(s.Placed[0], s.OldestOf(PortalColor.Teal));
+        s.Remove(PortalColor.Teal);
+        Assert.Equal(2, s.Placed.Count);
+        Assert.Contains(third.Portal!, s.Placed);
+        Assert.Same(third.Portal, s.OldestOf(PortalColor.Teal)); // the newer teal is untouched
+    }
+
     // ---- the pair of surfaces matter on real dungeons ----------------------------------------
 
     [Fact]

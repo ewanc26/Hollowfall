@@ -211,6 +211,9 @@ public sealed class CombatSim
             case PactKind.Showman:
                 Style.StalenessScale = Pacts.ShowmanStaleness;
                 break;
+            case PactKind.TwinGate:
+                Portals.TwinGate = true;
+                break;
         }
     }
 
@@ -836,11 +839,14 @@ public sealed class CombatSim
             _events.Add(new PortalPlaced(color, false, view.Eye, new Vec3(0, 0, 0), new Vec3(0, 1, 0), PlaceFailure.Disabled));
             return;
         }
-        var replaced = Portals.Get(color);
         int floor = _site.FloorIndexAt(view.Feet.X, view.Feet.Y + 0.1, view.Feet.Z);
         var result = Portals.Place(color, view.Eye, view.Forward, view.Forward, Blocks, platesOnly: floor >= DungeonSite.RiftPlateFloor);
         var p = result.Portal;
-        if (result.Placed && replaced != null) Close(replaced);
+        // Under the Twin Gate the ring's displaced opening is the one the placement pushed off the end, not this
+        // colour's previous portal — Place hands back whichever it removed.
+        if (result.Placed && result.Displaced is { } displaced) Close(displaced);
+        if (result.Placed && Has(PactKind.TwinGate) && Style.Rank < Pacts.TwinGateCostFreeRank)
+            Vitals.Damage(Pacts.TwinGatePlacementHealthCost);
         _events.Add(new PortalPlaced(color, result.Placed,
             p?.Frame.Center ?? view.Eye, p?.Frame.Normal ?? new Vec3(0, 0, 0), p?.Frame.Up ?? new Vec3(0, 1, 0), result.Failure));
     }
@@ -848,17 +854,25 @@ public sealed class CombatSim
     /// <summary>Removes one portal on purpose (the player, a pact or a boss) and severs anything standing in it.</summary>
     public bool ClosePortal(PortalColor color)
     {
-        if (Portals.Get(color) is not { } portal) return false;
+        // The oldest opening of the colour: with two slots that is the only one, and under the Twin Gate closing a
+        // colour gives up the slot it has held longest.
+        if (Portals.OldestOf(color) is not { } portal) return false;
         Portals.Remove(color);
         Close(portal);
         return true;
     }
 
-    /// <summary>Closes both portals, severing whatever stands in either opening.</summary>
-    /// <summary>Closes both portals. Rift openings cannot be closed, but a close that takes a placed portal also cuts whoever stands in them.</summary>
+    /// <summary>Closes every placed portal, severing whoever stands in them. Rift openings cannot be closed.</summary>
     public bool ClosePortals()
     {
-        bool closed = ClosePortal(PortalColor.Teal) | ClosePortal(PortalColor.Violet);
+        bool closed = false;
+        while (Portals.Placed.Count > 0)
+        {
+            var p = Portals.Placed[0];
+            Portals.Remove(p.Color);
+            Close(p);
+            closed = true;
+        }
         if (!closed) return false;
         foreach (var rift in Portals.Rifts) SeverRules.Apply(rift, _enemies, Style, _events.Add, KillSevered);
         return true;
@@ -1431,9 +1445,8 @@ public sealed class CombatSim
     private bool PlayerInsidePlacedHole(PlayerView view)
     {
         var body = Box.AroundFeet(view.Feet, Physics.PlayerBody.HalfWidth, Physics.PlayerBody.Height);
-        foreach (var placed in new[] { Portals.Teal, Portals.Violet })
+        foreach (var placed in Portals.Placed)
         {
-            if (placed == null) continue;
             foreach (var (x, y, z) in placed.HoleCells)
                 if (body.Min.X < x + 1 && body.Max.X > x && body.Min.Y < y + 1 && body.Max.Y > y && body.Min.Z < z + 1 && body.Max.Z > z)
                     return true;

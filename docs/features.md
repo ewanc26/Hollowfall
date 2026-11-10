@@ -232,9 +232,14 @@ health 30 lower), **Gravedigger** (slam shock radius +1.5 and floors break in on
 Savage, full from Savage, double at Legendary, re-read every step so the pacts rise and fall with the meter. After each floor
 the panel offers up to three untaken pacts drawn from the seed and the floor (never the same pact twice in a run, never an empty
 offer while one remains); taken pacts persist to later floors and across respawns, and the choice is recorded in the replay
-(format 6) so verification reproduces it (`RunReplay.SimVersion` is 16). The panel's words are in the string table, English only
-until a speaker checks them. **Twin Gate** and **Open Hand** are not built: Twin Gate waits until `PortalSystem` becomes a list
-of pairs (see risks), and Open Hand's portal-exit speed boost needs new host-side movement code. **Tests:** `PactTests`.
+(format 6) so verification reproduces it (`RunReplay.SimVersion` is 17). The panel's words are in the string table, English only
+until a speaker checks them. **Twin Gate** is built: `PortalSystem` keeps the placed openings as a list — two slots, one per
+colour, and each opening links to the next — and the pact opens a third slot that rotates in: each placement takes a slot, the
+newest replaces the oldest once all three hold, and the pushed-off opening leaves through the same `PortalClosed` the sever cut
+listens to. Close, the Warden's swap and the stand-in-your-hole deferral all work on every placed opening; its burden charges
+5 health per placement while below Brutal. Take it mid-run and nothing changes until a third portal is actually placed, so
+existing two-portal play is untouched. **Open Hand** is not built: its portal-exit speed boost needs new host-side movement
+code. **Tests:** `PactTests`, and the Twin Gate cases in `PortalTests`.
 
 **Build on.** `StyleMeter.Rank`, `PlayerVitals` constants made into parameters, a `RunState` (pacts, floor). **Tests:** strength
 scaling by rank, pact offers deterministic for a seed, burdens always apply, stacking limits. **Effort:** medium to large.
@@ -293,10 +298,9 @@ quantised to 16 bits, and the action bits). Playing it back reproduces the run e
 - **Tests.** Golden bytes for the format, the same seed and inputs giving the same final state twice and across parallel threads,
   live play equal to the replay of its decoded file, respawns replayed, fake grades rejected, fuzzed and truncated files never throwing.
 
-**Not done yet.** The daily seed and leaderboard built on top of verified runs. (Portal markers in the ghost, the sharing string and the
-ghost toggle are built: `ShareString`, the CLI's `--share` and `--verify`, and `GameSettings.ShowGhost`.) Anything still missing
-sits with the daily seed and leaderboard. Keep worker-thread meshing and chunk loading out of anything the sim reads (it already is).
-**Effort for what is left:** small, and it is the best value on this page.
+**Not done yet.** Nothing of this feature: the daily seed and the local, verification-gated daily board are built too (`DailySeed`, `DailyBoard`,
+the title screen's Daily button and board — see the changelog for issue #12). What genuinely remains is a *shared* board, which needs a
+server and is out of scope until then. Keep worker-thread meshing and chunk loading out of anything the sim reads (it already is).
 
 ## 5. Recommended build order
 
@@ -335,8 +339,8 @@ Portal-aware sound and the non-colour cue (2.6) are built; the build order table
 - **Determinism and edits.** Replays (4.3) need block edits to be part of the simulated state, not only the cached chunks.
   Today edits live in `VoxelWorld` chunks; the replay player must apply the same edits in the same order, which it will if it
   drives the same `CombatSim`.
-- **Single pair of portals.** Pacts (Twin Gate) and the Warden need more than one pair; `PortalSystem` should become a list of
-  pairs before either is built.
+- **Single pair of portals.** Solved: `PortalSystem` keeps the placed openings as a list (Twin Gate holds three; the Warden and the
+  fixed rift doors keep their own pairs).
 - **Balance numbers.** Everything above is a first guess and lives in constants so playtesting changes numbers, not logic.
 - **Bindings.** Slam needs a key (suggested: C on keyboard, left stick click on gamepad) and an entry in `GameAction`,
   `BindingMap.Defaults` and `ActionInfo`, which the input tests will insist on.

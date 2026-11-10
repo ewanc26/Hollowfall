@@ -171,7 +171,7 @@ public class ReplayTests
     }
 
     private const int ExpectedGoldenLength = 4515;
-    private const uint ExpectedGoldenChecksum = 2954000343; // changed on purpose: the format now records the pact picks
+    private const uint ExpectedGoldenChecksum = 3376231928; // sim 17: the Twin Gate pact changes a run's rules, not its bytes
 
     [Fact]
     public void FileSizesStaySane()

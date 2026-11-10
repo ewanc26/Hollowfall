@@ -72,8 +72,15 @@ public static class ReplayRunner
         h.Add(sim.Style.TotalScore);
         h.Add((int)sim.Style.Rank);
         h.Add(sim.Items.KeysHeld);
-        h.Add(sim.Portals.Teal != null);
-        h.Add(sim.Portals.Violet != null);
+        // The placed openings as a little list, so a Twin Gate run's third slot is part of a run's identity.
+        h.Add(sim.Portals.Placed.Count);
+        foreach (var p in sim.Portals.Placed)
+        {
+            h.Add((int)p.Color);
+            h.Add(p.Frame.Center.X * 32);
+            h.Add(p.Frame.Center.Y * 32);
+            h.Add(p.Frame.Center.Z * 32);
+        }
         for (int f = 0; f < floorCount; f++)
         {
             h.Add(sim.KillsOn(f));
