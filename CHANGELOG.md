@@ -4,6 +4,10 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ## [Unreleased]
 
+### Added
+
+- **Gaeilge (Irish)** interface support. The Language row gains *Gaeilge* and *Gaeilge agus Béarla*, and every interface key now has a Gaeilge rendering with the same honesty rules as the Gàidhlig: a status and a cited source (Ó Dónaill's Foclóir Gaeilge–Béarla on teanglann.ie, Wiktionary, Firefox as Gaeilge); dictionary-backed words and composed phrases show straight away, coined technical terms (respawn, gamepad, portal, the gun names) and composed sentences stay behind their English until a speaker checks them. `IrishStrings` holds the table, a test enforces fada-not-grave and matching placeholders, docs/gaeilge.md gains the generated table, and `--po-ga` writes a gettext catalogue for an Irish translator. Nothing has been reviewed by a fluent speaker yet.
+
 ### Changed
 
 - Gàidhlig now covers the whole interface: every interface key has a rendering, with a status and a cited source as before. Short labels put together from sourced words are Likely and are shown; composed sentences and coined technical terms (the tagline, the controls help, the gap captions, the tagline-style toasts, the gun names and the debug overlay) are NeedsReview and stay behind their English until a speaker checks them, as docs/gaidhlig.md records. The story prose (epigraphs, lore notes, boss and ending text, Eòghann's lines) is still English by policy. The tests and the generated tables in docs/gaidhlig.md follow the data.

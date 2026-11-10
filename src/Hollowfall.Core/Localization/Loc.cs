@@ -6,10 +6,10 @@ namespace Hollowfall.Core.Localization;
 /// <summary>Every string table in one place, with lookups and the counts the docs and the tests report.</summary>
 public static class LocTable
 {
-    /// <summary>The areas, in the order docs/gaidhlig.md lists them.</summary>
+    /// <summary>The areas, in the order docs/gaidhlig.md lists them. The interface entries carry the Gaeilge attached by <see cref="IrishStrings"/>.</summary>
     public static readonly IReadOnlyList<(string Area, IReadOnlyList<LocEntry> Entries)> Areas =
     [
-        ("Interface", InterfaceStrings.All),
+        ("Interface", IrishStrings.Merge(InterfaceStrings.All)),
         ("Story", StoryStrings.All),
         ("Creature names", CreatureNames.All),
         ("Wulver greetings", WulverGreetings.All),
@@ -40,6 +40,20 @@ public static class LocTable
             if (!e.HasGaelic) u++;
             else if (e.Status == ReviewStatus.Verified) v++;
             else if (e.Status == ReviewStatus.Likely) l++;
+            else n++;
+        }
+        return (v, l, n, u);
+    }
+
+    /// <summary>The same counts for the Gaeilge columns.</summary>
+    public static (int Verified, int Likely, int NeedsReview, int Untranslated) IrishCounts(IEnumerable<LocEntry>? entries = null)
+    {
+        int v = 0, l = 0, n = 0, u = 0;
+        foreach (var e in entries ?? All)
+        {
+            if (!e.HasIrish) u++;
+            else if (e.IrishStatus == ReviewStatus.Verified) v++;
+            else if (e.IrishStatus == ReviewStatus.Likely) l++;
             else n++;
         }
         return (v, l, n, u);
@@ -113,9 +127,14 @@ public sealed class Loc
         return key;
     }
 
-    /// <summary>The Gàidhlig for a key if there is some fit to show, whatever the language; otherwise null.</summary>
-    public string? GaelicOf(string key, params object[] args) =>
-        LocTable.Find(key) is { } entry && Shown(entry) is { } g ? Fill(g, args) : null;
+    /// <summary>The Gàidhlig for a key if the Gàidhlig is fit to show in this language; otherwise null. Never returns the Gaeilge.</summary>
+    public string? GaelicOf(string key, params object[] args)
+    {
+        if (!Languages.ShowsGaelic(_language)) return null;
+        if (LocTable.Find(key) is not { Gaelic: { } g } entry) return null;
+        if (entry.Status == ReviewStatus.NeedsReview && !ShowNeedsReview) return null;
+        return Fill(g, args);
+    }
 
     /// <summary>The name of a floor card in the current language ("III. An Sgòrnan" is built from this).</summary>
     public string CardName(string englishName) => LocTable.Has(StoryStrings.CardKey(englishName)) ? Tr(StoryStrings.CardKey(englishName)) : englishName;
@@ -127,14 +146,18 @@ public sealed class Loc
 
     private string? Shown(LocEntry entry)
     {
-        if (!Languages.ShowsGaelic(_language) || entry.Gaelic == null) return null;
-        return entry.Status == ReviewStatus.NeedsReview && !ShowNeedsReview ? null : entry.Gaelic;
+        if (!Languages.ShowsGaelic(_language) && !Languages.ShowsIrish(_language)) return null;
+        bool irish = Languages.ShowsIrish(_language);
+        string? text = irish ? entry.Irish : entry.Gaelic;
+        var status = irish ? entry.IrishStatus : entry.Status;
+        if (text == null) return null;
+        return status == ReviewStatus.NeedsReview && !ShowNeedsReview ? null : text;
     }
 
     private string Compose(string english, string? gaelic)
     {
         if (gaelic == null || _language == Language.English) return english;
-        if (_language == Language.Gaelic || gaelic == english) return gaelic;
+        if (_language is Language.Gaelic or Language.Irish || gaelic == english) return gaelic;
         bool inline = !gaelic.Contains('\n') && !english.Contains('\n') && gaelic.Length + english.Length <= InlineLimit;
         return inline ? $"{gaelic} ({english})" : $"{gaelic}\n{english}";
     }

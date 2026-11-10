@@ -1,9 +1,8 @@
 namespace Hollowfall.Core.Localization;
 
-/// <summary>The language the interface is shown in.</summary>
 public enum Language
 {
-    /// <summary>English only. The default, and the fallback for any string that has no Gaelic.</summary>
+    /// <summary>English only. The default, and the fallback for any string that has no Gàidhlig or Gaeilge.</summary>
     English,
 
     /// <summary>Scottish Gaelic (Gàidhlig). Strings with no reviewed Gaelic stay in English.</summary>
@@ -11,16 +10,23 @@ public enum Language
 
     /// <summary>Gàidhlig with the English beside it (in brackets) where it fits, or beneath it where it does not.</summary>
     Bilingual,
+
+    /// <summary>Irish (Gaeilge). Strings with no reviewed Irish stay in English.</summary>
+    Irish,
+
+    /// <summary>Gaeilge with the English beside it (in brackets) where it fits, or beneath it where it does not.</summary>
+    IrishBilingual,
 }
 
-/// <summary>Names and parsing for <see cref="Language"/>. Each language is named in itself, so a player can find theirs.</summary>
 public static class Languages
 {
-    /// <summary>The name of a language in that language (or, for Bilingual, in Gàidhlig): "English", "Gàidhlig", "Gàidhlig agus Beurla".</summary>
+    /// <summary>The name of a language in that language (or, for the bilingual modes, in Gàidhlig or Gaeilge).</summary>
     public static string NativeName(Language language) => language switch
     {
         Language.Gaelic => "Gàidhlig",
         Language.Bilingual => "Gàidhlig agus Beurla",
+        Language.Irish => "Gaeilge",
+        Language.IrishBilingual => "Gaeilge agus Béarla",
         _ => "English",
     };
 
@@ -32,4 +38,7 @@ public static class Languages
 
     /// <summary>Whether Gàidhlig is shown at all in this language.</summary>
     public static bool ShowsGaelic(Language language) => language is Language.Gaelic or Language.Bilingual;
+
+    /// <summary>Whether Gaeilge is shown at all in this language.</summary>
+    public static bool ShowsIrish(Language language) => language is Language.Irish or Language.IrishBilingual;
 }

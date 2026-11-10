@@ -75,7 +75,7 @@ public class LocTableTests(ITestOutputHelper output)
         var texts = LocTable.All.Where(e => e.HasGaelic).Select(e => e.Gaelic!)
             .Concat(GaelicNames.Nouns.Select(n => n.Gaelic))
             .Concat(GaelicNames.Adjectives.SelectMany(a => new[] { a.Base, a.Lenited }))
-            .Concat(Enum.GetValues<Language>().Select(Languages.NativeName));
+            .Concat(new[] { Languages.NativeName(Language.Gaelic), Languages.NativeName(Language.Bilingual) });
         foreach (var t in texts)
             foreach (char c in t)
             {
@@ -90,6 +90,57 @@ public class LocTableTests(ITestOutputHelper output)
         Assert.Equal("English", Languages.NativeName(Language.English));
         Assert.Equal("Gàidhlig", Languages.NativeName(Language.Gaelic));
         Assert.Equal("Gàidhlig agus Beurla", Languages.NativeName(Language.Bilingual));
+        Assert.Equal("Gaeilge", Languages.NativeName(Language.Irish));
+        Assert.Equal("Gaeilge agus Béarla", Languages.NativeName(Language.IrishBilingual));
+    }
+
+    [Fact]
+    public void IrishUsesAcuteFadaOnlyAndNeverScottishGrave()
+    {
+        // Gaeilge is written with the acute fada and never the Scottish grave; the Irish language names are included.
+        var texts = LocTable.All.Where(e => e.HasIrish).Select(e => e.Irish!)
+            .Concat(new[] { Languages.NativeName(Language.Irish), Languages.NativeName(Language.IrishBilingual) });
+        foreach (var t in texts)
+            foreach (char c in t)
+            {
+                Assert.False(Grave.Contains(c), $"'{t}' has a grave accent ({c}); Gaeilge uses the acute fada");
+                Assert.True(c is >= ' ' and <= '~' || Acute.Contains(c) || c is '\n' or '…', $"'{t}' has an unexpected character {c} (U+{(int)c:X4})");
+            }
+    }
+
+    [Fact]
+    public void IrishCoversTheWholeInterfaceWithSourcesAndMatchingPlaceholders()
+    {
+        int translated = 0;
+        foreach (var e in LocTable.Areas.First(a => a.Area == "Interface").Entries)
+        {
+            Assert.True(e.HasIrish, $"the interface key {e.Key} has no Gaeilge");
+            translated++;
+            Assert.False(string.IsNullOrWhiteSpace(e.IrishSource), $"{e.Key} has Gaeilge but cites no source");
+            foreach (var id in e.IrishSource.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                Assert.True(LocSources.All.ContainsKey(id), $"{e.Key} cites unknown source {id}");
+            Assert.False(string.IsNullOrWhiteSpace(e.IrishNote), $"{e.Key} needs a note saying how the Gaeilge was reached");
+            Assert.Equal(LocTable.Placeholders(e.English).OrderBy(p => p), LocTable.Placeholders(e.Irish!).OrderBy(p => p));
+        }
+        Assert.Equal(LocTable.Areas.First(a => a.Area == "Interface").Entries.Count, translated);
+    }
+
+    [Fact]
+    public void TheIrishInterfaceShowsHeldBackAndBilingualBehavesLikeTheGaelicOne()
+    {
+        var irish = new Loc(Language.Irish);
+        Assert.Equal("Imir", irish.Tr("menu.play"));
+        Assert.Equal("Urlár 5 / 7", irish.Tr("hud.floor", 5, 7)); // Likely, so it shows straight away
+        Assert.Equal("Scoir", irish.Tr("menu.quit"));
+
+        var bilingual = new Loc(Language.IrishBilingual);
+        Assert.Equal("Imir (Play)", bilingual.Tr("menu.play"));
+
+        var held = LocTable.Find("menu.reset")!;
+        Assert.Equal(Hollowfall.Core.Localization.ReviewStatus.NeedsReview, held.IrishStatus);
+        Assert.Equal("Reset", irish.Tr("menu.reset"));
+        irish.ShowNeedsReview = true;
+        Assert.Equal("Athshocraigh", irish.Tr("menu.reset"));
     }
 
     [Fact]
@@ -497,6 +548,46 @@ public class WulverGaelicTests
     {
         Assert.Empty(DialogueValidator.Validate(WulverDialogue.Graph));
         foreach (var e in WulverGreetings.All) Assert.DoesNotMatch(@"E[oò]ghann|Ewan", e.English + e.Gaelic);
+    }
+}
+
+/// <summary>Keeps docs/gaeilge.md's interface table identical to the data. Run with HOLLOWFALL_WRITE_DOCS=1 to rewrite it.</summary>
+public class IrishDocsTests
+{
+    private const string Begin = "<!-- BEGIN GENERATED IRISH TABLES -->";
+    private const string End = "<!-- END GENERATED IRISH TABLES -->";
+
+    private static string Cell(string? text) => string.IsNullOrEmpty(text) ? "" : text.Replace("|", "\\|").Replace("\\n", "\\n");
+
+    public static string Render()
+    {
+        var entries = LocTable.Areas.First(a => a.Area == "Interface").Entries;
+        var c = LocTable.IrishCounts(entries);
+        var sb = new StringBuilder();
+        sb.AppendLine("| Key | English | Gaeilge | Status | Source | Note |");
+        sb.AppendLine("| --- | --- | --- | --- | --- | --- |");
+        foreach (var e in entries)
+            sb.AppendLine($"| `{e.Key}` | {Cell(e.English)} | {Cell(e.Irish)} | {(e.HasIrish ? e.IrishStatus.ToString() : "Untranslated")} | {e.IrishSource} | {Cell(e.IrishNote)} |");
+        sb.AppendLine();
+        sb.AppendLine($"Counts: Verified {c.Verified}, Likely {c.Likely}, NeedsReview {c.NeedsReview}, no Gaeilge yet {c.Untranslated}.");
+        return sb.ToString().TrimEnd() + "\n";
+    }
+
+    [Fact]
+    public void TheDocsTableMatchesTheData()
+    {
+        string path = Path.Combine(RepoFiles.Root(), "docs", "gaeilge.md");
+        string doc = File.ReadAllText(path);
+        int a = doc.IndexOf(Begin, StringComparison.Ordinal), b = doc.IndexOf(End, StringComparison.Ordinal);
+        Assert.True(a >= 0 && b > a, "docs/gaeilge.md needs the generated-table markers");
+        string expected = doc[..(a + Begin.Length)] + "\n\n" + Render() + "\n" + doc[b..];
+
+        if (Environment.GetEnvironmentVariable("HOLLOWFALL_WRITE_DOCS") == "1")
+        {
+            File.WriteAllText(path, expected);
+            return;
+        }
+        Assert.True(doc == expected, "docs/gaeilge.md is out of date: run  HOLLOWFALL_WRITE_DOCS=1 dotnet test --filter IrishDocsTests  and commit it");
     }
 }
 
