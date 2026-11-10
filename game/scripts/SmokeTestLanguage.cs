@@ -7,6 +7,7 @@ namespace Hollowfall.Game;
 public partial class SmokeTest
 {
     private const string GraveLetters = "àèìòùÀÈÌÒÙ";
+    private const string AcuteLetters = "áéíóúÁÉÍÓÚ";
 
     private static List<string> ButtonTexts(Node root)
     {
@@ -47,6 +48,18 @@ public partial class SmokeTest
             return true;
         });
 
+        Check("every UI font draws the acute-fada vowels Gaeilge needs", () =>
+        {
+            foreach (var (name, font) in new[] { ("Display", UiFonts.Display), ("DisplayMedium", UiFonts.DisplayMedium), ("Body", UiFonts.Body), ("BodyBold", UiFonts.BodyBold) })
+                foreach (char c in AcuteLetters)
+                    if (!font.HasChar(c))
+                    {
+                        GD.PrintErr($"    {name} cannot draw {c}");
+                        return false;
+                    }
+            return true;
+        });
+
         const string name = "the Language chooser rebuilds the menus in Gàidhlig, Bilingual and back";
         try
         {
@@ -55,7 +68,8 @@ public partial class SmokeTest
             menus.Open(MenuScreen.Settings);
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             var box = menus.LanguageBox ?? throw new InvalidOperationException("Settings has no Language chooser");
-            bool named = box.ItemCount == 3 && box.GetItemText(0) == "English" && box.GetItemText(1) == "Gàidhlig" && box.GetItemText(2) == "Gàidhlig agus Beurla";
+            bool named = box.ItemCount == 5 && box.GetItemText(0) == "English" && box.GetItemText(1) == "Gàidhlig" && box.GetItemText(2) == "Gàidhlig agus Beurla" &&
+                box.GetItemText(3) == "Gaeilge" && box.GetItemText(4) == "Gaeilge agus Béarla";
 
             async Task<List<string>> Choose(Language language)
             {
@@ -70,10 +84,15 @@ public partial class SmokeTest
             var gaelic = await Choose(Language.Gaelic);
             bool inGaelic = settings.Language == Language.Gaelic && gaelic.Contains("Cluich") && gaelic.Contains("Lean air") && gaelic.Contains("Roghainnean");
             bool stillSettings = menus.Current == MenuScreen.Settings && menus.LanguageBox!.Selected == (int)Language.Gaelic;
-            bool englishKept = gaelic.Contains("Controls"); // no verified Gàidhlig, so the English stays
+            bool englishKept = LabelTexts(menus).Any(t => t.Contains("Stick dead zone")); // the Settings label held back for a speaker keeps its English
 
             var bilingual = await Choose(Language.Bilingual);
             bool inBoth = bilingual.Contains("Cluich (Play)") && bilingual.Contains("Roghainnean (Settings)");
+
+            var gaeilge = await Choose(Language.Irish);
+            bool inIrish = settings.Language == Language.Irish && gaeilge.Contains("Imir") && gaeilge.Contains("Socruithe") && gaeilge.Contains("Lean ar aghaidh");
+            var bothIrish = await Choose(Language.IrishBilingual);
+            bool inBothIrish = settings.Language == Language.IrishBilingual && bothIrish.Contains("Imir (Play)");
 
             var back = await Choose(Language.English);
             bool english = settings.Language == Language.English && back.Contains("Play") && back.Contains("Resume") && !back.Contains("Cluich");
@@ -86,9 +105,9 @@ public partial class SmokeTest
             await Choose(Language.English);
             menus.Close();
 
-            bool ok = named && inGaelic && stillSettings && englishKept && inBoth && english && dungeonName && settings.Language == Language.English;
+            bool ok = named && inGaelic && stillSettings && englishKept && inBoth && inIrish && inBothIrish && english && dungeonName && settings.Language == Language.English;
             if (ok) { _passed++; GD.Print($"  ok   {name}"); }
-            else { _failed++; GD.PrintErr($"  FAIL {name}: named={named} gaelic={inGaelic} still={stillSettings} englishKept={englishKept} both={inBoth} english={english} dungeonName={dungeonName}"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: named={named} gaelic={inGaelic} still={stillSettings} englishKept={englishKept} both={inBoth} irish={inIrish} bothIrish={inBothIrish} english={english} dungeonName={dungeonName}"); }
         }
         catch (Exception e)
         {
