@@ -209,6 +209,11 @@ public static class InterfaceStrings
             G("hint.parry", "parry", "dìon", ReviewStatus.Likely, "WK", "dìon, defence; the fencing sense of parry needs a speaker"),
             G("hint.tealPortal", "teal portal", "portail uaine-gorm", ReviewStatus.NeedsReview, "WK", "portail as group.portals; uaine-gorm, turquoise (uaine, green, + gorm, blue); composed"),
             G("hint.violetPortal", "violet portal", "portail purpaidh", ReviewStatus.Likely, "WK", "purpaidh, violet or purple; composed with portail"),
+
+            // The portal pair's non-colour marks (docs/features.md 2.6): teal frames carry chevrons, violet frames diamonds,
+            // and the HUD shows the words so the pair never depends on telling the two colours apart.
+            T("portal.mark.chevron", "chevron"),
+            T("portal.mark.diamond", "diamond"),
             G("hint.sever", "sever", "gèarr", ReviewStatus.Likely, "WK", "gèarr, cut (imperative); sever is read as cutting the link"),
             G("hint.open", "open", "fosgail", ReviewStatus.Likely, "WK", "fosgail, open; the bare verb is the imperative"),
             G("hint.jump", "jump", "leum", ReviewStatus.Likely, "WK", "leum, to jump"),

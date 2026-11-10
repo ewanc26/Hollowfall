@@ -114,8 +114,9 @@ public class LocTableTests(ITestOutputHelper output)
         int translated = 0;
         foreach (var e in LocTable.Areas.First(a => a.Area == "Interface").Entries)
         {
-            // The pact panel (docs/features.md 4.1) is English-only for now: its keys are the interface's one exception.
-            if (e.Key.StartsWith("pact.", StringComparison.Ordinal)) continue;
+            // The pact panel (docs/features.md 4.1) and the portal marks' words (2.6) are English-only for now: those keys
+            // are the interface's exceptions, listed English-only until a speaker blesses renderings.
+            if (e.Key.StartsWith("pact.", StringComparison.Ordinal) || e.Key.StartsWith("portal.mark.", StringComparison.Ordinal)) continue;
             Assert.True(e.HasIrish, $"the interface key {e.Key} has no Gaeilge");
             translated++;
             Assert.False(string.IsNullOrWhiteSpace(e.IrishSource), $"{e.Key} has Gaeilge but cites no source");
@@ -124,7 +125,7 @@ public class LocTableTests(ITestOutputHelper output)
             Assert.False(string.IsNullOrWhiteSpace(e.IrishNote), $"{e.Key} needs a note saying how the Gaeilge was reached");
             Assert.Equal(LocTable.Placeholders(e.English).OrderBy(p => p), LocTable.Placeholders(e.Irish!).OrderBy(p => p));
         }
-        Assert.Equal(LocTable.Areas.First(a => a.Area == "Interface").Entries.Count(e => !e.Key.StartsWith("pact.", StringComparison.Ordinal)), translated);
+        Assert.Equal(LocTable.Areas.First(a => a.Area == "Interface").Entries.Count(e => !e.Key.StartsWith("pact.", StringComparison.Ordinal) && !e.Key.StartsWith("portal.mark.", StringComparison.Ordinal)), translated);
     }
 
     [Fact]

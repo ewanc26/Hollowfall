@@ -52,6 +52,7 @@ public static class SoundMap
         SoundId.ShotgunShot or SoundId.Explosion or SoundId.Death or SoundId.Meteor => 1.0,
         SoundId.RevolverShot or SoundId.Kill or SoundId.FloorComplete => 0.9,
         SoundId.UiMove => 0.35,
+        SoundId.PortalVeil => 0.35,
         SoundId.StepWater => 0.55,
         SoundId.FireCrackle => 0.4,
         SoundId.CatPurr => 0.3,

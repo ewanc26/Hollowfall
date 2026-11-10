@@ -118,8 +118,12 @@ public partial class AudioDirector : Node
         }
     }
 
-    /// <summary>Plays whatever combat event just happened.</summary>
-    public void OnEvent(CombatEvent e, CombatSim sim)
+    /// <summary>
+    /// Plays whatever combat event just happened. Sounds with a place in the world are portal-aware: they are heard from the
+    /// closer of the direct path and the path through a portal pair (<see cref="PortalAcoustics"/>), a little muffled and followed by
+    /// the pair's veil chime, so a room behind a gate is heard before it is seen.
+    /// </summary>
+    public void OnEvent(CombatEvent e, CombatSim sim, Func<int, int, int, BlockType> blockAt)
     {
         if (SoundMap.For(e) is not { } id) return;
         Vector3? at = e switch
@@ -130,7 +134,21 @@ public partial class AudioDirector : Node
             EnemyTelegraph t => sim.Enemies.FirstOrDefault(x => x.Id == t.Id) is { } en ? V(en.Feet) + Vector3.Up : null,
             _ => null,
         };
-        Play(id, at);
+        if (at is { } position)
+        {
+            var ear = Listener();
+            var hearing = PortalAcoustics.WhereHeard(new Vec3(ear.X, ear.Y, ear.Z), new Vec3(position.X, position.Y, position.Z), sim.Portals, blockAt);
+            var heard = new Vector3((float)hearing.Position.X, (float)hearing.Position.Y, (float)hearing.Position.Z);
+            if (hearing.ThroughPortal)
+            {
+                Play(id, heard, (float)PortalAcoustics.ThroughPortalVolume, (float)PortalAcoustics.ThroughPortalPitch);
+                Play(SoundId.PortalVeil, heard, 0.7f);
+                return;
+            }
+            Play(id, heard);
+            return;
+        }
+        Play(id, null);
     }
 
     /// <summary>

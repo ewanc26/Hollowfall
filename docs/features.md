@@ -122,6 +122,14 @@ using the same reflection test the enemy shortcut logic uses, so you can hear a 
 portals also get a non-colour cue (teal frames get chevron notches, violet frames get diamond notches) so the pair is
 readable without telling teal from violet.
 
+**Status: built** (`PortalAcoustics` in Core owns the hearing — the mirrored point through the nearer gate, with the same
+line-of-sight test to the gate's face that the enemy shortcut logic uses — and the host plays the sound there, slightly
+muffled, with the pair's own `PortalVeil` chime; new `SoundId`s are appended at the end per convention, and nothing in
+`CombatSim` changes, so no `SimVersion` bump. The non-colour cue is `PortalMarks` in Core: chevrons on the teal frame,
+diamonds on the violet frame, drawn by `PortalView` on the frame layer above and below each opening, the same shapes in
+the two portal HUD icons, and the mark words at the crosshair, English-only in the string table until a speaker blesses
+them. **Tests:** `PortalSoundTests`; the smoke test checks the notches and the crosshair words in the real scene.)
+
 ## 3. Pillar two: Dig
 
 The world is voxels, so the world should be breakable, in a few controlled ways.
@@ -307,7 +315,7 @@ never happens.
 | 8 | Pacts (4.1) | Chain | Medium to large | run state | The meta layer, once there is enough to choose between. |
 | 9 | Collapse (3.3) and the Warden's portals (2.5) | Dig, Fold | Large | boss, batch block edits | The two set pieces; build them last, on a stable base. |
 
-Portal-aware sound and the non-colour cue (2.6) go in when audio and accessibility work start; they are small and independent.
+Portal-aware sound and the non-colour cue (2.6) are built; the build order table above is otherwise unchanged.
 
 ## 6. Ideas I left out
 

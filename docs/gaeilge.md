@@ -254,6 +254,8 @@ Bí gasta. Faigh sláinte trí ghortú. | NeedsReview | FGB WKI | composed from 
 | `hint.parry` | parry | cosaint | Likely | FGB | FGB cosaint, a defence; the fencing sense of parry needs a speaker |
 | `hint.tealPortal` | teal portal | portail turcaide | NeedsReview | FGB | portail is the naturalised borrowed word for portal; turcaide coined from turcaid, turquoise; composed |
 | `hint.violetPortal` | violet portal | portail corcra | Likely | FGB WKI | corcra, purple or violet; composed with portail |
+| `portal.mark.chevron` | chevron |  | Untranslated |  |  |
+| `portal.mark.diamond` | diamond |  | Untranslated |  |  |
 | `hint.sever` | sever | gearr | Likely | FGB | FGB gearr, to cut (the imperative); sever is read as cutting the link |
 | `hint.open` | open | oscail | Likely | FGB | FGB oscail, to open; the bare verb is the imperative |
 | `hint.jump` | jump | léim | Verified | FGB | FGB léim, to jump |
@@ -311,7 +313,7 @@ Bí gasta. Faigh sláinte trí ghortú. | NeedsReview | FGB WKI | composed from 
 | `rank.apocalyptic` | APOCALYPTIC | APACAILIPT | NeedsReview | WKI | coined from the WKI Irish for an apocalypse; the adjective's form needs a speaker |
 | `rank.legendary` | LEGENDARY | MIOTASACH | NeedsReview | FGB | coined from miotas, a myth, for legendary; needs a speaker |
 
-Counts: Verified 26, Likely 110, NeedsReview 54, no Gaeilge yet 18.
+Counts: Verified 26, Likely 110, NeedsReview 54, no Gaeilge yet 20.
 
 <!-- END GENERATED IRISH TABLES -->
 

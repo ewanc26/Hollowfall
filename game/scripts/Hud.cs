@@ -24,6 +24,7 @@ public partial class Hud : CanvasLayer
     private Label _info = null!, _style = null!, _awards = null!, _banner = null!, _hitMarker = null!, _health = null!;
     private HintBar _hint = null!;
     private Control _tealMark = null!, _violetMark = null!;
+    private Label _tealWord = null!, _violetWord = null!;
     private TextureRect _rankIcon = null!;
     private Control _crossCluster = null!;
     private MiniMap _map = null!;
@@ -185,11 +186,18 @@ public partial class Hud : CanvasLayer
         cross.AddThemeConstantOverride("separation", 4);
         _tealMark = Glyphs.Icon(GameIcons.PortalTeal, 22);
         _violetMark = Glyphs.Icon(GameIcons.PortalViolet, 22);
+        // The pair's non-colour cue beside each mark: the teal portal is a chevron, the violet one a diamond.
+        _tealWord = MarkWord(PortalMark.Chevron);
+        _violetWord = MarkWord(PortalMark.Diamond);
         var plus = Text(cross, Vector2.Zero, 30);
         plus.Text = "+";
         cross.AddChild(_tealMark);
         cross.MoveChild(_tealMark, 0);
+        cross.AddChild(_tealWord);
+        cross.MoveChild(_tealWord, 1);
         cross.AddChild(_violetMark);
+        cross.MoveChild(_violetMark, 2);
+        cross.AddChild(_violetWord);
         crossCentre.AddChild(cross);
         _crossCluster = cross;
         _avoid.Add(cross);
@@ -264,6 +272,9 @@ public partial class Hud : CanvasLayer
     /// <summary>How visible the crosshair is (it fades while it would sit on a portal opening). For tests.</summary>
     public float CrosshairAlpha => _crossCluster.Modulate.A;
 
+    /// <summary>The pair's non-colour words beside the crosshair, teal first. For tests.</summary>
+    public (string Teal, string Violet) PortalMarkWords => (_tealWord.Text, _violetWord.Text);
+
     /// <summary>Shows the dungeon progress panel, or hides it on the surface.</summary>
     public void SetFloorInfo(int floor, int floors, int kills, int enemies, double elapsed, double par, int keys = 0)
     {
@@ -301,6 +312,15 @@ public partial class Hud : CanvasLayer
     }
 
     private static string Clock(double seconds) => $"{(int)seconds / 60}:{(int)seconds % 60:D2}";
+
+    /// <summary>A portal mark's word beside the crosshair, so the pair reads without colour.</summary>
+    private Label MarkWord(PortalMark mark)
+    {
+        var l = new Label { MouseFilter = Control.MouseFilterEnum.Ignore, Text = Loc.Tr(PortalMarks.MarkKey(mark)) };
+        l.AddThemeFontSizeOverride("font_size", 10);
+        l.AddThemeColorOverride("font_color", Colors.White);
+        return l;
+    }
 
     /// <summary>
     /// Tells the HUD where portal openings are on screen. Anything that would be drawn over one fades out, so the view
@@ -412,9 +432,14 @@ public partial class Hud : CanvasLayer
         _styleFill.Size = new Vector2((float)(BarWidth * (style.Rank == StyleRank.None ? style.Points / 150.0 : style.RankProgress)), 8);
         _awards.Text = string.Join("\n", style.RecentAwards.TakeLast(5).Reverse().Select(a => $"+{a.Points:F0} {a.Bonus}"));
 
-        // The crosshair shows which portals exist: each half lights up as its portal is placed.
+        // The crosshair shows which portals exist: each half lights up as its portal is placed. The marks and their words
+        // (chevron, diamond) are the pair's non-colour cue, so it reads whichever way the tint is seen.
         _tealMark.Modulate = new Color(1, 1, 1, portals.Teal != null ? 1f : 0.22f);
         _violetMark.Modulate = new Color(1, 1, 1, portals.Violet != null ? 1f : 0.22f);
+        _tealWord.Text = Loc.Tr(PortalMarks.MarkKey(PortalMark.Chevron));
+        _violetWord.Text = Loc.Tr(PortalMarks.MarkKey(PortalMark.Diamond));
+        _tealWord.Modulate = _tealMark.Modulate;
+        _violetWord.Modulate = _violetMark.Modulate;
         _rankIcon.Texture = Glyphs.Get(GameIcons.RankIcon(style.Rank));
 
         if (_flashTime > 0)
