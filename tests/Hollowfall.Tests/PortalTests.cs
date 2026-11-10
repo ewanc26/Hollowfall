@@ -514,6 +514,35 @@ public class PortalTests
         Assert.Same(third.Portal, s.OldestOf(PortalColor.Teal)); // the newer teal is untouched
     }
 
+    [Fact]
+    public void TheThirdSlotMarkBelongsToTheNewestOpeningOnlyWhenTheRingIsFull()
+    {
+        var s = new PortalSystem { TwinGate = true };
+        var a = Fire(s, PortalColor.Teal, 0.5).Portal!;
+        var b = Fire(s, PortalColor.Violet, 12).Portal!;
+        Assert.Null(s.ThirdSlotOpening); // two stand: no third slot to mark
+
+        var c = Fire(s, PortalColor.Teal, -12).Portal!;
+        Assert.Same(c, s.ThirdSlotOpening); // the newest holds the bar
+        Assert.NotSame(a, s.ThirdSlotOpening);
+
+        // The next placement rotates the oldest out, and the bar rotates with the slot, not the portal.
+        var d = Fire(s, PortalColor.Violet, 7).Portal!;
+        Assert.Same(d, s.ThirdSlotOpening);
+        Assert.DoesNotContain(a, s.Placed);
+
+        // Without the pact there is no third slot at all.
+        var plain = new PortalSystem();
+        Fire(plain, PortalColor.Teal, 0.5);
+        Fire(plain, PortalColor.Violet, 12);
+        Assert.Null(plain.ThirdSlotOpening);
+
+        // The bar's silhouette is its own: a two-triangle band, unlike either bent shape, with its own word.
+        Assert.Equal(2, PortalMarks.Notch(PortalMark.Bar).Count);
+        Assert.Equal(4, PortalMarks.Notch(PortalMark.Chevron).Count);
+        Assert.Equal("portal.mark.bar", PortalMarks.MarkKey(PortalMark.Bar));
+    }
+
     // ---- the pair of surfaces matter on real dungeons ----------------------------------------
 
     [Fact]

@@ -214,6 +214,7 @@ public static class InterfaceStrings
             // and the HUD shows the words so the pair never depends on telling the two colours apart.
             T("portal.mark.chevron", "chevron"),
             T("portal.mark.diamond", "diamond"),
+            T("portal.mark.bar", "bar"),
             G("hint.sever", "sever", "gèarr", ReviewStatus.Likely, "WK", "gèarr, cut (imperative); sever is read as cutting the link"),
             G("hint.open", "open", "fosgail", ReviewStatus.Likely, "WK", "fosgail, open; the bare verb is the imperative"),
             G("hint.jump", "jump", "leum", ReviewStatus.Likely, "WK", "leum, to jump"),

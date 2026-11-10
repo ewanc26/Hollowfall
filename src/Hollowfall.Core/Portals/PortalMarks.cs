@@ -1,10 +1,17 @@
 namespace Hollowfall.Core.Portals;
 
-/// <summary>The non-colour cue for the two placed portals: the teal frame carries a chevron, the violet frame a diamond.</summary>
+/// <summary>
+/// The non-colour cue for the placed portals: the teal frame carries a chevron, the violet frame a diamond. The
+/// Twin Gate's third slot carries a bar beside its colour's mark, so a ring may hold two of one colour and still be
+/// read: each opening's marks are unique while all three stand.
+/// </summary>
 public enum PortalMark
 {
     Chevron,
     Diamond,
+
+    /// <summary>The Twin Gate's third slot, drawn beside the colour's mark rather instead of it.</summary>
+    Bar,
 }
 
 /// <summary>
@@ -26,7 +33,13 @@ public static class PortalMarks
     };
 
     /// <summary>The HUD word for a mark, e.g. <c>portal.mark.chevron</c>.</summary>
-    public static string MarkKey(PortalMark mark) => "portal.mark." + (mark == PortalMark.Chevron ? "chevron" : "diamond");
+    public static string MarkKey(PortalMark mark) => mark switch
+    {
+        PortalMark.Chevron => "portal.mark.chevron",
+        PortalMark.Diamond => "portal.mark.diamond",
+        PortalMark.Bar => "portal.mark.bar",
+        _ => throw new ArgumentOutOfRangeException(nameof(mark)),
+    };
 
     /// <summary>
     /// The notch for a mark, as triangles in the frame's local plane: x along <see cref="Frame.Right"/>, y along
@@ -51,6 +64,12 @@ public static class PortalMarks
                 ((0, 0.5), (0, -0.1), (0.42, 0)),
                 ((0, -0.5), (0.42, 0), (0, 0.1)),
                 ((0, -0.5), (0, 0.1), (-0.42, 0)),
+            ],
+            // The third slot's bar: a plain solid band, unlike either bent shape at any distance or tint.
+            PortalMark.Bar =>
+            [
+                ((-0.5, 0.12), (0.5, 0.12), (0.5, -0.08)),
+                ((-0.5, 0.12), (0.5, -0.08), (-0.5, -0.08)),
             ],
             _ => throw new ArgumentOutOfRangeException(nameof(mark)),
         };

@@ -238,7 +238,9 @@ colour, and each opening links to the next — and the pact opens a third slot t
 newest replaces the oldest once all three hold, and the pushed-off opening leaves through the same `PortalClosed` the sever cut
 listens to. Close, the Warden's swap and the stand-in-your-hole deferral all work on every placed opening; its burden charges
 5 health per placement while below Brutal. Take it mid-run and nothing changes until a third portal is actually placed, so
-existing two-portal play is untouched. **Open Hand** is built too: portal exits lend extra walking speed for 0.8 seconds — the
+existing two-portal play is untouched. The third slot is readable without colour too: while all three stand, the newest opening
+carries a **bar** mark beside its colour's own (`PortalMarks.Bar`, a plain solid band above the colour's notch), so a ring may hold
+two of one colour and each opening still reads uniquely. The bar rotates with the slot, not the portal. **Open Hand** is built too: portal exits lend extra walking speed for 0.8 seconds — the
 boost lives in the host's player body (which the simulation never moves), scaled by the rank and re-read each step — and its
 burden cuts revolver damage by 25% in the simulation. Both pacts' words are English-only until a speaker checks them.
 `RunReplay.SimVersion` is 18 — a chosen pact changes a run's outcome, and the pact picks are still recorded (format 6).

@@ -143,7 +143,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 26.
+Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 27.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -301,6 +301,7 @@ Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 26.
 | `hint.violetPortal` | violet portal | portail purpaidh | Likely | WK | purpaidh, violet or purple; composed with portail |
 | `portal.mark.chevron` | chevron | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `portal.mark.diamond` | diamond | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `portal.mark.bar` | bar | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hint.sever` | sever | gèarr | Likely | WK | gèarr, cut (imperative); sever is read as cutting the link |
 | `hint.open` | open | fosgail | Likely | WK | fosgail, open; the bare verb is the imperative |
 | `hint.jump` | jump | leum | Likely | WK | leum, to jump |

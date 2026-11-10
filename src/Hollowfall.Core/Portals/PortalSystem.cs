@@ -50,6 +50,12 @@ public sealed class PortalSystem
     /// <summary>Set by the Twin Gate pact: a third slot rotates in, and the ring links each portal to the next placed.</summary>
     public bool TwinGate { get; set; }
 
+    /// <summary>
+    /// The opening that holds the ring's third slot — the newest placed, the one the bar mark belongs to — or null
+    /// while fewer than three stand. The host reads this to draw the extra notch beside the colour's mark.
+    /// </summary>
+    public Portal? ThirdSlotOpening => TwinGate && _placed.Count == TwinGateSlots ? _placed[^1] : null;
+
     public IReadOnlyList<Portal> Placed => _placed;
 
     /// <summary>The newest opening of a colour, or null. A Twin Gate run may hold a second, older one.</summary>
