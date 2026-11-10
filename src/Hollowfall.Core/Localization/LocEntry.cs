@@ -14,16 +14,21 @@ public enum ReviewStatus
 
 /// <summary>
 /// One interface string: its key, the English text, the Gàidhlig (null when there is none we can stand behind, so the English is
-/// shown), how sure we are, and where the Gàidhlig came from (ids in <see cref="LocSources"/>, separated by spaces). Placeholders are
-/// <c>{0}</c>, <c>{1}</c>… and must match in both languages.
+/// shown), how sure we are, and where the Gàidhlig came from (ids in <see cref="LocSources"/>, separated by spaces). The Gaeilge
+/// columns hold the same for the Irish interface table added by <c>IrishStrings</c>. Placeholders are <c>{0}</c>, <c>{1}</c>…
+/// and must match in every language.
 /// </summary>
-public sealed record LocEntry(string Key, string English, string? Gaelic, ReviewStatus Status, string Source, string Note = "")
+public sealed record LocEntry(string Key, string English, string? Gaelic, ReviewStatus Status, string Source, string Note = "",
+    string? Irish = null, ReviewStatus IrishStatus = ReviewStatus.NeedsReview, string IrishSource = "", string IrishNote = "")
 {
     /// <summary>Whether there is Gàidhlig for this key at all (reviewed or not).</summary>
     public bool HasGaelic => Gaelic != null;
+
+    /// <summary>Whether there is Gaeilge for this key at all (reviewed or not).</summary>
+    public bool HasIrish => Irish != null;
 }
 
-/// <summary>The sources Gàidhlig is checked against. Every entry with Gàidhlig names one or more of these ids.</summary>
+/// <summary>The sources Gàidhlig and Gaeilge are checked against. Every entry with a translation names one or more of these ids.</summary>
 public static class LocSources
 {
     public static readonly IReadOnlyDictionary<string, (string Name, string Url)> All = new Dictionary<string, (string, string)>
@@ -35,5 +40,8 @@ public static class LocSources
         ["GDW"] = ("Vicipeid na Gàidhlig, the Gaelic Wikipedia (Bean-nighe, Gruagach, Each-uisge)", "https://gd.wikipedia.org"),
         ["TAD"] = ("Tobar an Dualchais: recording titled 'Each-uisge ann an Loch Fada'", "https://www.tobarandualchais.co.uk/track/5824"),
         ["DRU"] = ("Drupal Colossal Menu translation, gd: 'Menu' is 'Clàr-taice'", "https://ftp.drupal.org/files/translations/all/colossal_menu/colossal_menu-3.0.0.gd.po"),
+        ["WKI"] = ("Wiktionary, Irish entries (spelling, gender, meanings, mutations)", "https://en.wiktionary.org/wiki/Category:Irish_lemmas"),
+        ["FGB"] = ("Foclóir Gaeilge–Béarla (Ó Dónaill, 1977) on teanglann.ie: the Irish dictionary the cat's lines were checked against", "https://www.teanglann.ie/en/fgb/"),
+        ["FFI"] = ("Firefox as Gaeilge (Mozilla l10n, ga): software wording such as Socruithe and Roghchlár", "https://github.com/mozilla-l10n/firefox-l10n/tree/main/ga"),
     };
 }

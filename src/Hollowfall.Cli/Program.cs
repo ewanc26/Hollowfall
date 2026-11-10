@@ -9,6 +9,12 @@ if (args is ["--po", var poPath])
     return;
 }
 
+if (args is ["--po-ga", var poGaPath])
+{
+    File.WriteAllText(poGaPath, Hollowfall.Core.Localization.PoFiles.ExportIrish(Hollowfall.Core.Localization.LocTable.All), new UTF8Encoding(false));
+    return;
+}
+
 if (args is ["--share", var sharePath])
 {
     // Print a run file as text, so a seed and a whole replay fit in a message.

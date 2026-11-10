@@ -24,6 +24,33 @@ public static class PoFiles
             });
         }
 
+        return Generate(catalog);
+    }
+
+    /// <summary>The same catalogue for the Gaeilge column, for an Irish translator to review.</summary>
+    public static string ExportIrish(IEnumerable<LocEntry> entries)
+    {
+        var catalog = new POCatalog { Language = "ga", Encoding = "UTF-8" };
+        foreach (var e in entries)
+        {
+            var comments = new List<POComment>
+            {
+                new POTranslatorComment { Text = $"Key {e.Key}. Status {e.IrishStatus}. Sources {(e.IrishSource.Length > 0 ? e.IrishSource : "none")}.{(e.IrishNote.Length > 0 ? $" {e.IrishNote}" : "")}" },
+            };
+            if (e.IrishStatus == ReviewStatus.NeedsReview && e.HasIrish)
+                comments.Add(new POFlagsComment { Flags = new HashSet<string> { "fuzzy" } });
+            catalog.Add(new POSingularEntry(new POKey(e.English, null, e.Key))
+            {
+                Translation = e.Irish ?? "",
+                Comments = comments.ToArray(),
+            });
+        }
+
+        return Generate(catalog);
+    }
+
+    private static string Generate(POCatalog catalog)
+    {
         var text = new StringWriter();
         // The text is UTF-8 (Gàidhlig accents), which the generator's single-byte check would refuse; the caller writes it as UTF-8.
         new POGenerator(new POGeneratorSettings { IgnoreEncoding = true }).Generate(text, catalog);
