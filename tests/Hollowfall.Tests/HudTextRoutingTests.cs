@@ -41,13 +41,22 @@ public class HudTextRoutingTests
     public void GaelicShowsTheEnglishForLinesNotYetChecked()
     {
         var gaelic = new Loc(Language.Gaelic);
-        foreach (var key in new[] { "toast.omen", "toast.boon", "standing.better", "standing.worse", "gap.edge", "gap.alcove", "gap.afterFall", "gap.fellBare", "gap.spikes", "gap.splash" })
+        foreach (var key in new[] { "toast.omen", "toast.boon", "standing.better", "standing.worse", "gap.edge", "gap.alcove", "gap.afterFall", "gap.splash" })
         {
             var entry = LocTable.Find(key);
             Assert.NotNull(entry);
             Assert.Null(entry!.Gaelic);
             Assert.Equal(new Loc(Language.English).Tr(key, "x", "y"), gaelic.Tr(key, "x", "y"));
         }
+    }
+
+    [Fact]
+    public void FallBannersShowGaelicWhereThereIsSomeAndEnglishWhereThereIsNot()
+    {
+        var gaelic = new Loc(Language.Gaelic);
+        Assert.Equal("THUIT  -8", GapHints.FallBanner(new PlayerFell(GapHazard.Bare, 8, true), gaelic));
+        Assert.Equal("BIORAN  -8", GapHints.FallBanner(new PlayerFell(GapHazard.Spikes, 8, true), gaelic));
+        Assert.Equal("SPLASH  climbing out", GapHints.FallBanner(new PlayerFell(GapHazard.Water, 8, true), gaelic));
     }
 
     [Fact]

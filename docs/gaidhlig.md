@@ -29,9 +29,9 @@ The counts are printed by the test `ReviewStatusCountsArePrintedAndAddUp` (run `
 
 ## What is and is not translated
 
-**In Gàidhlig (when something is checked):** the menu words (Play, Settings, Quit, Resume, Journal, Back, Seed, Language), the Settings and Journal headings, the Movement heading, three action labels (move forward, move back, jump), the HUD key count, three hints (open, jump, menu) and the "read" and "speak" prompts, the death and key banners, two floor-card names, a short line shown with a death, the names of the creatures in `docs/mythology.md`, a Gàidhlig name for the dungeon shown under the title, and five short greetings from Eòghann.
+**In Gàidhlig (when something is checked):** the menu words (Play, Settings, Controls, Quit, Resume, Journal, Back, Seed, Language, Daily), the Settings, Journal, Controls, Standing and Bag headings, the Movement, Look and System group headings, the four movement and four look action labels plus "open and use", the HUD key count and rank, the Character screen's Level, Vigour and Might, the bag's Bag, Coin, Wear, worn and Ready words, the quest's Finished state, three hints (open, jump, menu) and the "read" and "speak" prompts, the death, key, chest, locked-chest, chest-heal, spike and fall banners, two style ranks (Fierce, Brutal), two floor-card names, a short line shown with a death, the names of the creatures in `docs/mythology.md`, a Gàidhlig name for the dungeon shown under the title, and five short greetings from Eòghann.
 
-**Stays in English** (and why): the tagline; most settings labels and the controls help; most action labels; ranks and style bonuses; the floor-complete, boss, opening and ending text; every epigraph and every lore note (long free prose, where the risk of a plausible mistake is highest, so none was attempted); and everything Eòghann says apart from his short greetings. How much story text that is: the test output above prints the count of strings in `StoryBook`.
+**Stays in English** (and why): the tagline; most settings labels and the controls help; some action labels; most ranks and all style bonuses; the floor-complete, boss, opening and ending text; every epigraph and every lore note (long free prose, where the risk of a plausible mistake is highest, so none was attempted); and everything Eòghann says apart from his short greetings. How much story text that is: the test output above prints the count of strings in `StoryBook`.
 
 **Held back (NeedsReview):** `hud.floor`, "Làr {0} / {1}" for a dungeon floor, because *làr* is the floor of a room or the ground and whether it suits a level of a dungeon needs a speaker; and `pause.title`, *Air stad*, because Firefox's Pause is the command *Cuir 'na stad* and a heading that names the state is only a guess.
 
@@ -95,9 +95,12 @@ Add a value to `Language`, a native name in `Languages.NativeName`, a column (or
 
 ## Needs a speaker
 
-- **First:** the Likely rows that are one-word UI labels used as buttons, because the form (imperative, plural, or noun) matters: *Air ais* (Back), *Leum*, *Fosgail*, *Bruidhinn*, *Leugh*, *Gluais air adhart / air ais*, *Iuchraichean {0}*, *Clàr-taice* and *Aisig na bun-roghainnean* (for "Reset to defaults"). *Fàg an-seo* is Firefox's own wording for Quit, so it is Verified, but a speaker should say whether it suits a game's menu.
+- **First:** the Likely rows that are one-word UI labels used as buttons, because the form (imperative, plural, or noun) matters: *Air ais* (Back), *Leum*, *Fosgail*, *Bruidhinn*, *Leugh*, *Caith*, *Gluais air adhart / air ais*, *Iuchraichean {0}*, *Clàr-taice* and *Aisig na bun-roghainnean* (for "Reset to defaults"). *Fàg an-seo* is Firefox's own wording for Quit, so it is Verified, but a speaker should say whether it suits a game's menu.
+- *Smachd* as the heading for Controls, and whether the plural *smachdan* is better; *Seasamh* as the name of the Standing screen; and whether *Caith* and *caithte* are the right words for wearing and worn charms and relics.
 - *Làr* for a dungeon floor (held back), and whether *lobhta* or another word is better; and the Paused heading *Air stad* (held back: Firefox's Pause is the command *Cuir 'na stad*).
-- Which of Controls, Seed (*Sìol*), Random, Respawn, Main menu, Quit and the settings labels (sensitivity, dead zone, field of view, volume, render distance, prompts, invert) have an established Gàidhlig term in software and games; the English is shown until they do.
+- The composed direction and look phrases: *Gluais air chlì / air dheis*, *Seall suas / sìos*, *Seall air chlì / air dheis*, and *Fosgail agus cleachd*. Each word is sourced, but the phrases themselves are put together by rule, not quoted.
+- The other Likely phrases: *Meur-chlàr / luch* for "Keyboard / mouse", *Bioran* for "Spikes", *Ciste Ghlaiste* for "Locked chest", and *CISTE +{0} slàinte* for "Chest +{0} health".
+- Which of Seed (*Sìol*), Random, Respawn, Main menu, Quit and the settings labels (sensitivity, dead zone, field of view, volume, render distance, prompts, invert) have an established Gàidhlig term in software and games; the English is shown until they do.
 - *brùnaidh* (brownie): not found in any source checked; *gruagach* is used (Likely) because the Gaelic Wikipedia describes a spirit of the cattle, but the brownie sense is reasoned, not quoted.
 - Whether the greetings suit Eòghann's voice (Halò, Fàilte, Mòran taing, Tha i fuar, Mar sin leat); each is a sentence or phrase a source prints, but a source is not a speaker.
 - The gender of *loch* and *tobar*, and whether Beinn + dubh lenites.
@@ -140,13 +143,13 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
+Verified 28, Likely 32, NeedsReview 2, no Gàidhlig yet 127.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
 | `menu.play` | Play | Cluich | Verified | WK | cluich is the imperative of the verb cluich, to play |
 | `menu.settings` | Settings | Roghainnean | Verified | FF WK | Firefox's own gd word for Settings; roghainn, an option or choice |
-| `menu.controls` | Controls | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `menu.controls` | Controls | Smachd | Likely | WK | smachd is the noun control or command; used as a heading here, a speaker should say whether the plural smachdan suits better |
 | `menu.quit` | Quit | Fàg an-seo | Verified | FF WK | Firefox gd's Quit on Windows and Linux (macOS has 'Fàg' plus the app's name); fàg is leave or quit |
 | `menu.back` | Back | Air ais | Likely | WK | air ais is the adverb 'back'; its use on a Back button is not confirmed |
 | `menu.reset` | Reset | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -154,36 +157,36 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `title.seed` | Seed | Sìol | Verified | WK | sìol, seed (first sense) |
 | `title.seedHint` | any text or number | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.random` | Random | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `title.daily` | Daily | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `title.daily` | Daily | Làitheil | Verified | WK | làitheil, daily or everyday (adjective) |
 | `title.board` | Verified today | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.boardNone` | No verified run yet today. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `title.boardRow` | Floor {0}: grade {1}, {2} points, {3} s | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.title` | PAUSED | AIR STAD | NeedsReview | WK FF | held back: Firefox gd's Pause is the command 'Cuir 'na stad'; 'air stad' (at a stop, from stad, a stop or pause) is a guess at a heading that names the state |
 | `pause.resume` | Resume | Lean air | Verified | FF WK | Firefox gd's Resume (downloads) is 'Lean air'; Wiktionary lists lean air as continue |
 | `pause.respawn` | Respawn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `pause.standing` | Standing | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pause.standing` | Standing | Seasamh | Likely | WK | seasamh is the verbal noun of seas, to stand, and is listed as position or attitude; its use as this screen's name is not quoted |
 | `pause.character` | Character | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `pause.bag` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.title` | Bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pause.bag` | Bag | Poca | Verified | WK | poca, bag or sack |
+| `bag.title` | Bag | POCA | Verified | WK | capitals of poca, bag |
 | `bag.slots` | Slots used: {0} of {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.coin` | Coin {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.coin` | Coin {0} | Bonn {0} | Verified | WK | bonn, coin (one of its senses); the number sits beside it |
 | `bag.none` | Nothing is carried yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.wear` | Wear | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.wear` | Wear | Caith | Likely | WK | caith, to wear (clothes); the bare verb is the imperative |
 | `bag.takeOff` | Take off | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.worn` | worn | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.ready` | Ready | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `bag.readyMark` | ready | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `bag.worn` | worn | caithte | Likely | WK | caithte, worn out or used up, the past participle of caith |
+| `bag.ready` | Ready | Deiseil | Verified | WK | deiseil, ready or prepared |
+| `bag.readyMark` | ready | deiseil | Verified | WK | same word as bag.ready, lower case for the mark beside an item |
 | `bag.readyHint` | The ready item is what the quick-use button spends in a run; only one comes with you. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `bag.wearHint` | Worn charms and relics take effect from your next run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.title` | CHARACTER | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.none` | No character yet. Defeat something to begin. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `character.level` | Level {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.level` | Level {0} | Ìre {0} | Verified | WK | ìre, degree or level; the number sits beside it |
 | `character.nextLevel` | {0} of {1} experience to the next level | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.maxLevel` | Highest level reached | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.points` | Points to spend: {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `character.vigour` | Vigour {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.vigour` | Vigour {0} | Neart {0} | Verified | WK | neart, strength, power or vigour; the number sits beside it |
 | `character.vigourHint` | +10 maximum health a point | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `character.might` | Might {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `character.might` | Might {0} | Cumhachd {0} | Verified | WK | cumhachd, power or might; the number sits beside it |
 | `character.mightHint` | +5 percent damage from guns and parries a point | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `character.nextRun` | Points take effect from your next run. A run keeps the stats it began with. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.title` | QUESTS | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -195,7 +198,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `quest.reward` | Reward: {0} experience, {1} coin and {2} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.take` | Take | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.taken` | Taken | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `quest.done` | Finished | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `quest.done` | Finished | Deiseil | Verified | WK | deiseil, ready, prepared or finished |
 | `quest.refused` | Refused | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `quest.nextRun` | Quests count the kills you make from now on, in every run. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pause.quests` | Quests | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -204,16 +207,16 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `journal.title` | JOURNAL | LEABHAR-LATHA | Verified | WK | capitals of the entry above |
 | `journal.notesRead` | {0}   -   Notes read: {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `journal.empty` | Nothing read yet. Notes lie against the walls of the dungeon: walk up to a scroll and use it. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `controls.title` | CONTROLS | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `controls.title` | CONTROLS | SMACHD | Likely | WK | capitals of smachd, control or command; the heading use needs a speaker |
 | `controls.help` | Click a binding, then press the new key, button or stick direction. Esc cancels. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `controls.colAction` | Action | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `controls.colKeys` | Keyboard / mouse | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `controls.colAction` | Action | Gnìomh | Verified | WK | gnìomh, act or action |
+| `controls.colKeys` | Keyboard / mouse | Meur-chlàr / luch | Likely | WK | meur-chlàr, keyboard, and luch, mouse; the slash is kept from the English |
 | `controls.colPad` | Gamepad | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.resetAll` | Reset to defaults | Aisig na bun-roghainnean | Likely | FF | Firefox gd uses this for 'Restore Defaults'; whether it suits 'Reset to defaults' needs a speaker |
 | `controls.listenPad` | press a button or move a stick… | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.listenKey` | press a key or click… | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.binding` | Binding "{0}". Esc cancels. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `controls.mouse` | mouse | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `controls.mouse` | mouse | luch | Verified | WK | luch, mouse, including the computing sense |
 | `controls.now` | {0} is now {1}. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.swapUnbound` | {0} was used by {1}, which is now unbound. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.swapped` | {0} was used by {1}; the two swapped. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -223,18 +226,18 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `controls.same` | That binding is already set. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `controls.resetDone` | Bindings reset to defaults. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `group.movement` | MOVEMENT | GLUASAD | Likely | WK | gluasad is the verbal noun of gluais, move |
-| `group.look` | LOOK | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `group.look` | LOOK | SEALLADH | Verified | WK | sealladh, a look or glance (noun) |
 | `group.combat` | COMBAT | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `group.portals` | PORTALS | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `group.system` | SYSTEM | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `group.system` | SYSTEM | SIOSTAM | Verified | WK | siostam, system |
 | `action.moveForward` | Move forward | Gluais air adhart | Likely | WK | gluais (move) + air adhart (forward) |
 | `action.moveBack` | Move back | Gluais air ais | Likely | WK | gluais (move) + air ais (back) |
-| `action.moveLeft` | Move left | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `action.moveRight` | Move right | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `action.lookUp` | Look up | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `action.lookDown` | Look down | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `action.lookLeft` | Look left | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `action.lookRight` | Look right | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.moveLeft` | Move left | Gluais air chlì | Likely | WK | gluais (move) + air chlì (on the left); clì is left. The phrase is composed, so a speaker should check it |
+| `action.moveRight` | Move right | Gluais air dheis | Likely | WK | gluais (move) + air dheis (on the right); deas is right, lenited dheis. The phrase is composed |
+| `action.lookUp` | Look up | Seall suas | Likely | WK | seall (look, the imperative) + suas (up) |
+| `action.lookDown` | Look down | Seall sìos | Likely | WK | seall (look, the imperative) + sìos (down) |
+| `action.lookLeft` | Look left | Seall air chlì | Likely | WK | seall (look) + air chlì (on the left); composed, so a speaker should check it |
+| `action.lookRight` | Look right | Seall air dheis | Likely | WK | seall (look) + air dheis (on the right); composed, so a speaker should check it |
 | `action.jump` | Jump | Leum | Likely | WK | leum, to jump; the bare verb is the imperative |
 | `action.firePrimary` | Fire revolver | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.fireSecondary` | Fire shotgun | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -245,7 +248,7 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `action.flyToggle` | Free-fly | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.flyDown` | Fly down | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.debugInfo` | Debug overlay | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `action.interact` | Open and use | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `action.interact` | Open and use | Fosgail agus cleachd | Likely | WK | fosgail (open) + agus (and) + cleachd (use), both bare verbs used as imperatives |
 | `action.closePortals` | Close portals (sever) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.pause` | Pause menu | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `action.slam` | Slam | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -272,14 +275,14 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `hud.floor` | Floor {0} / {1} | Làr {0} / {1} | NeedsReview | WK | làr is the floor of a room or the ground; whether it fits a level of a dungeon (or lobhta, a storey) needs a speaker, so it is held back |
 | `hud.keys` | Keys {0} | Iuchraichean {0} | Likely | WK | iuchraichean is the plural of iuchair, key; the number sits beside it, so no count agreement is needed |
 | `hud.result.title` | FLOOR {0} COMPLETE | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `hud.result.rank` | RANK  {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `hud.result.rank` | RANK  {0} | INBHE  {0} | Verified | WK | inbhe, rank or status; capitals for the banner and two spaces kept before the number |
 | `hud.result.stats` | Time {0}    Kills {1}    Style {2} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hud.result.restarts` | Restarts {0}  (−{0} points) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `toast.omen` | A washerwoman wrings out her cloth nearby. Something is coming. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `toast.boon` | The brownie warms the hearth for you (+{0} health) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.better` | {0} think better of you: {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.worse` | {0} now regard you as {1} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `standing.title` | STANDING | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `standing.title` | STANDING | SEASAMH | Likely | WK | capitals of seasamh, position or standing; the screen-name sense needs a speaker |
 | `standing.subtitle` | How the dungeon's peoples regard you. Hurt a creature in front of its kin and they will remember. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.nobody` | Nobody here has an opinion of you yet. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `standing.recent` | RECENT | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -287,8 +290,8 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `gap.edge` | A gap. Fire a portal across it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.alcove` | A high alcove. Fire a portal up into it ({0}), then another beside you ({1}), and step through. | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `gap.afterFall` | You are set back at the edge. Fire a portal across the gap instead ({0}, then {1}). | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `gap.fellBare` | FELL  -{0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `gap.spikes` | SPIKES  -{0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `gap.fellBare` | FELL  -{0} | THUIT  -{0} | Verified | WK | thuit is the past tense of tuit, to fall; two spaces kept before the number |
+| `gap.spikes` | SPIKES  -{0} | BIORAN  -{0} | Likely | WK | bioran is the plural of bior, spike or prong |
 | `gap.splash` | SPLASH  climbing out | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hint.revolver` | revolver | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `hint.shotgun` | shotgun | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
@@ -314,20 +317,20 @@ Verified 9, Likely 14, NeedsReview 2, no Gàidhlig yet 164.
 | `banner.newBest` | NEW BEST  (was {0}) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.best` | best {0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.key` | KEY | IUCHAIR | Likely | WK | iuchair, key |
-| `banner.chest` | CHEST | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `banner.lockedChest` | LOCKED CHEST | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `banner.chestHealed` | CHEST  +{0} health | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `banner.chest` | CHEST | CISTE | Verified | WK | ciste, chest or box; capitals for the banner |
+| `banner.lockedChest` | LOCKED CHEST | CISTE GHLAISTE | Likely | WK GW | ciste (feminine) + glaiste, locked; the adjective is lenited after a feminine noun |
+| `banner.chestHealed` | CHEST  +{0} health | CISTE  +{0} slàinte | Likely | WK | ciste, chest, and slàinte, health; composed for the banner |
 | `banner.lockedChestHealed` | LOCKED CHEST OPENED  +{0} health | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.item` | {0}  +{1} to your bag | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.bagFull` | {0}  your bag is full | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.locked` | locked: find the key on this floor | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `banner.spikes` | SPIKES  -{0} | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `banner.spikes` | SPIKES  -{0} | BIORAN  -{0} | Likely | WK | bioran is the plural of bior, spike or prong |
 | `banner.noPortal` | can't place a portal there ({0}) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.meteor` | METEOR | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `banner.meteor2` | METEOR x2 | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `rank.rowdy` | ROWDY | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `rank.fierce` | FIERCE | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
-| `rank.brutal` | BRUTAL | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `rank.fierce` | FIERCE | FIADHAICH | Verified | WK | fiadhaich, fierce or wild |
+| `rank.brutal` | BRUTAL | BRÙIDEIL | Verified | WK | brùideil, brutal or cruel |
 | `rank.savage` | SAVAGE | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `rank.merciless` | MERCILESS | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `rank.relentless` | RELENTLESS | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
