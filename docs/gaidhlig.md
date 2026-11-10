@@ -111,7 +111,7 @@ Add a value to `Language`, a native name in `Languages.NativeName`, a column (or
 
 If you read Gàidhlig, please look over the tables below and tell us what is wrong, odd, stiff or unnatural: spelling, accents, mutation, word order, a better word, a regional preference, anything. You do not need to be a programmer: a list of the keys and what each should say is enough, in an issue or an email to the author. Corrections are welcome and will be credited if you wish. Thank you; the game takes Gaelic seriously and wants to get it right.
 
-If you would rather correct the strings in a translation tool, run `dotnet run --project src/Hollowfall.Cli -- --po gd.po` and open `gd.po` in Poedit or any gettext editor. Each entry's comment gives its key, status and sources, and an entry marked fuzzy needs a decision before it is shown.
+If you would rather correct the strings in a translation tool, run `dotnet run --project src/Hollowfall.Cli -- --po-gd gd.po` and open `gd.po` in Poedit or any gettext editor. Each entry's comment gives its key, status and sources, and an entry marked fuzzy needs a decision before it is shown.
 
 ## Independent re-check (21 October 2026)
 

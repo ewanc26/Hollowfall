@@ -3,7 +3,7 @@ using Hollowfall.Core.Dungeon;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
 
-if (args is ["--po", var poPath])
+if (args is ["--po-gd", var poPath])
 {
     File.WriteAllText(poPath, Hollowfall.Core.Localization.PoFiles.Export(Hollowfall.Core.Localization.LocTable.All, "gd"), new UTF8Encoding(false));
     return;
