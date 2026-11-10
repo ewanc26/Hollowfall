@@ -21,6 +21,9 @@ public enum PactKind
 
     /// <summary>All style points +25%; weapons go stale 40% faster.</summary>
     Showman,
+
+    /// <summary>A third portal slot that rotates in, the newest replacing the oldest; placing costs 5 health below Brutal.</summary>
+    TwinGate,
 }
 
 /// <summary>The pacts' numbers and the deterministic offer. Kept in one place so playtesting changes numbers, not logic.</summary>
@@ -34,12 +37,16 @@ public static class Pacts
     public const double HollowHeartBloodMultiplier = 1.5;
     public const double GravediggerSlamRadiusBonus = 1.5;
     public const double ShowmanStyleBonus = 0.25;
+    public const double TwinGatePlacementHealthCost = 5;
 
     // Burdens: always at full strength once the pact is taken.
     public const double BloodswornHardDamageFraction = 0.50;
     public const double HollowHeartHealthLoss = 30;
     public const double GravediggerStyleDecay = 1.2;
     public const double ShowmanStaleness = 1.4;
+
+    /// <summary>The style rank from which placing a portal under the Twin Gate stops costing health.</summary>
+    public const StyleRank TwinGateCostFreeRank = StyleRank.Brutal;
 
     /// <summary>The lowest maximum health a burden may leave the player with.</summary>
     public const double MinMaxHealth = 10;

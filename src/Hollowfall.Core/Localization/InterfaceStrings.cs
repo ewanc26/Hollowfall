@@ -267,6 +267,9 @@ public static class InterfaceStrings
             T("pact.showman.name", "Showman"),
             T("pact.showman.boon", "All style points 25% higher"),
             T("pact.showman.burden", "Weapons go stale 40% faster"),
+            T("pact.twinGate.name", "Twin Gate"),
+            T("pact.twinGate.boon", "A third portal slot: the newest rotates in, the oldest rotates out"),
+            T("pact.twinGate.burden", "Placing a portal costs 5 health while below Brutal"),
         };
 
         var rankGaelic = new Dictionary<StyleRank, (string Gaelic, ReviewStatus Status, string Note)>

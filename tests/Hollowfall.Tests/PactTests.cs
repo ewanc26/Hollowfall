@@ -1,5 +1,6 @@
 using Hollowfall.Core.Combat;
 using Hollowfall.Core.Dungeon;
+using Hollowfall.Core.Portals;
 using Hollowfall.Core.Replay;
 using Hollowfall.Core.Terrain;
 using Hollowfall.Core.World;
@@ -278,6 +279,68 @@ public class PactTests
     }
 
     // ---- the run and the replay ----------------------------------------------------------
+
+    [Fact]
+    public void TwinGateGivesTheThirdSlotInPlayAndChargesPlacementsBelowBrutal()
+    {
+        var a = CombatSimTests.MakeArena();
+        a.Sim.TakePact(PactKind.TwinGate);
+        Assert.True(a.Sim.Portals.TwinGate);
+
+        var east = a.View();
+        var west = a.View() with { Forward = new Vec3(-1, 0, 0) };
+        // Aimed down and ahead, so the opening lands on the floor well clear of either wall portal.
+        var floor = a.View(dx: 4) with { Forward = new Vec3(4, -3, 0).Normalized() };
+
+        a.Sim.Tick(Dt, east, new PlayerActions(false, false, false, PortalTeal: true));
+        Assert.True(Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>()).Success, "the east wall takes teal");
+        Assert.Equal(100 - Pacts.TwinGatePlacementHealthCost, a.Sim.Vitals.Health, 6);
+
+        a.Sim.Tick(Dt, west, new PlayerActions(false, false, false, PortalViolet: true));
+        Assert.True(Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>()).Success, "the west wall takes violet");
+        Assert.Equal(100 - 2 * Pacts.TwinGatePlacementHealthCost, a.Sim.Vitals.Health, 6);
+        Assert.Equal(2, a.Sim.Portals.Placed.Count);
+
+        // The boon: the third placement takes the ring's third slot instead of replacing its colour.
+        a.Sim.Tick(Dt, floor, new PlayerActions(false, false, false, PortalTeal: true));
+        Assert.True(Assert.Single(a.Sim.DrainEvents().OfType<PortalPlaced>()).Success, "a third slot opens without closing the older teal");
+        Assert.Equal(3, a.Sim.Portals.Placed.Count);
+        Assert.Equal(100 - 3 * Pacts.TwinGatePlacementHealthCost, a.Sim.Vitals.Health, 6);
+
+        // From Brutal up the dungeon stops charging: at Savage the same placement costs nothing.
+        Rank(a.Sim, 1600);
+        a.Sim.Tick(Dt, west, new PlayerActions(false, false, false, PortalViolet: true));
+        a.Sim.DrainEvents();
+        Assert.Equal(100 - 3 * Pacts.TwinGatePlacementHealthCost, a.Sim.Vitals.Health, 6);
+    }
+
+    [Fact]
+    public void TwinGateRotatesTheOldestSlotOutThroughAClose()
+    {
+        var a = CombatSimTests.MakeArena();
+        a.Sim.TakePact(PactKind.TwinGate);
+        a.Sim.DrainEvents();
+
+        var east = a.View();
+        var west = a.View() with { Forward = new Vec3(-1, 0, 0) };
+        var floor = a.View(dx: 4) with { Forward = new Vec3(4, -3, 0).Normalized() };
+
+        var aims = new[] { (east, true), (west, false), (floor, true), (floor, false) };
+        for (int i = 0; i < 4; i++)
+        {
+            a.Sim.Tick(Dt, aims[i].Item1, new PlayerActions(false, false, false, PortalTeal: aims[i].Item2, PortalViolet: !aims[i].Item2));
+            var events = a.Sim.DrainEvents();
+            Assert.True(events.OfType<PortalPlaced>().Last().Success, $"placement {i} succeeded");
+            if (i == 3)
+            {
+                Assert.Contains(events, e => e is PortalClosed c && c.Color == PortalColor.Teal); // the pushed-off oldest is closed
+                break;
+            }
+            Assert.Empty(events.OfType<PortalClosed>());
+        }
+        Assert.Equal(PortalSystem.TwinGateSlots, a.Sim.Portals.Placed.Count);
+    }
+
 
     [Fact]
     public void PactPicksRoundTripThroughTheFileFormat()

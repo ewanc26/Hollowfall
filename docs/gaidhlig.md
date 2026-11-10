@@ -143,7 +143,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 20.
+Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 23.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -349,6 +349,9 @@ Verified 28, Likely 118, NeedsReview 44, no Gàidhlig yet 20.
 | `pact.showman.name` | Showman | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pact.showman.boon` | All style points 25% higher | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `pact.showman.burden` | Weapons go stale 40% faster | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.twinGate.name` | Twin Gate | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.twinGate.boon` | A third portal slot: the newest rotates in, the oldest rotates out | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `pact.twinGate.burden` | Placing a portal costs 5 health while below Brutal | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `rank.rowdy` | ROWDY | RUGDA | Likely | WK | rugda, rough or rude; the rowdy sense needs a speaker |
 | `rank.fierce` | FIERCE | FIADHAICH | Verified | WK | fiadhaich, fierce or wild |
 | `rank.brutal` | BRUTAL | BRÙIDEIL | Verified | WK | brùideil, brutal or cruel |

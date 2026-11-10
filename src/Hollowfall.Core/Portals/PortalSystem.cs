@@ -13,15 +13,20 @@ public enum PlaceFailure
     Disabled,
 }
 
-public readonly record struct PlaceResult(bool Placed, Portal? Portal, PlaceFailure Failure);
+public readonly record struct PlaceResult(bool Placed, Portal? Portal, PlaceFailure Failure, Portal? Displaced = null);
 
 /// <summary>Where a body ends up after going through a portal.</summary>
 public readonly record struct Crossing(Portal Entered, Portal Exited, Vec3 Position, Vec3 Velocity, Vec3 Forward);
 
 /// <summary>
-/// A linked pair of portals (teal and violet). Placing one replaces the previous of its colour. Anything that
+/// A list of linked pairs of portals (teal and violet). Placing one replaces the previous of its colour. Anything that
 /// crosses the face of one comes out of the other, keeping its speed. The Warden can open a pair of his own on the
 /// arena walls, which switches the player's pair off while it stands. Pure and engine-free.
+///
+/// Under the Twin Gate pact (docs/features.md 4.1) the list grows to three placed openings: each placement rotates in,
+/// the newest replaces the oldest once all three slots hold, and each opening's partner is the one placed after it —
+/// the ring closes from the oldest round to the newest. With only the two default slots this is exactly the colour pair
+/// the game has always had, which is why the pair lives as a list rather than two fields.
 /// </summary>
 public sealed class PortalSystem
 {
@@ -33,14 +38,27 @@ public sealed class PortalSystem
     /// <summary>How far in front of a gate a launched shot starts, so that it crosses the face on its first step.</summary>
     public const double LaunchGap = 0.4;
 
+    /// <summary>The placed slots the Twin Gate pact opens. Without the pact there are two, one per colour.</summary>
+    public const int TwinGateSlots = 3;
+
     private readonly List<(Portal A, Portal B)> _fixed = [];
     private (Portal A, Portal B)? _warden;
 
-    public Portal? Teal { get; private set; }
-    public Portal? Violet { get; private set; }
+    /// <summary>The placed openings, oldest first. Without the Twin Gate this holds at most one of each colour.</summary>
+    private readonly List<Portal> _placed = [];
 
-    /// <summary>Both portals exist, so they work.</summary>
-    public bool Linked => Teal != null && Violet != null;
+    /// <summary>Set by the Twin Gate pact: a third slot rotates in, and the ring links each portal to the next placed.</summary>
+    public bool TwinGate { get; set; }
+
+    public IReadOnlyList<Portal> Placed => _placed;
+
+    /// <summary>The newest opening of a colour, or null. A Twin Gate run may hold a second, older one.</summary>
+    public Portal? Teal => LastOf(PortalColor.Teal);
+
+    public Portal? Violet => LastOf(PortalColor.Violet);
+
+    /// <summary>At least two placed openings exist, so they work.</summary>
+    public bool Linked => _placed.Count >= 2;
 
     /// <summary>The Warden's own pair is open, and the player's placed pair is disabled until it closes.</summary>
     public bool WardenLive => _warden != null;
@@ -54,8 +72,8 @@ public sealed class PortalSystem
         {
             if (Linked && !WardenLive)
             {
-                yield return Teal!;
-                yield return Violet!;
+                foreach (var portal in _placed)
+                    yield return portal;
             }
             if (_warden is { } w)
             {
@@ -73,11 +91,32 @@ public sealed class PortalSystem
     /// <summary>The fixed rift openings of the current floor.</summary>
     public IEnumerable<Portal> Rifts => _fixed.SelectMany(pair => new[] { pair.A, pair.B });
 
-    public Portal? Get(PortalColor color) => color == PortalColor.Teal ? Teal : Violet;
+    /// <summary>The newest opening of a colour, or null.</summary>
+    public Portal? Get(PortalColor color) => LastOf(color);
 
+    /// <summary>The oldest opening of a colour, or null — the one a close takes first under the Twin Gate.</summary>
+    public Portal? OldestOf(PortalColor color) => _placed.FirstOrDefault(p => p.Color == color);
+
+    private Portal? LastOf(PortalColor color)
+    {
+        for (int i = _placed.Count - 1; i >= 0; i--)
+            if (_placed[i].Color == color)
+                return _placed[i];
+        return null;
+    }
+
+    /// <summary>
+    /// The opening this one comes out of. Placed openings link to the one placed after them, round the ring; the fixed
+    /// rift openings and the Warden's gates keep their own partners.
+    /// </summary>
     public Portal? Other(Portal p)
     {
-        if (p.Color != PortalColor.Rift) return p.Color == PortalColor.Teal ? Violet : Teal;
+        if (p.Color != PortalColor.Rift)
+        {
+            int index = _placed.IndexOf(p);
+            if (index < 0) return null;
+            return _placed[(index + 1) % _placed.Count];
+        }
         foreach (var (a, b) in _fixed)
         {
             if (a == p) return b;
@@ -100,22 +139,39 @@ public sealed class PortalSystem
 
     public void Clear()
     {
-        Teal = null;
-        Violet = null;
+        _placed.Clear();
         _warden = null;
     }
 
+    /// <summary>
+    /// Removes the oldest opening of a colour. Without the Twin Gate that is the only one there is, so this is the
+    /// close the game has always had.
+    /// </summary>
     public void Remove(PortalColor color)
     {
-        if (color == PortalColor.Teal) Teal = null; else Violet = null;
+        for (int i = 0; i < _placed.Count; i++)
+        {
+            if (_placed[i].Color == color)
+            {
+                _placed.RemoveAt(i);
+                return;
+            }
+        }
     }
 
-    /// <summary>Exchanges where the player's two portals are. Each keeps its colour, and the openings stay where the walls are.</summary>
+    /// <summary>
+    /// Exchanges where the player's portals are. Each keeps its colour, and the openings stay where the walls are:
+    /// the frames rotate one slot round the ring, which for two placed portals is the swap the Warden has always made.
+    /// </summary>
     public void SwapPlaced()
     {
-        if (Teal is not { } t || Violet is not { } v) return;
-        Teal = new Portal(PortalColor.Teal, v.Frame, v.HoleCells.ToArray(), v.NormalCell);
-        Violet = new Portal(PortalColor.Violet, t.Frame, t.HoleCells.ToArray(), t.NormalCell);
+        if (_placed.Count < 2) return;
+        var frames = _placed.Select(p => p.Frame).ToList();
+        for (int i = 0; i < _placed.Count; i++)
+        {
+            var p = _placed[i];
+            _placed[i] = new Portal(p.Color, frames[(i + 1) % frames.Count], p.HoleCells.ToArray(), p.NormalCell);
+        }
     }
 
     /// <summary>Takes the Warden's pair down. The player's pair works again.</summary>
@@ -127,16 +183,50 @@ public sealed class PortalSystem
     /// Fires a portal along a ray. The 1 x 2 opening is fitted to the struck surface: both blocks behind it must
     /// be portalable and both cells in front of it open. On a floor or ceiling its long side points the way
     /// <paramref name="facing"/> points, so you can step in the direction you are looking.
+    ///
+    /// Without the Twin Gate the new portal replaces the previous opening of its colour, and <c>Displaced</c> in the
+    /// result carries it away for the sever cut. With the pact the opening takes the next slot instead — the third
+    /// holds at once, and once it is full the newest replaces the oldest, whatever its colour.
     /// </summary>
     public PlaceResult Place(PortalColor color, Vec3 origin, Vec3 direction, Vec3 facing, Func<int, int, int, BlockType> blockAt, bool platesOnly = false)
     {
-        var result = Fit(color, origin, direction, facing, blockAt, b => BlockInfo.Portalable(b, platesOnly), p => Other(p) is { } partner && p.Overlaps(partner));
+        var result = Fit(color, origin, direction, facing, blockAt, b => BlockInfo.Portalable(b, platesOnly), p => ProspectivePartner(color) is { } partner && p.Overlaps(partner));
         if (result.Placed)
         {
-            if (color == PortalColor.Teal) Teal = result.Portal; else Violet = result.Portal;
+            Portal? displaced = null;
+            if (TwinGate)
+            {
+                _placed.Add(result.Portal!);
+                if (_placed.Count > TwinGateSlots)
+                {
+                    displaced = _placed[0];
+                    _placed.RemoveAt(0);
+                }
+            }
+            else
+            {
+                int same = _placed.FindIndex(p => p.Color == color);
+                if (same >= 0)
+                {
+                    displaced = _placed[same];
+                    _placed.RemoveAt(same);
+                }
+                _placed.Add(result.Portal!);
+            }
+            result = result with { Displaced = displaced };
         }
         return result;
     }
+
+    /// <summary>
+    /// The opening a candidate about to be placed would come out of: for the two-slot game the newest of the other
+    /// colour, and for the Twin Gate ring the oldest placed opening, which is what the ring links the newest to
+    /// whether or not placing it pushes one off the end.
+    /// </summary>
+    private Portal? ProspectivePartner(PortalColor color) =>
+        TwinGate
+            ? _placed.Count > 0 ? _placed[0] : null
+            : LastOf(color == PortalColor.Teal ? PortalColor.Violet : PortalColor.Teal);
 
     /// <summary>
     /// Opens the Warden's pair on the first two walls the aims strike that take a portal. Returns false, and leaves
