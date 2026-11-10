@@ -172,7 +172,9 @@ public class LocTests
         var loc = new Loc(Language.Gaelic);
         Assert.Equal("Cluich", loc.Tr("menu.play"));
         Assert.Equal("Iuchraichean 4", loc.Tr("hud.keys", 4));
-        Assert.Equal("Random", loc.Tr("title.random"));
+        Assert.Equal("Air thuaiream", loc.Tr("title.random"));
+        // The whole interface is translated, but a line held for a speaker shows its English until checked
+        Assert.Equal("Floor 5 / 7", loc.Tr("hud.floor", 5, 7));
         Assert.Empty(loc.MissingKeys); // a key with no Gàidhlig is not a missing key
     }
 
@@ -190,7 +192,7 @@ public class LocTests
     {
         var loc = new Loc(Language.Bilingual);
         Assert.Equal("Cluich (Play)", loc.Tr("menu.play"));
-        Assert.Equal("Random", loc.Tr("title.random"));
+        Assert.Equal("Air thuaiream (Random)", loc.Tr("title.random"));
         string longer = loc.Tr("prompt.read", "F", "Day Two");
         Assert.Equal("F  leugh: Day Two\nF  read: Day Two", longer);
     }

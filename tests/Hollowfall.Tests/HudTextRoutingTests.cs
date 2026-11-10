@@ -38,14 +38,23 @@ public class HudTextRoutingTests
     }
 
     [Fact]
-    public void GaelicShowsTheEnglishForLinesNotYetChecked()
+    public void GaelicShowsSourcedGapToastsAndHoldsBackTheComposedOnes()
     {
+        // Every interface line now has Gàidhlig; the ones assembled from sourced words show, the composed prose stays English until a speaker checks it.
         var gaelic = new Loc(Language.Gaelic);
-        foreach (var key in new[] { "toast.omen", "toast.boon", "standing.better", "standing.worse", "gap.edge", "gap.alcove", "gap.afterFall", "gap.splash" })
+        foreach (var key in new[] { "standing.better", "standing.worse" })
         {
             var entry = LocTable.Find(key);
             Assert.NotNull(entry);
-            Assert.Null(entry!.Gaelic);
+            Assert.Equal(Hollowfall.Core.Localization.ReviewStatus.Likely, entry!.Status);
+            Assert.NotEqual(new Loc(Language.English).Tr(key, "x", "y"), gaelic.Tr(key, "x", "y"));
+        }
+        foreach (var key in new[] { "toast.omen", "toast.boon", "gap.edge", "gap.alcove", "gap.afterFall", "gap.splash" })
+        {
+            var entry = LocTable.Find(key);
+            Assert.NotNull(entry);
+            Assert.Equal(Hollowfall.Core.Localization.ReviewStatus.NeedsReview, entry!.Status);
+            Assert.False(string.IsNullOrEmpty(entry.Gaelic));
             Assert.Equal(new Loc(Language.English).Tr(key, "x", "y"), gaelic.Tr(key, "x", "y"));
         }
     }
