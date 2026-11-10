@@ -9,6 +9,41 @@ if (args is ["--po", var poPath])
     return;
 }
 
+if (args is ["--share", var sharePath])
+{
+    // Print a run file as text, so a seed and a whole replay fit in a message.
+    if (!File.Exists(sharePath)) { Console.Error.WriteLine($"no such file: {sharePath}"); return; }
+    if (new FileInfo(sharePath).Length is < 1 or > Hollowfall.Core.Replay.ReplayCodec.MaxFileBytes) { Console.Error.WriteLine("not a run file"); return; }
+    if (!Hollowfall.Core.Replay.ReplayCodec.TryDecode(File.ReadAllBytes(sharePath), out var shared) || shared is null) { Console.Error.WriteLine("not a run file"); return; }
+    Console.WriteLine(Hollowfall.Core.Replay.ShareString.Encode(shared));
+    return;
+}
+
+if (args is ["--verify", var verifyText])
+{
+    // Re-simulate a run from a share string or a file and check it reaches the result it claims.
+    var verifyTarget = verifyText.StartsWith(Hollowfall.Core.Replay.ShareString.Prefix, StringComparison.Ordinal) ? null : verifyText;
+    Hollowfall.Core.Replay.RunReplay? toVerify = null;
+    if (verifyTarget == null)
+    {
+        if (!Hollowfall.Core.Replay.ShareString.TryDecode(verifyText, out toVerify) || toVerify is null) { Console.Error.WriteLine("not a share string"); return; }
+    }
+    else
+    {
+        if (!File.Exists(verifyTarget) || new FileInfo(verifyTarget).Length is < 1 or > Hollowfall.Core.Replay.ReplayCodec.MaxFileBytes ||
+            !Hollowfall.Core.Replay.ReplayCodec.TryDecode(File.ReadAllBytes(verifyTarget), out toVerify) || toVerify is null)
+        { Console.Error.WriteLine("not a run file"); return; }
+    }
+    Console.WriteLine($"seed {toVerify.Seed}, floor {toVerify.Floor + 1}, grade {toVerify.Result.Grade}, {toVerify.Result.Points} points, {toVerify.Result.Seconds:F1} s, sim {toVerify.SimVersionRecorded}");
+    if (!toVerify.IsVerifiable) { Console.WriteLine("recorded under different combat rules: it loads but cannot be verified"); return; }
+    var world = new Hollowfall.Core.World.VoxelWorld(Hollowfall.Core.Terrain.TerrainGenerator.SeedFromString(toVerify.Seed));
+    if (Hollowfall.Core.Replay.ReplayRunner.Verify(toVerify, world, out var outcome))
+        Console.WriteLine($"verified in {outcome.Ticks} steps: {toVerify.Result.Grade} {toVerify.Result.Points} points, {toVerify.Result.Seconds:F1} s");
+    else
+        Console.Error.WriteLine("this run does not verify: it does not reach the result it claims");
+    return;
+}
+
 // Usage: dotnet run --project src/Hollowfall.Cli -- [seed] [chunksRadius]
 string seedText = args.Length > 0 ? args[0] : "voxel";
 int radius = args.Length > 1 && int.TryParse(args[1], out var r) ? Math.Clamp(r, 1, 12) : 5;

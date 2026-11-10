@@ -926,6 +926,7 @@ public partial class Menus : CanvasLayer
         Slider(list, _loc.Tr("settings.uiSize"), UiScaling.UserRange.Min, UiScaling.UserRange.Max, 0.05,
             () => _settings.UiScale, v => _settings.UiScale = v, v => $"{v * 100:F0}%");
         CheckBox(list, _loc.Tr("settings.autoScale"), () => _settings.AutoUiScale, v => _settings.AutoUiScale = v);
+        CheckBox(list, _loc.Tr("settings.ghost"), () => _settings.ShowGhost, v => _settings.ShowGhost = v);
         Slider(list, _loc.Tr("settings.master"), GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,
             () => _settings.MasterVolume, v => _settings.MasterVolume = v, v => $"{v * 100:F0}%");
         Slider(list, _loc.Tr("settings.effects"), GameSettings.VolumeRange.Min, GameSettings.VolumeRange.Max, 0.05,

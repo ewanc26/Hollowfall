@@ -143,7 +143,7 @@ Generated from the data by `GaelicDocsTests`; do not edit by hand. "Untranslated
 
 ### Interface
 
-Verified 28, Likely 32, NeedsReview 2, no Gàidhlig yet 127.
+Verified 28, Likely 32, NeedsReview 2, no Gàidhlig yet 128.
 
 | Key | English | Gàidhlig | Status | Source | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -268,6 +268,7 @@ Verified 28, Likely 32, NeedsReview 2, no Gàidhlig yet 127.
 | `settings.music` | Music volume | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.viewDistance` | Render distance | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.chunks` | {0} chunks | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
+| `settings.ghost` | Show the ghost of your best run | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.prompts` | Controller prompts | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.promptsAuto` | Auto (follow controller) | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |
 | `settings.invertMouse` | Invert mouse Y | (English shown) | Untranslated |  | no verified Gàidhlig; English is shown |

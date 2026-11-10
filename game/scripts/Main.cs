@@ -223,6 +223,7 @@ public partial class Main : Node3D
             AddChild(_props);
             _replay = new ReplayDirector { Name = "Replay" };
             _replay.Initialize(Combat.Sim, site, seedText, RecordsPath);
+            _replay.ShowGhost = Settings.ShowGhost;
             AddChild(_replay);
         }
 
@@ -393,6 +394,7 @@ public partial class Main : Node3D
         _loc.Language = Settings.Language;
         InputMapper.Apply(Settings.Bindings, Settings.Deadzone);
         _view.ViewRadius = Settings.ViewRadius;
+        if (_replay != null) _replay.ShowGhost = Settings.ShowGhost;
         ApplyUiScale();
     }
 

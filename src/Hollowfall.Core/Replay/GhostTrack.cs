@@ -36,6 +36,22 @@ public sealed class GhostTrack
 
     public Vec3 FeetAt(int index) => _frames[Math.Clamp(index, 0, _frames.Length - 1)].Feet;
 
+    /// <summary>The recorded eye position at a step: where the run looked from, which is where its portals were aimed.</summary>
+    public Vec3 EyeAt(int index)
+    {
+        var f = _frames[Math.Clamp(index, 0, _frames.Length - 1)];
+        return new Vec3(
+            (double)(f.Fx + f.Ex) / ReplayFrame.PositionScale,
+            (double)(f.Fy + f.Ey) / ReplayFrame.PositionScale,
+            (double)(f.Fz + f.Ez) / ReplayFrame.PositionScale);
+    }
+
+    /// <summary>Whether the recorded run pressed the teal portal's button on a step. Held buttons stay true for the whole press.</summary>
+    public bool TealAt(int index) => (_frames[Math.Clamp(index, 0, _frames.Length - 1)].Flags & ReplayFrame.TealBit) != 0;
+
+    /// <summary>Whether the recorded run pressed the violet portal's button on a step.</summary>
+    public bool VioletAt(int index) => (_frames[Math.Clamp(index, 0, _frames.Length - 1)].Flags & ReplayFrame.VioletBit) != 0;
+
     /// <summary>The heading at a step, as a rotation about Y that is zero when facing -Z (the convention of the enemy views).</summary>
     public double YawAt(int index)
     {

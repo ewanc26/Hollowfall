@@ -4,6 +4,10 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ## [Unreleased]
 
+### Added
+
+- Replay sharing and ghost polish (`docs/features.md` 4.3's leftovers). A run can be written as text — `hollowfall:` plus the run file's bytes in base64url (`ShareString`) — so a seed and a whole replay fit in a message; the CLI prints one with `--share <file>` and checks one with `--verify <share-string-or-file>`, which re-simulates the run and says whether it reaches the result it claims. The settings screen has a **Show the ghost of your best run** toggle (`GameSettings.ShowGhost`, on by default; an old settings file without it keeps the ghost), and the ghost now pulses a teal or violet mark where the recorded run pressed its portal buttons, fading over about a second. Nothing here changes the simulation: `SimVersion` stays 15, so existing replays still verify.
+
 ### Changed
 
 - `progression.json` is version 4. It records coin, the quest log, the relic slot and the ready item beside experience, stats, the bag and the worn charm; versions 1 to 3 still load. The replay format is 5: it records the quick item, its uses and the relic, and its frame control bits no longer overlap the mortar and quick-use actions. `RunReplay.SimVersion` is 15, so replays recorded before the item changes are not verifiable.

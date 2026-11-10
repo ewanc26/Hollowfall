@@ -73,6 +73,9 @@ public sealed class GameSettings
     /// <summary>Whether the interface also grows and shrinks with the window. Off pins it to your multiplier alone.</summary>
     public bool AutoUiScale { get; set; } = true;
 
+    /// <summary>Whether the best earlier run plays back as a translucent ghost over the dungeon. Off hides it.</summary>
+    public bool ShowGhost { get; set; } = true;
+
     /// <summary>The world to play, as typed: any text, or a number. Cleaned on the way in so it is never empty.</summary>
     public string Seed
     {
@@ -137,6 +140,7 @@ public sealed class GameSettings
         ViewRadius = ViewRadiusRange.Default;
         UiScale = Ui.UiScaling.UserRange.Default;
         AutoUiScale = true;
+        ShowGhost = true;
         Seed = SeedWords.Default;
         MasterVolume = VolumeRange.Default;
         EffectsVolume = 1.0;
@@ -174,6 +178,7 @@ public sealed class GameSettings
             ["viewRadius"] = ViewRadius,
             ["uiScale"] = UiScale,
             ["autoUiScale"] = AutoUiScale,
+            ["showGhost"] = ShowGhost,
             ["seed"] = Seed,
             ["masterVolume"] = MasterVolume,
             ["effectsVolume"] = EffectsVolume,
@@ -214,6 +219,7 @@ public sealed class GameSettings
         s.Seed = root["seed"] is JsonValue sv && sv.TryGetValue<string>(out var seedText) ? seedText : SeedWords.Default;
         s.UiScale = Number(root, "uiScale", Ui.UiScaling.UserRange.Default);
         s.AutoUiScale = root["autoUiScale"] is not JsonValue au || !au.TryGetValue<bool>(out var autoScale) || autoScale;
+        s.ShowGhost = root["showGhost"] is not JsonValue gv || !gv.TryGetValue<bool>(out var ghost) || ghost;
         s.MasterVolume = Number(root, "masterVolume", VolumeRange.Default);
         s.EffectsVolume = Number(root, "effectsVolume", 1.0);
         s.AmbienceVolume = Number(root, "ambienceVolume", AmbienceRange.Default);

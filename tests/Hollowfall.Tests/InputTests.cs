@@ -186,7 +186,7 @@ public class GameSettingsTests : IDisposable
     [Fact]
     public void SettingsRoundTripThroughJson()
     {
-        var s = new GameSettings { MouseSensitivity = 0.004, FieldOfView = 95, ViewRadius = 9, InvertMouseY = true, InvertPadY = true, Deadzone = 0.3, PadLookSpeed = 5 };
+        var s = new GameSettings { MouseSensitivity = 0.004, FieldOfView = 95, ViewRadius = 9, InvertMouseY = true, InvertPadY = true, Deadzone = 0.3, PadLookSpeed = 5, ShowGhost = false };
         s.Bindings.Rebind(GameAction.Parry, Binding.Key("K"));
         s.Bindings.Rebind(GameAction.PortalViolet, Binding.Button("Back"));
         s.Bindings.Unbind(GameAction.FlyToggle, Slot.KeyboardMouse);
@@ -194,6 +194,9 @@ public class GameSettingsTests : IDisposable
         var back = GameSettings.FromJson(s.ToJson());
         Assert.Equal((s.MouseSensitivity, s.FieldOfView, s.ViewRadius, s.InvertMouseY, s.InvertPadY, s.Deadzone, s.PadLookSpeed),
             (back.MouseSensitivity, back.FieldOfView, back.ViewRadius, back.InvertMouseY, back.InvertPadY, back.Deadzone, back.PadLookSpeed));
+        Assert.False(back.ShowGhost);
+        Assert.True(new GameSettings().ShowGhost); // the ghost runs unless you turn it off
+        Assert.True(GameSettings.FromJson("{}").ShowGhost); // a file without the key keeps the ghost
         Assert.True(s.Bindings.EqualsMap(back.Bindings));
         Assert.Null(back.Bindings.Get(GameAction.FlyToggle, Slot.KeyboardMouse));
     }
