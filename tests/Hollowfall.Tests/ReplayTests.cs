@@ -170,8 +170,8 @@ public class ReplayTests
         Assert.Equal(ExpectedGoldenChecksum, ReplayCodec.Fnv32(bytes));
     }
 
-    private const int ExpectedGoldenLength = 4514;
-    private const uint ExpectedGoldenChecksum = 2275110642; // changed on purpose: the format now records the quick item and relic
+    private const int ExpectedGoldenLength = 4515;
+    private const uint ExpectedGoldenChecksum = 2954000343; // changed on purpose: the format now records the pact picks
 
     [Fact]
     public void FileSizesStaySane()

@@ -205,6 +205,7 @@ public partial class SmokeTest : Node
             CheckPedlar(main);
             CheckTrapStrikes(main);
             CheckRunRecordsSaveAndReload(main);
+            CheckPactPanel(main);
             await CheckReplaySavedByARealRunAsync(main);
             CheckUiScaling(main);
             await CheckAGapIsCrossedAsync(main);
@@ -1011,6 +1012,43 @@ public partial class SmokeTest : Node
             if (!(fileWritten && same)) GD.PrintErr($"    records: file={fileWritten} expected {expected} got {back}");
             return fileWritten && same;
         });
+    }
+
+    /// <summary>
+    /// The floor the previous check completed opened the pact panel in the real scene: the offers are the seed's three plus a way to
+    /// take none, a take is applied to the run, and a decline leaves the game unpaused. Afterwards the rest of the scripted run
+    /// answers every offer with a decline, so no check waits on a player.
+    /// </summary>
+    private void CheckPactPanel(Main main)
+    {
+        Check("the pact panel offers three seeded pacts after a floor, one is taken and the panel lets you decline", () =>
+        {
+            var director = main.Pacts ?? throw new InvalidOperationException("the pact panel was not wired");
+            var sim = (main.Combat ?? throw new InvalidOperationException("no dungeon")).Sim;
+            bool offering = director.Offering;
+            var choices = main.StoryUi.DialogueChoices;
+            int expected = Enum.GetValues<PactKind>().Length;
+            bool rightSize = choices.Count == Math.Min(Pacts.OfferSize, expected) + 1; // the pacts plus "Take none"
+            bool boonAndBurden = choices.Take(choices.Count - 1).All(c => c.Contains("Boon") && c.Contains("Burden"));
+
+            int before = sim.PactsTaken.Count;
+            director.Press(0);
+            bool taken = sim.PactsTaken.Count == before + 1;
+            bool closed = !director.Offering && !main.StoryUi.DialogueOpen && !GetTree().Paused;
+
+            // The decline path: re-offer for the next floor, then take none; the run is unchanged and the game unpaused.
+            director.Offer(1, sim.PactOffer(1));
+            bool reopened = director.Offering && GetTree().Paused;
+            director.Press(sim.PactOffer(1).Count);
+            bool declined = sim.PactsTaken.Count == before + 1 && !director.Offering && !GetTree().Paused;
+
+            bool ok = offering && rightSize && boonAndBurden && taken && closed && reopened && declined;
+            if (!ok) GD.PrintErr($"    pacts: offering={offering} choices={choices.Count} boonAndBurden={boonAndBurden} taken={taken} closed={closed} reopened={reopened} declined={declined}");
+            return ok;
+        });
+
+        // The scripted runs that follow complete floors of their own: their offers decline automatically, recorded like any decline.
+        if (main.Pacts != null) main.Pacts.AutoDecline = true;
     }
 
     /// <summary>The interface scale follows the settings and lands on the real window.</summary>

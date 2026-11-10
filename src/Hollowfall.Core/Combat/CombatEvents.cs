@@ -111,3 +111,6 @@ public sealed record OfferingAccepted(int Id, Relations.Faction Faction) : Comba
 /// <summary>The player ate a jar of cream and healed <paramref name="Healed"/>. The host takes the jar out of the bag.</summary>
 /// <summary>A quick-use item was spent. <see cref="Applied"/> is what it did: health, hard damage, style or seconds of a perk.</summary>
 public sealed record ItemUsed(ItemKind Kind, double Applied) : CombatEvent;
+
+/// <summary>A pact was taken between floors (docs/features.md 4.1): its boon follows the style rank, its burden applies at once and stays.</summary>
+public sealed record PactTaken(PactKind Pact) : CombatEvent;

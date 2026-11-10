@@ -11,8 +11,11 @@ namespace Hollowfall.Core.Replay;
 /// </summary>
 public sealed class RunReplay
 {
-    /// <summary>The file format. Bump when the byte layout changes. Format 5 records the quick item, its uses and the relic, and moves the frame control bits clear of the action flags.</summary>
-    public const int FormatVersion = 5;
+    /// <summary>The file format. Bump when the byte layout changes. Format 6 records the pacts taken after each completed floor; format 5 recorded the quick item, its uses and the relic, and moved the frame control bits clear of the action flags.</summary>
+    public const int FormatVersion = 6;
+
+    /// <summary>The first format that records the pacts taken after each completed floor (the pick for floor <c>f</c> sits at index <c>f</c>).</summary>
+    public const int FormatVersionWithPacts = 6;
 
     /// <summary>The format that recorded only a cream count and the worn charm, before other consumables and the relic slot.</summary>
     public const int FormatVersionWithCream = 4;
@@ -27,7 +30,7 @@ public sealed class RunReplay
     /// The simulation rules the run was recorded under. Bump this whenever <c>CombatSim</c> behaviour changes in a way that alters a
     /// replay's outcome; older files still load (a ghost only needs the recorded positions) but are flagged as unverifiable.
     /// </summary>
-    public const int SimVersion = 15;
+    public const int SimVersion = 16;
 
     public const int TicksPerSecond = 60;
     public const double Dt = 1.0 / TicksPerSecond;
@@ -70,6 +73,12 @@ public sealed class RunReplay
     /// <summary>The character's stats the run was played with. A replay re-simulates with these, so a run with Vigour verifies with Vigour.</summary>
     public Progression.RunStats Stats { get; init; }
 
+    /// <summary>
+    /// The pact taken after each completed floor, at that floor's index (null when the offer was declined). Playing the
+    /// replay feeds these back to the simulation as each floor completes, so a run with pacts reproduces exactly.
+    /// </summary>
+    public IReadOnlyList<PactKind?> PactPicks { get; init; } = [];
+
     public int TickCount => Frames.Count;
 
     /// <summary>False if the file was made by a different version of the combat rules, so a replay would not reproduce it.</summary>
@@ -103,6 +112,8 @@ public static class ReplayCodec
         PutVar(o, replay.Stats.Consumable is { } consumable ? (uint)consumable + 1 : 0);
         PutVar(o, replay.Stats.Charm is { } charm ? (uint)charm + 1 : 0);
         PutVar(o, replay.Stats.Relic is { } relic ? (uint)relic + 1 : 0);
+        PutVar(o, (uint)replay.PactPicks.Count);
+        foreach (var pick in replay.PactPicks) PutVar(o, pick is { } pact ? (uint)pact + 1 : 0);
         var seed = Encoding.UTF8.GetBytes(replay.Seed.Length > RunReplay.MaxSeedLength ? replay.Seed[..RunReplay.MaxSeedLength] : replay.Seed);
         PutVar(o, (uint)seed.Length);
         o.AddRange(seed);
@@ -268,7 +279,7 @@ public static class ReplayCodec
             if (r.Failed || vigour > RunStats.MaxPoints || might > RunStats.MaxPoints) return null;
             stats = new RunStats((int)vigour, (int)might);
         }
-        if (format == RunReplay.FormatVersion)
+        if (format > RunReplay.FormatVersionWithCream) // format 5 on: the quick item, its uses and the relic
         {
             uint uses = r.Var(), consumable = r.Var(), charm = r.Var(), relic = r.Var();
             if (r.Failed || uses > Inventory.MaxStack * Inventory.Slots) return null;
@@ -290,6 +301,21 @@ public static class ReplayCodec
             var worn = ReadKind(charm, ItemUse.Charm);
             if (r.Failed || creams > Inventory.MaxStack * Inventory.Slots || worn.Invalid) return null;
             stats = stats with { Uses = (int)creams, Consumable = ItemKind.BrownieCream, Charm = worn.Kind };
+        }
+
+        // Format 6 on: every pact taken after a completed floor (0 = the offer was declined).
+        PactKind?[] picks = [];
+        if (format >= RunReplay.FormatVersionWithPacts)
+        {
+            uint picksCount = r.Var();
+            if (r.Failed || picksCount > (uint)RunReplay.MaxFloors) return null;
+            picks = new PactKind?[picksCount];
+            for (int i = 0; i < picks.Length; i++)
+            {
+                uint code = r.Var();
+                if (r.Failed || code > (uint)Enum.GetValues<PactKind>().Length) return null;
+                picks[i] = code == 0 ? null : (PactKind)(code - 1);
+            }
         }
         uint seedLen = r.Var();
         if (r.Failed || seedLen is 0 or > RunReplay.MaxSeedLength * 4) return null;
@@ -337,6 +363,6 @@ public static class ReplayCodec
         }
         if (n != ticks || r.Left != 0) return null;
 
-        return new RunReplay(seed, regionX, regionZ, (int)floor, (int)end, new FloorRecord((OverallGrade)grade, points, millis / 1000.0), frames, sim) { Stats = stats };
+        return new RunReplay(seed, regionX, regionZ, (int)floor, (int)end, new FloorRecord((OverallGrade)grade, points, millis / 1000.0), frames, sim) { Stats = stats, PactPicks = picks };
     }
 }

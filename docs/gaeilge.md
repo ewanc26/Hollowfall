@@ -284,6 +284,24 @@ Bí gasta. Faigh sláinte trí ghortú. | NeedsReview | FGB WKI | composed from 
 | `banner.noPortal` | can't place a portal there ({0}) | Ní féidir portail a chur ansin ({0}) | Likely | FGB | ní féidir, cannot; ansin, there; composed |
 | `banner.meteor` | METEOR | MEATAN | Likely | FGB | meatán, meteor; capitals for the banner |
 | `banner.meteor2` | METEOR x2 | MEATAN x2 | Likely | FGB | as banner.meteor; the x2 is kept |
+| `pact.title` | THE DUNGEON OFFERS A PACT |  | Untranslated |  |  |
+| `pact.strength` | its strength follows your style rank |  | Untranslated |  |  |
+| `pact.boon` | Boon |  | Untranslated |  |  |
+| `pact.burden` | Burden |  | Untranslated |  |  |
+| `pact.decline` | Take none |  | Untranslated |  |  |
+| `pact.hint` | {0} to take one, {1} to leave them |  | Untranslated |  |  |
+| `pact.bloodsworn.name` | Bloodsworn |  | Untranslated |  |  |
+| `pact.bloodsworn.boon` | Parries heal 20 more and the spent parry window's cooldown is refunded |  | Untranslated |  |  |
+| `pact.bloodsworn.burden` | Hard damage takes half of damage taken, up from 35% |  | Untranslated |  |  |
+| `pact.hollowHeart.name` | Hollow Heart |  | Untranslated |  |  |
+| `pact.hollowHeart.boon` | Blood heals 1.5x |  | Untranslated |  |  |
+| `pact.hollowHeart.burden` | Maximum health 30 lower |  | Untranslated |  |  |
+| `pact.gravedigger.name` | Gravedigger |  | Untranslated |  |  |
+| `pact.gravedigger.boon` | Slam shockwaves reach 1.5 blocks further and break floors in one hit |  | Untranslated |  |  |
+| `pact.gravedigger.burden` | Style decays 20% faster |  | Untranslated |  |  |
+| `pact.showman.name` | Showman |  | Untranslated |  |  |
+| `pact.showman.boon` | All style points 25% higher |  | Untranslated |  |  |
+| `pact.showman.burden` | Weapons go stale 40% faster |  | Untranslated |  |  |
 | `rank.rowdy` | ROWDY | BORRACH | NeedsReview | FGB | FGB borrach, insolent or elated; the rowdy sense needs a speaker |
 | `rank.fierce` | FIERCE | FIÁIN | NeedsReview | FGB | FGB fiáin, wild; whether it carries the fierce rank sense needs a speaker |
 | `rank.brutal` | BRUTAL | BRÚIDIÚIL | Likely | FGB | FGB brúidiúil, brutal or cruel |
@@ -293,7 +311,7 @@ Bí gasta. Faigh sláinte trí ghortú. | NeedsReview | FGB WKI | composed from 
 | `rank.apocalyptic` | APOCALYPTIC | APACAILIPT | NeedsReview | WKI | coined from the WKI Irish for an apocalypse; the adjective's form needs a speaker |
 | `rank.legendary` | LEGENDARY | MIOTASACH | NeedsReview | FGB | coined from miotas, a myth, for legendary; needs a speaker |
 
-Counts: Verified 26, Likely 110, NeedsReview 54, no Gaeilge yet 0.
+Counts: Verified 26, Likely 110, NeedsReview 54, no Gaeilge yet 18.
 
 <!-- END GENERATED IRISH TABLES -->
 

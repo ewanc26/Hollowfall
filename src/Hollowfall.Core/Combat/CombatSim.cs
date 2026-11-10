@@ -18,6 +18,8 @@ public readonly record struct PlayerActions(bool FireRevolver, bool FireShotgun,
 /// The fast-combat loop for one dungeon: entering a room with enemies locks its doors and spawns them,
 /// enemies telegraph attacks that can be parried, hits at close range heal, style builds and decays, and
 /// every floor is graded when you leave it. Fixed-step, deterministic, and free of engine types.
+/// Pacts taken between floors (<see cref="TakePact"/>) are part of the run's state: their burdens alter the rules
+/// immediately and their boons follow the style rank, so a replay must take the same pacts in the same order.
 /// </summary>
 public sealed class CombatSim
 {
@@ -147,13 +149,16 @@ public sealed class CombatSim
     public bool Dead => Vitals.Dead;
 
     /// <param name="store">Puts a chest's item in the character's bag. Null keeps the item out of the run (as for a replay or a test).</param>
-    public CombatSim(VoxelWorld world, DungeonSite site, RunStats stats = default, Func<ItemKind, int, bool>? store = null)
+    /// <param name="pacts">The pacts the run started with (a fresh run has none). More can be taken after each floor with <see cref="TakePact"/>.</param>
+    public CombatSim(VoxelWorld world, DungeonSite site, RunStats stats = default, Func<ItemKind, int, bool>? store = null, IReadOnlyList<PactKind>? pacts = null)
     {
         _world = world;
         _site = site;
         Stats = stats;
         _uses = stats.ClampedUses;
         Vitals = new PlayerVitals(stats.MaxHealth);
+        _pacts = pacts != null ? [.. pacts] : [];
+        foreach (var pact in _pacts) ApplyBurdens(pact);
         _rng = new SeededRandom(world.Seed, site.RegionX, site.RegionZ, 700);
         _items = new Interactables(site.Spawns, world.Seed, d => { double before = Vitals.Health; HurtPlayer(d); return before - Vitals.Health; }, _events.Add, store);
         Map = new FloorMap(site);
@@ -164,6 +169,61 @@ public sealed class CombatSim
             BuildEncounters(k);
         }
     }
+
+    // ---- pacts ------------------------------------------------------------------------------
+
+    private readonly List<PactKind> _pacts;
+
+    /// <summary>The pacts taken this run, in the order they were taken. Each persists to every later floor.</summary>
+    public IReadOnlyList<PactKind> PactsTaken => _pacts;
+
+    private bool Has(PactKind pact) => _pacts.Contains(pact);
+
+    /// <summary>The boon strength of the taken pacts' boons at the current style rank (docs/features.md 4.1).</summary>
+    private double PactStrength => Pacts.Strength(Style.Rank);
+
+    /// <summary>The pacts this run has not yet taken, offered after the given floor completes. Deterministic from the seed and the floor.</summary>
+    public IReadOnlyList<PactKind> PactOffer(int floor) => Pacts.Offer(_world.Seed, floor, _pacts);
+
+    /// <summary>Takes a pact after a floor completes. A pact is taken at most once a run; its burden applies at once, its boon follows the style rank.</summary>
+    public void TakePact(PactKind pact)
+    {
+        if (_pacts.Contains(pact)) return;
+        _pacts.Add(pact);
+        ApplyBurdens(pact);
+        _events.Add(new PactTaken(pact));
+    }
+
+    private void ApplyBurdens(PactKind pact)
+    {
+        switch (pact)
+        {
+            case PactKind.Bloodsworn:
+                Vitals.HardDamageFraction = Pacts.BloodswornHardDamageFraction;
+                break;
+            case PactKind.HollowHeart:
+                Vitals.ReduceMax(Pacts.HollowHeartHealthLoss);
+                break;
+            case PactKind.Gravedigger:
+                Style.DecayScale = Pacts.GravediggerStyleDecay;
+                _breach.BreakInOneHit = true;
+                break;
+            case PactKind.Showman:
+                Style.StalenessScale = Pacts.ShowmanStaleness;
+                break;
+        }
+    }
+
+    /// <summary>Boons that track the style rank are re-read every step, so the pacts' strength rises and falls with play.</summary>
+    private void ApplyPactScales()
+    {
+        double strength = PactStrength;
+        Vitals.HitHealScale = _items.Perks.HealScale * (Has(PactKind.HollowHeart) ? 1 + (Pacts.HollowHeartBloodMultiplier - 1) * strength : 1);
+        Style.AwardScale = Has(PactKind.Showman) ? 1 + Pacts.ShowmanStyleBonus * strength : 1;
+    }
+
+    /// <summary>The parry heal's pact bonus, if Bloodsworn is taken: 20 more, at the current boon strength.</summary>
+    private double ParryHealBonus => Has(PactKind.Bloodsworn) ? Pacts.BloodswornParryHeal * PactStrength : 0;
 
     /// <summary>
     /// Switches the relationship system on: creatures of the Folk, wanderers and vermin appear as their floors are reached,
@@ -291,6 +351,7 @@ public sealed class CombatSim
             SenseOmen(view);
         }
         Vitals.HitHealScale = _items.Perks.HealScale;
+        ApplyPactScales();
         TriggerEncounters(view);
         UpdateMeteor(dt, view);
 
@@ -301,7 +362,8 @@ public sealed class CombatSim
             else
             {
                 _parryWindow -= dt;
-                if (_parryWindow <= 0) _parryCooldown = ParryCooldownSeconds;
+                // Bloodsworn refunds the spent window's cooldown: the next parry can come at once.
+                if (_parryWindow <= 0) _parryCooldown = Has(PactKind.Bloodsworn) ? 0 : ParryCooldownSeconds;
             }
         }
 
@@ -400,9 +462,10 @@ public sealed class CombatSim
         if (Vitals.Dead) return;
 
         Style.Award(fallBlocks > AirSlamHeight ? StyleBonus.AirSlam : StyleBonus.GroundSlam);
+        double radius = SlamShockwaveRadius + (Has(PactKind.Gravedigger) ? Pacts.GravediggerSlamRadiusBonus * PactStrength : 0);
         foreach (var e in _enemies.ToList())
         {
-            if (e.Dead || e.Feet.DistanceTo(feet) > SlamShockwaveRadius) continue;
+            if (e.Dead || e.Feet.DistanceTo(feet) > radius) continue;
             DamageEnemy(e, SlamShockwaveDamage * Stats.DamageScale, HitZone.Torso, e.Feet + new Vec3(0, 1, 0), "slam", false);
         }
 
@@ -867,7 +930,7 @@ public sealed class CombatSim
                 p.Velocity = forward * (p.Velocity.Length * ReflectedSpeedBoost);
                 p.Damage *= ReflectedDamageBoost;
                 p.Age = 0;
-                double healed = Vitals.Parry();
+                double healed = Vitals.Parry(ParryHealBonus);
                 Style.Award(StyleBonus.Parry);
                 _events.Add(new ProjectileReflected(p.Id));
                 _events.Add(new Parried(ParryKind.Projectile, healed));
@@ -879,7 +942,7 @@ public sealed class CombatSim
 
     private void ParryEnemy(Enemy e, ParryKind kind)
     {
-        double healed = Vitals.Parry();
+        double healed = Vitals.Parry(ParryHealBonus);
         Style.Award(StyleBonus.Parry);
         e.State = EnemyState.Stunned;
         e.Timer = ParryStunSeconds;

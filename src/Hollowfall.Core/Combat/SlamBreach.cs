@@ -19,6 +19,9 @@ public sealed class SlamBreach
     public const double BreakWindowSeconds = 3;
     public const int HoleRadius = 1;
 
+    /// <summary>True when a pact makes every slam break the tile outright (docs/features.md 4.1, Gravedigger).</summary>
+    public bool BreakInOneHit { get; set; }
+
     private (int X, int Y, int Z)? _cracked;
     private double _crackedAt;
 
@@ -26,13 +29,20 @@ public sealed class SlamBreach
     {
         if (!IsBrick(world.GetBlock(x, y, z)) || ShaftOpen(world, x, y, z)) return FloorSlam.None;
 
-        bool recentlyCracked = _cracked == (x, y, z) && time - _crackedAt < BreakWindowSeconds;
-        if (!recentlyCracked)
+        if (!BreakInOneHit)
         {
-            world.SetBlock(x, y, z, BlockType.CrackedFloor);
-            _cracked = (x, y, z);
-            _crackedAt = time;
-            return FloorSlam.Cracked;
+            bool recentlyCracked = _cracked == (x, y, z) && time - _crackedAt < BreakWindowSeconds;
+            if (!recentlyCracked)
+            {
+                world.SetBlock(x, y, z, BlockType.CrackedFloor);
+                _cracked = (x, y, z);
+                _crackedAt = time;
+                return FloorSlam.Cracked;
+            }
+
+            BreakFloor(world, x, y, z);
+            _cracked = null;
+            return FloorSlam.Broken;
         }
 
         BreakFloor(world, x, y, z);

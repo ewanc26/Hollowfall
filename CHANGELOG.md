@@ -6,6 +6,15 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ### Added
 
+- **Pacts** (issue #10, `docs/features.md` 4.1). After each completed floor the game pauses and offers pacts drawn from the seed and the floor: a boon whose strength follows your style rank (half below Savage, full from Savage, double at Legendary, re-read every step) and a burden that always applies. Four pacts exist so far, each built only from existing rules: **Bloodsworn** (parries heal 20 more and refund the spent parry window's cooldown; hard damage takes half of damage taken, up from 35%), **Hollow Heart** (blood heals 1.5x; maximum health 30 lower), **Gravedigger** (slam shock radius +1.5 and floors break in one slam; style decays 20% faster) and **Showman** (all style points 25% higher; weapons go stale 40% faster). Never the same pact twice in a run; taken pacts persist to later floors and across respawns. The offer panel shows each pact's boon and burden, navigable by keyboard, mouse and gamepad, its words in the string table English-only for now (the interface's one exception to the full Gaeilge coverage, which the tests and the generated tables record). Twin Gate and Open Hand are left for later: Twin Gate needs `PortalSystem` to hold more than one pair first.
+
+### Changed
+
+- The replay format is 6: a run now records the pact taken after each completed floor, given back to the simulation between steps on playback exactly as the take was, so a replay of a pact-shaped run verifies. Older files still load (as ghosts) but are unverifiable, and `RunReplay.SimVersion` is 16, so replays recorded before the pacts are not verifiable either.
+- `ShareString.TryDecode` replaces the base64url padding it strips before decoding. A share string whose file length was not a multiple of 3 had none to re-add and was refused; any length now round-trips.
+
+### Added
+
 - **Gaeilge (Irish)** interface support. The Language row gains *Gaeilge* and *Gaeilge agus Béarla*, and every interface key now has a Gaeilge rendering with the same honesty rules as the Gàidhlig: a status and a cited source (Ó Dónaill's Foclóir Gaeilge–Béarla on teanglann.ie, Wiktionary, Firefox as Gaeilge); dictionary-backed words and composed phrases show straight away, coined technical terms (respawn, gamepad, portal, the gun names) and composed sentences stay behind their English until a speaker checks them. `IrishStrings` holds the table, a test enforces fada-not-grave and matching placeholders, docs/gaeilge.md gains the generated table, and `--po-ga` writes a gettext catalogue for an Irish translator. Nothing has been reviewed by a fluent speaker yet.
 
 ### Changed

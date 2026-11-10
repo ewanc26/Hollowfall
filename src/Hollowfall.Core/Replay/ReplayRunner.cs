@@ -28,6 +28,8 @@ public static class ReplayRunner
 
             completed = null;
             foreach (var e in sim.DrainEvents()) if (e is FloorCompleted fc) completed = fc;
+            // The pacts were taken between the tick the floor completed on and the next one, so the replay feeds them back in the same gap.
+            if (completed is { Floor: var done } && done < replay.PactPicks.Count && replay.PactPicks[done] is { } pick) sim.TakePact(pick);
             sim.TakeDirtyChunks();
             onTick?.Invoke(i, sim);
         }

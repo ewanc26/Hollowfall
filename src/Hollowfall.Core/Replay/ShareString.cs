@@ -30,7 +30,9 @@ public static class ShareString
         if (body.Count(c => c == '=') > 2 || (body.Contains('=') && !body.EndsWith("=", StringComparison.Ordinal))) return false;
         try
         {
+            // Trimmed base64 is missing its padding; FromBase64String wants it back.
             string base64 = body.Replace('-', '+').Replace('_', '/');
+            base64 += new string('=', (4 - base64.Length % 4) % 4);
             return ReplayCodec.TryDecode(Convert.FromBase64String(base64), out replay);
         }
         catch (Exception e) when (e is FormatException or ArgumentException)
