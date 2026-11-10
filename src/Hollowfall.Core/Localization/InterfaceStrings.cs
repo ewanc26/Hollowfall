@@ -242,7 +242,8 @@ public static class InterfaceStrings
             G("banner.meteor2", "METEOR x2", "MEATAN x2", ReviewStatus.Likely, "WK", "as banner.meteor; the x2 is kept"),
         };
 
-        var rankGaelic = new Dictionary<StyleRank, (string Gaelic, ReviewStatus Status, string Note)>        {
+        var rankGaelic = new Dictionary<StyleRank, (string Gaelic, ReviewStatus Status, string Note)>
+        {
             [StyleRank.Fierce] = ("FIADHAICH", ReviewStatus.Verified, "fiadhaich, fierce or wild"),
             [StyleRank.Brutal] = ("BRÙIDEIL", ReviewStatus.Verified, "brùideil, brutal or cruel"),
             [StyleRank.Savage] = ("FIADHACH", ReviewStatus.Likely, "fiadhach, savage; kept apart from FIADHAICH above, which a speaker should confirm"),
