@@ -29,9 +29,18 @@ public partial class ReplayDirector : Node3D
     private GhostTrack? _track;
     private EnemyView? _ghost;
     private bool _ghostDressed;
+    private MeshInstance3D? _tealMark;
+    private MeshInstance3D? _violetMark;
+    private double _tealMarkAt = -1, _violetMarkAt = -1;
 
     /// <summary>The ghost of the best earlier run on the current floor, if there is one.</summary>
     public GhostTrack? Track => _track;
+
+    /// <summary>Whether the ghost is shown at all. Off hides the runner and its portal marks; recording is unaffected.</summary>
+    public bool ShowGhost { get; set; } = true;
+
+    /// <summary>How long a portal mark stays after the recorded run placed one, fading as it goes.</summary>
+    private const double MarkSeconds = 1.2;
 
     public bool GhostVisible => _ghost?.Visible ?? false;
 
@@ -77,12 +86,16 @@ public partial class ReplayDirector : Node3D
             _trackFloor = floor;
             var stored = floor >= 0 ? _store.Load(_seed, floor) : null;
             _track = stored != null && stored.RegionX == _site.RegionX && stored.RegionZ == _site.RegionZ ? new GhostTrack(stored) : null;
+            _tealMarkAt = _violetMarkAt = -1;
         }
 
         int? index = _track != null && floor >= 0 && !_sim.FloorCompleted(floor) ? _track.IndexAt(_sim.ElapsedOn(floor)) : null;
-        if (index is not { } i)
+        if (index is not { } i || !ShowGhost)
         {
             if (_ghost != null) _ghost.Visible = false;
+            HideMark(ref _tealMark);
+            HideMark(ref _violetMark);
+            _tealMarkAt = _violetMarkAt = -1;
             return;
         }
 
@@ -98,6 +111,63 @@ public partial class ReplayDirector : Node3D
         _ghost.Position = new Vector3((float)feet.X, (float)feet.Y, (float)feet.Z);
         _ghost.Rotation = new Vector3(0, (float)_track.YawAt(i), 0);
         _ghost.Animate(EnemyState.Chasing, delta);
+
+        // Portal marks: a pulse where the recorded run pressed its portal buttons, so you can see where its portals were.
+        double now = Time.GetTicksMsec() / 1000.0;
+        if (_track.TealAt(i) && (i == 0 || !_track.TealAt(i - 1))) ShowMark(ref _tealMark, TealMarkColor, _track.EyeAt(i), now, ref _tealMarkAt);
+        if (_track.VioletAt(i) && (i == 0 || !_track.VioletAt(i - 1))) ShowMark(ref _violetMark, VioletMarkColor, _track.EyeAt(i), now, ref _violetMarkAt);
+        FadeMark(_tealMark, _tealMarkAt, now);
+        FadeMark(_violetMark, _violetMarkAt, now);
+    }
+
+    private static readonly Color TealMarkColor = new(0.3f, 0.95f, 0.9f);
+    private static readonly Color VioletMarkColor = new(0.75f, 0.4f, 1f);
+
+    /// <summary>A small see-through sphere marking where a recorded portal was placed; it fades out over <see cref="MarkSeconds"/>.</summary>
+    private void ShowMark(ref MeshInstance3D? mark, Color color, Vec3 eye, double now, ref double shownAt)
+    {
+        if (mark == null)
+        {
+            mark = new MeshInstance3D
+            {
+                Name = "PortalMark",
+                Mesh = new SphereMesh { Radius = 0.18f, Height = 0.36f, RadialSegments = 12, Rings = 8 },
+                MaterialOverride = new StandardMaterial3D
+                {
+                    AlbedoColor = color,
+                    EmissionEnabled = true,
+                    Emission = color,
+                    EmissionEnergyMultiplier = 0.9f,
+                    Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                    ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+                },
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            };
+            AddChild(mark);
+        }
+        mark.Position = new Vector3((float)eye.X, (float)eye.Y, (float)eye.Z);
+        ((StandardMaterial3D)mark.MaterialOverride).AlbedoColor = color;
+        mark.Visible = true;
+        shownAt = now;
+    }
+
+    private void FadeMark(MeshInstance3D? mark, double shownAt, double now)
+    {
+        if (mark == null || !mark.Visible) return;
+        double age = now - shownAt;
+        if (age >= MarkSeconds || age < 0)
+        {
+            mark.Visible = false;
+            return;
+        }
+        var material = (StandardMaterial3D)mark.MaterialOverride!;
+        var color = material.Emission;
+        material.AlbedoColor = new Color(color.R, color.G, color.B, (float)(1 - age / MarkSeconds));
+    }
+
+    private static void HideMark(ref MeshInstance3D? mark)
+    {
+        if (mark != null) mark.Visible = false;
     }
 
     /// <summary>Gives the ghost its own see-through material. The shared enemy materials are left alone.</summary>

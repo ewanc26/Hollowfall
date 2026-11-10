@@ -169,6 +169,7 @@ public static class InterfaceStrings
             T("settings.music", "Music volume"),
             T("settings.viewDistance", "Render distance"),
             T("settings.chunks", "{0} chunks"),
+            T("settings.ghost", "Show the ghost of your best run"),
             T("settings.prompts", "Controller prompts"),
             T("settings.promptsAuto", "Auto (follow controller)"),
             T("settings.invertMouse", "Invert mouse Y"),

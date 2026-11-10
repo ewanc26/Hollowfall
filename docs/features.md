@@ -273,8 +273,9 @@ quantised to 16 bits, and the action bits). Playing it back reproduces the run e
 - **Tests.** Golden bytes for the format, the same seed and inputs giving the same final state twice and across parallel threads,
   live play equal to the replay of its decoded file, respawns replayed, fake grades rejected, fuzzed and truncated files never throwing.
 
-**Not done yet.** Portal markers in the ghost, a replay string for sharing, a settings toggle for the ghost, and the daily
-seed and leaderboard. Keep worker-thread meshing and chunk loading out of anything the sim reads (it already is).
+**Not done yet.** The daily seed and leaderboard built on top of verified runs. (Portal markers in the ghost, the sharing string and the
+ghost toggle are built: `ShareString`, the CLI's `--share` and `--verify`, and `GameSettings.ShowGhost`.) Anything still missing
+sits with the daily seed and leaderboard. Keep worker-thread meshing and chunk loading out of anything the sim reads (it already is).
 **Effort for what is left:** small, and it is the best value on this page.
 
 ## 5. Recommended build order
