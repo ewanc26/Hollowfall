@@ -72,6 +72,8 @@ public partial class PortalView : Node3D
     private MeshInstance3D _quad = null!;
     private MeshInstance3D _frameQuad = null!;
     private readonly List<MeshInstance3D> _notches = [];
+    private readonly List<MeshInstance3D> _bar = [];
+    private Basis _frameBasis = Basis.Identity;
     private ShaderMaterial _material = null!;
     private SubViewport _viewport = null!;
     private Camera3D _camera = null!;
@@ -101,6 +103,7 @@ public partial class PortalView : Node3D
         var f = Portal.Frame;
         // Quad faces +Z with width along X and height along Y; (Right, Up, Normal) is exactly that basis.
         var basis = new Basis(V(f.Right), V(f.Up), V(f.Normal));
+        _frameBasis = basis;
         var size = new Vector2((float)(Portal.Width + 2 * FrameWidth), (float)(Portal.Height + 2 * FrameWidth));
 
         _quad = new MeshInstance3D
@@ -149,12 +152,35 @@ public partial class PortalView : Node3D
         if (Portal.Color != PortalColor.Rift) AddNotches(basis);
     }
 
+    /// <summary>
+    /// Whether this opening holds the Twin Gate's third slot, and so carries the bar mark beside its colour's own.
+    /// The slot rotates, so this can be turned on and off as placements come in; the extra notch is kept apart from
+    /// the colour pair's notches.
+    /// </summary>
+    public void SetThirdSlot(bool third)
+    {
+        bool drawn = _bar.Count > 0;
+        if (third == drawn) return;
+        if (third) _bar.AddRange(AddNotches(_frameBasis, PortalMarks.Notch(PortalMark.Bar), upShift: Portal.Height / 2 + PortalMarks.NotchBlocks * 1.1));
+        else
+        {
+            foreach (var n in _bar) n.QueueFree();
+            _bar.Clear();
+        }
+    }
+
     /// <summary>Builds the marks from <see cref="PortalMarks.Notch"/>, the shape carrying the cue on its own.</summary>
-    private void AddNotches(Basis basis)
+    private void AddNotches(Basis basis) => AddNotches(basis, PortalMarks.Notch(PortalMarks.Mark(Portal.Color)), upShift: null);
+
+    /// <summary>
+    /// Builds one mark's meshes into this view. Without <paramref name="upShift"/> the mark sits once above and once
+    /// below the opening; with it, once at that height only — the third slot's bar rides above the colour's mark.
+    /// </summary>
+    private List<MeshInstance3D> AddNotches(Basis basis, IReadOnlyList<((double X, double Y) A, (double X, double Y) B, (double X, double Y) C)> notch, double? upShift)
     {
         var surface = new SurfaceTool();
         surface.Begin(Mesh.PrimitiveType.Triangles);
-        foreach (var (a, b, c) in PortalMarks.Notch(PortalMarks.Mark(Portal.Color)))
+        foreach (var (a, b, c) in notch)
         {
             surface.AddVertex(new Vector3((float)a.X, (float)a.Y, 0));
             surface.AddVertex(new Vector3((float)b.X, (float)b.Y, 0));
@@ -167,9 +193,11 @@ public partial class PortalView : Node3D
             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
             AlbedoColor = _colour.Lightened(0.35f), // bright against the wall; the shape is the cue, not the tint
         };
-        foreach (var side in new[] { Portal.Height / 2, -Portal.Height / 2 })
+        var made = new List<MeshInstance3D>();
+        var sides = upShift is { } shift ? new[] { shift } : new[] { Portal.Height / 2, -Portal.Height / 2 };
+        foreach (var side in sides)
         {
-            var notch = new MeshInstance3D
+            var instance = new MeshInstance3D
             {
                 Mesh = mesh,
                 Transform = new Transform3D(
@@ -179,9 +207,11 @@ public partial class PortalView : Node3D
                 MaterialOverride = material,
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             };
-            AddChild(notch);
-            _notches.Add(notch);
+            AddChild(instance);
+            made.Add(instance);
         }
+        if (upShift == null) _notches.AddRange(made);
+        return made;
     }
 
     /// <summary>The mark this portal carries in the world (a placed pair: chevron or diamond; a rift: none). For tests.</summary>

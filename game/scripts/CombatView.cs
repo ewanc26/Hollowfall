@@ -142,6 +142,10 @@ public partial class CombatView : Node3D
             AddChild(view);
             _portals[portal] = view;
         }
+        // The Twin Gate's third slot rotates, so the bar mark is refreshed on every placement rather than baked in.
+        var third = Sim.Portals.ThirdSlotOpening;
+        foreach (var (portal, view) in _portals)
+            view.SetThirdSlot(portal == third);
     }
 
     /// <summary>Makes a view for each rift opening on the current floor and for the Warden's gates, and drops the ones no longer open.</summary>
