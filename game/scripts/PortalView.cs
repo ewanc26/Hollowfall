@@ -71,6 +71,7 @@ public partial class PortalView : Node3D
     private readonly Color _colour;
     private MeshInstance3D _quad = null!;
     private MeshInstance3D _frameQuad = null!;
+    private readonly List<MeshInstance3D> _notches = [];
     private ShaderMaterial _material = null!;
     private SubViewport _viewport = null!;
     private Camera3D _camera = null!;
@@ -142,7 +143,49 @@ public partial class PortalView : Node3D
         _camera = new Camera3D { Current = true, CullMask = 1 | FrameLayer, Far = 400, Fov = 80 };
         _viewport.AddChild(_camera);
         _material.SetShaderParameter("view_tex", _viewport.GetTexture());
+
+        // The placed pair's non-colour cue: Core's chevron or diamond notch, once above and once below the opening,
+        // on the frame layer so the main view and the portal cameras both see it. The fixed rift openings carry no mark.
+        if (Portal.Color != PortalColor.Rift) AddNotches(basis);
     }
+
+    /// <summary>Builds the marks from <see cref="PortalMarks.Notch"/>, the shape carrying the cue on its own.</summary>
+    private void AddNotches(Basis basis)
+    {
+        var surface = new SurfaceTool();
+        surface.Begin(Mesh.PrimitiveType.Triangles);
+        foreach (var (a, b, c) in PortalMarks.Notch(PortalMarks.Mark(Portal.Color)))
+        {
+            surface.AddVertex(new Vector3((float)a.X, (float)a.Y, 0));
+            surface.AddVertex(new Vector3((float)b.X, (float)b.Y, 0));
+            surface.AddVertex(new Vector3((float)c.X, (float)c.Y, 0));
+        }
+        surface.GenerateNormals();
+        var mesh = surface.Commit();
+        var material = new StandardMaterial3D
+        {
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+            AlbedoColor = _colour.Lightened(0.35f), // bright against the wall; the shape is the cue, not the tint
+        };
+        foreach (var side in new[] { Portal.Height / 2, -Portal.Height / 2 })
+        {
+            var notch = new MeshInstance3D
+            {
+                Mesh = mesh,
+                Transform = new Transform3D(
+                    basis.Scaled(new Vector3((float)PortalMarks.NotchBlocks, (float)PortalMarks.NotchBlocks, 1)),
+                    V(Portal.Frame.Center + Portal.Frame.Up * side + Portal.Frame.Normal * 0.03)),
+                Layers = FrameLayer,
+                MaterialOverride = material,
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            };
+            AddChild(notch);
+            _notches.Add(notch);
+        }
+    }
+
+    /// <summary>The mark this portal carries in the world (a placed pair: chevron or diamond; a rift: none). For tests.</summary>
+    public IReadOnlyList<MeshInstance3D> Notches => _notches;
 
     public override void _Process(double delta)
     {

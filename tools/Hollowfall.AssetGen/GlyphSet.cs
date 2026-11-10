@@ -136,8 +136,8 @@ public static class GlyphSet
         foreach (var part in new[] { "left", "right", "middle", "wheel_up", "wheel_down" }) yield return ($"mouse_{part}", Mouse(part));
 
         // HUD icons.
-        yield return ("icon_portal_teal", PortalIcon(Teal));
-        yield return ("icon_portal_violet", PortalIcon(Violet));
+        yield return ("icon_portal_teal", PortalIcon(Teal, "M20 36 L32 26 L44 36"));
+        yield return ("icon_portal_violet", PortalIcon(Violet, "M32 24 L41 33 L32 42 L23 33 Z"));
         yield return ("icon_revolver", Svg(64, 64, $"""<path d="M4 20 H46 V27 H49 Q55 27 55 33 V38 H43 L40 32 H27 L24 38 L19 56 H8 L13 36 L10 28 H4 Z" fill="{Ink}"/><circle cx="36" cy="26" r="3" fill="{Deep}"/>"""));
         yield return ("icon_shotgun", Svg(64, 64, $"""<path d="M2 24 H46 L52 20 H62 V30 H52 L46 28 H28 L23 34 H8 L12 28 H2 Z" fill="{Ink}"/><path d="M12 34 L6 46 H14 L20 36 Z" fill="{Dim}"/><rect x="30" y="31" width="14" height="4" rx="2" fill="{Dim}"/>"""));
         yield return ("icon_parry", Svg(64, 64, $"""
@@ -300,9 +300,10 @@ public static class GlyphSet
 
     /// <summary>
     /// A portal drawn as a chamfered gate: a double-edged frame with cut corners and a slanted shimmer inside. Deliberately
-    /// angular rather than a glowing oval, so the game's portals have their own look.
+    /// angular rather than a glowing oval, so the game's portals have their own look. Each portal also carries its non-colour
+    /// mark inside the gate (a chevron or a diamond, drawn in white), so the pair is told apart without the tint.
     /// </summary>
-    private static string PortalIcon(string colour) => Svg(64, 64, Gate(32, 32, 44, 58, colour, 6));
+    private static string PortalIcon(string colour, string mark) => Svg(64, 64, Gate(32, 32, 44, 58, colour, 6) + Stroke(mark, "#ffffff", 3.5));
 
     /// <summary>The gate shape centred at (cx, cy), with its stroke and shimmer sized from its own width.</summary>
     private static string Gate(double cx, double cy, double w, double h, string colour, double stroke)

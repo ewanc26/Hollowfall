@@ -79,6 +79,9 @@ public enum SoundId
     BedDungeonPlain,
     BedDungeonMossy,
     BedDungeonAshen,
+
+    // ---- portal-aware sound (appended; new sounds go below this line) ----
+    PortalVeil,
 }
 
 /// <summary>
@@ -156,6 +159,7 @@ public static class Synth
             SoundId.AllyJoin => Mix(0.6, (t, _) => (Sine(t, Lerp(330, 660, Math.Min(1, t / 0.2))) * Decay(t, 5) + Sine(t, 990) * Decay(t, 9) * 0.4) * 0.45),
             SoundId.CreamSip => Mix(0.35, (t, _) => (Sine(t, Lerp(280, 540, Math.Min(1, t / 0.12))) * Decay(t, 12) + Sine(t, 1080) * Decay(t, 30) * 0.2) * 0.5),
             SoundId.CharmWear => Mix(0.8, (t, _) => (Sine(t, 1046.5) * Decay(t, 6) + (t > 0.08 ? Sine(t - 0.08, 1568) * Decay(t - 0.08, 7) : 0)) * 0.4),
+            SoundId.PortalVeil => Mix(0.32, (t, i) => (Sweep(t, 1250, 620, 0.18) * Decay(t, 13) * 0.4 + Sweep(t, 680, 340, 0.2) * Decay(t, 16) * 0.3 + Noise(i, 70) * Decay(t, 26) * 0.2) * Math.Min(1, t / 0.01)),
             _ when Beds.IsBed(id) => Beds.Render(id),
             _ => throw new ArgumentOutOfRangeException(nameof(id)),
         };

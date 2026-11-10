@@ -312,6 +312,40 @@ public partial class SmokeTest : Node
             else { _failed++; GD.PrintErr($"  FAIL {name}: enemyDrawn={enemyDrawn} portalsDrawn={portalsDrawn} linked={linked}"); }
 
             await CheckHudStaysOffPortalsAsync(main, combat);
+            CheckPortalMarks(main, combat);
+        }
+        catch (Exception e)
+        {
+            _failed++;
+            GD.PrintErr($"  FAIL {name}: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// docs/features.md 2.6: the pair must read without colour. Each placed portal carries Core's shaped notch in the world
+    /// (a chevron on teal, a diamond on violet, drawn on the frame layer so both the main view and the portal cameras see
+    /// them), and the crosshair's marks answer with the same words.
+    /// </summary>
+    private void CheckPortalMarks(Main main, CombatView combat)
+    {
+        const string name = "the portal pair reads without colour: notches in the world, words at the crosshair";
+        try
+        {
+            var teal = combat.GetNode<PortalView>("Portal_Teal");
+            var violet = combat.GetNode<PortalView>("Portal_Violet");
+            var hud = main.GetNode<Hud>("Hud");
+
+            bool notchCount = teal.Notches.Count == 2 && violet.Notches.Count == 2;
+            bool onFrameLayer = teal.Notches.Concat(violet.Notches).All(n => n.Layers == PortalView.FrameLayer);
+            bool shapesDiffer = notchCount && teal.Notches[0].Mesh.GetAabb().Size != violet.Notches[0].Mesh.GetAabb().Size;
+            var words = hud.PortalMarkWords;
+            bool wordsOk = words.Teal == Hollowfall.Core.Localization.LocTable.Find(Hollowfall.Core.Portals.PortalMarks.MarkKey(Hollowfall.Core.Portals.PortalMark.Chevron))!.English
+                && words.Violet == Hollowfall.Core.Localization.LocTable.Find(Hollowfall.Core.Portals.PortalMarks.MarkKey(Hollowfall.Core.Portals.PortalMark.Diamond))!.English
+                && words.Teal != words.Violet;
+
+            bool ok = notchCount && onFrameLayer && shapesDiffer && wordsOk;
+            if (ok) { _passed++; GD.Print($"  ok   {name}"); }
+            else { _failed++; GD.PrintErr($"  FAIL {name}: notchCount={notchCount} onFrameLayer={onFrameLayer} shapesDiffer={shapesDiffer} words={words.Teal}/{words.Violet}"); }
         }
         catch (Exception e)
         {
