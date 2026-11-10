@@ -341,7 +341,9 @@ public partial class SmokeTest : Node
             var words = hud.PortalMarkWords;
             bool wordsOk = words.Teal == Hollowfall.Core.Localization.LocTable.Find(Hollowfall.Core.Portals.PortalMarks.MarkKey(Hollowfall.Core.Portals.PortalMark.Chevron))!.English
                 && words.Violet == Hollowfall.Core.Localization.LocTable.Find(Hollowfall.Core.Portals.PortalMarks.MarkKey(Hollowfall.Core.Portals.PortalMark.Diamond))!.English
-                && words.Teal != words.Violet;
+                && words.Bar == Hollowfall.Core.Localization.LocTable.Find(Hollowfall.Core.Portals.PortalMarks.MarkKey(Hollowfall.Core.Portals.PortalMark.Bar))!.English
+                && words.Teal != words.Violet && words.Bar != words.Teal && words.Bar != words.Violet
+                && !hud.ThirdSlotShown; // with only the pair placed, the Twin Gate's word stays hidden
 
             bool ok = notchCount && onFrameLayer && shapesDiffer && wordsOk;
             if (ok) { _passed++; GD.Print($"  ok   {name}"); }

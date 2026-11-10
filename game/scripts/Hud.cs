@@ -24,7 +24,7 @@ public partial class Hud : CanvasLayer
     private Label _info = null!, _style = null!, _awards = null!, _banner = null!, _hitMarker = null!, _health = null!;
     private HintBar _hint = null!;
     private Control _tealMark = null!, _violetMark = null!;
-    private Label _tealWord = null!, _violetWord = null!;
+    private Label _tealWord = null!, _violetWord = null!, _barWord = null!;
     private TextureRect _rankIcon = null!;
     private Control _crossCluster = null!;
     private MiniMap _map = null!;
@@ -189,6 +189,9 @@ public partial class Hud : CanvasLayer
         // The pair's non-colour cue beside each mark: the teal portal is a chevron, the violet one a diamond.
         _tealWord = MarkWord(PortalMark.Chevron);
         _violetWord = MarkWord(PortalMark.Diamond);
+        // The Twin Gate's third slot shows its own word beside the pair's: the bar is the mark the newest
+        // opening carries in the world (PortalMarks.Bar), so the crosshair can say the same thing.
+        _barWord = MarkWord(PortalMark.Bar);
         var plus = Text(cross, Vector2.Zero, 30);
         plus.Text = "+";
         cross.AddChild(_tealMark);
@@ -198,6 +201,8 @@ public partial class Hud : CanvasLayer
         cross.AddChild(_violetMark);
         cross.MoveChild(_violetMark, 2);
         cross.AddChild(_violetWord);
+        cross.AddChild(_barWord); // the Twin Gate's third word, last in the cluster
+        _barWord.Hide();
         crossCentre.AddChild(cross);
         _crossCluster = cross;
         _avoid.Add(cross);
@@ -272,8 +277,11 @@ public partial class Hud : CanvasLayer
     /// <summary>How visible the crosshair is (it fades while it would sit on a portal opening). For tests.</summary>
     public float CrosshairAlpha => _crossCluster.Modulate.A;
 
-    /// <summary>The pair's non-colour words beside the crosshair, teal first. For tests.</summary>
-    public (string Teal, string Violet) PortalMarkWords => (_tealWord.Text, _violetWord.Text);
+    /// <summary>The pair's non-colour words beside the crosshair, teal first, and the third slot's own — for tests.</summary>
+    public (string Teal, string Violet, string Bar) PortalMarkWords => (_tealWord.Text, _violetWord.Text, _barWord.Text);
+
+    /// <summary>Whether the Twin Gate's third slot is standing, so its bar word is shown at the crosshair. For tests.</summary>
+    public bool ThirdSlotShown => _barWord.Visible;
 
     /// <summary>Shows the dungeon progress panel, or hides it on the surface.</summary>
     public void SetFloorInfo(int floor, int floors, int kills, int enemies, double elapsed, double par, int keys = 0)
@@ -440,6 +448,9 @@ public partial class Hud : CanvasLayer
         _violetWord.Text = Loc.Tr(PortalMarks.MarkKey(PortalMark.Diamond));
         _tealWord.Modulate = _tealMark.Modulate;
         _violetWord.Modulate = _violetMark.Modulate;
+        _barWord.Text = Loc.Tr(PortalMarks.MarkKey(PortalMark.Bar));
+        // The third slot is pact-only space: its word is hidden entirely while no third portal stands.
+        if (portals.ThirdSlotOpening is null) _barWord.Hide(); else _barWord.Show();
         _rankIcon.Texture = Glyphs.Get(GameIcons.RankIcon(style.Rank));
 
         if (_flashTime > 0)
