@@ -4,6 +4,10 @@ Everything that changes for someone using Hollowfall goes here, newest first, in
 
 ## [Unreleased]
 
+### Changed
+
+- Gàidhlig now covers the whole interface: every interface key has a rendering, with a status and a cited source as before. Short labels put together from sourced words are Likely and are shown; composed sentences and coined technical terms (the tagline, the controls help, the gap captions, the tagline-style toasts, the gun names and the debug overlay) are NeedsReview and stay behind their English until a speaker checks them, as docs/gaidhlig.md records. The story prose (epigraphs, lore notes, boss and ending text, Eòghann's lines) is still English by policy. The tests and the generated tables in docs/gaidhlig.md follow the data.
+
 ### Added
 
 - Replay sharing and ghost polish (`docs/features.md` 4.3's leftovers). A run can be written as text — `hollowfall:` plus the run file's bytes in base64url (`ShareString`) — so a seed and a whole replay fit in a message; the CLI prints one with `--share <file>` and checks one with `--verify <share-string-or-file>`, which re-simulates the run and says whether it reaches the result it claims. The settings screen has a **Show the ghost of your best run** toggle (`GameSettings.ShowGhost`, on by default; an old settings file without it keeps the ghost), and the ghost now pulses a teal or violet mark where the recorded run pressed its portal buttons, fading over about a second. Nothing here changes the simulation: `SimVersion` stays 15, so existing replays still verify.
