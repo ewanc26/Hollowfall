@@ -59,3 +59,15 @@ All saved data lives in one folder, `~/.ewanc26/hollowfall` (`Hollowfall.Core.St
 - No dead or duplicate code. Each behaviour has one home: if Core authors something (geometry, animation clips, textures, sounds), Core is the only place that builds it. The committed file is that output, and game scripts load it through one loader. The just-in-time fallback when a file is missing runs the same Core builder and the same loader, so it produces the same bytes; never write a second builder in game code. When a change makes code unreachable, delete it in the same change; do not leave commented-out or unused members, and do not copy logic between game scripts and Core.
 - Use feature branches and pull requests.
 - Treat generated files, credentials, deployment configuration, and release metadata as sensitive.
+
+<!-- allowed-agents -->
+## Allowed agents
+
+Only **Claude** (Anthropic) and **Mistral** (Mistral AI) may be used as coding agents in this repository. This rule supersedes any earlier agent-attribution guidance in this file.
+
+- Agent-assisted commits must credit only one of those agents:
+  - `Co-Authored-By: Claude <noreply@anthropic.com>`
+  - `Co-Authored-By: Mistral Vibe <vibe@mistral.ai>`
+- Allowed agent footers are `🤖 Generated with [Claude Code](https://claude.com/claude-code)` and `🤖 Generated with [Mistral Vibe](https://mistral.ai)`.
+- Do not add `Co-Authored-By:` trailers, `Generated with` footers, author names, or committer identities for any other agent or AI tool.
+- Do not credit another agent in commit metadata.
