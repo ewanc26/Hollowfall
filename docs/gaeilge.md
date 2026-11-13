@@ -8,7 +8,7 @@ Hollowfall's interface can be shown in **Gaeilge** (Irish), on its own or with t
 
 - Settings has a **Language** row at the top, naming each language in itself: `English`, `Gàidhlig`, `Gàidhlig agus Beurla`, `Gaeilge`, `Gaeilge agus Béarla`. Changing it rebuilds every screen at once and is saved with the other settings.
 - **Gaeilge** shows the Gaeilge where there is some fit to show, and the English where there is not. **Gaeilge agus Béarla** shows the Gaeilge with the English in brackets for short single-line text and beneath it for longer text.
-- The interface is the only area translated; the story prose (the epigraphs, the lore notes, the boss and ending text) and the Gàidhlig dungeon names stay as they are.
+- The interface is the only area translated; the story prose (the epigraphs, the lore notes, the boss and ending text) and the Gàidhlig dungeon names stay as they are. The pact screen and the three portal mark names also stay in English for now, because they arrived after the interface pass.
 - `dotnet run --project src/Hollowfall.Cli -- --po-ga gd-ga.po` writes the whole interface as a gettext catalogue for an Irish translator, with each key's status and sources in the comments and fuzzy flags on the strings that need a decision.
 
 ## Rules the game follows
