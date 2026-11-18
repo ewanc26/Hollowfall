@@ -23,7 +23,8 @@ Godot is the shell; the game is C#. This is a hard rule, not a preference.
 ## Input: actions, never keys
 
 All player input goes through `GameAction` and `BindingMap` (`Hollowfall.Core.Input`) so every control can be remapped
-and works on keyboard, mouse and gamepad.
+and works
+ on keyboard, mouse and gamepad.
 
 - A new player ability gets a `GameAction`, a label in `ActionInfo`, and default bindings for both slots in `BindingMap.Defaults`. Game scripts ask `InputMapper.Pressed(GameAction.X)`; they never name a key, button or axis. `NoHardCodedInputTests` fails if they do, and if an action is never read.
 - Escape is reserved for the pause menu. Required actions cannot be left unbound, and rebinding onto a used input swaps the two actions. These rules live in Core and are unit tested; keep new rules there too.
@@ -44,7 +45,8 @@ Agents manipulate the engine through the `godot` MCP server in `.mcp.json` (Codi
 
 All saved data lives in one folder, `~/.ewanc26/hollowfall` (`Hollowfall.Core.Storage.DataHome`; `HOLLOWFALL_HOME` moves it).
 
-- A new saved file gets its path from `DataHome` (add a name and a path property there, and an optional per-file environment variable for tests). Never write to Godot's `user://` folder or any other place.
+- A new saved file gets its path from `DataHome` (add a name and a path property there, and an optional per-file environment variable for tests). Never write to Godot's `user://` folder or 
+any other place.
 - Save atomically, load defensively (a damaged or hand-edited file must never stop the game), and keep sizes bounded.
 - Tests and the smoke test point every file at a temporary path with the per-file variables, so they never touch the real folder.
 
@@ -52,13 +54,14 @@ All saved data lives in one folder, `~/.ewanc26/hollowfall` (`Hollowfall.Core.St
 
 - Inspect the README, manifests, CI workflows, and nearby code before editing.
 - Preserve existing architecture, naming, formatting, and error-handling conventions.
+- Use project scripts for validation; never claim checks you did not run.
+- Keep changes scoped and update tests or documentation when behavior changes.
+- Use feature branches and pull requests.
+- Treat generated files, credentials, deployment configuration, and release metadata as sensitive.
 - Use `dotnet build` and `dotnet test` for validation; never claim checks you did not run.
 - Terrain generation must remain a pure function of the seed and coordinates: no `System.Random`, no shared mutable state, no dependence on generation order.
 - Dungeon generation follows the same rule: `FloorLayout` and `DungeonSite.BlockAt` are pure functions of the seed and coordinates. Add new dungeon blocks at the end of `BlockType` so existing values never shift.
-- Keep changes scoped and update tests or documentation when behavior changes.
 - No dead or duplicate code. Each behaviour has one home: if Core authors something (geometry, animation clips, textures, sounds), Core is the only place that builds it. The committed file is that output, and game scripts load it through one loader. The just-in-time fallback when a file is missing runs the same Core builder and the same loader, so it produces the same bytes; never write a second builder in game code. When a change makes code unreachable, delete it in the same change; do not leave commented-out or unused members, and do not copy logic between game scripts and Core.
-- Use feature branches and pull requests.
-- Treat generated files, credentials, deployment configuration, and release metadata as sensitive.
 
 <!-- allowed-agents -->
 ## Allowed agents
@@ -66,6 +69,18 @@ All saved data lives in one folder, `~/.ewanc26/hollowfall` (`Hollowfall.Core.St
 Only **Claude** (Anthropic) and **Mistral** (Mistral AI) may be used as coding agents in this repository. This rule supersedes any earlier agent-attribution guidance in this file.
 
 - Agent-assisted commits must credit only one of those agents:
+  - `Co-Authored-By: Claude <noreply@anthropic.com>`
+  - `Co-Authored-By: Mistral Vibe <vibe@mistral.ai>`
+- Allowed agent footers are `🤖 Generated with [Claude Code](https://claude.com/claude-code)` and `🤖 Generated with [Mistral Vibe](https://mistral.ai)`.
+- Do not add `Co-Authored-By:` trailers, `Generated with` footers, author names, or committer identities for any other agent or AI tool.
+- Do not credit another agent in commit metadata.
+
+## Allowed agents
+
+Only **Claude** (Anthropic) and **Mistral** (Mistral AI) may be used as coding agents in this repository. This rule supersedes any earlier agent-attribution guidance in this file.
+
+- Agent-assisted commits must credit only one of those a
+gents:
   - `Co-Authored-By: Claude <noreply@anthropic.com>`
   - `Co-Authored-By: Mistral Vibe <vibe@mistral.ai>`
 - Allowed agent footers are `🤖 Generated with [Claude Code](https://claude.com/claude-code)` and `🤖 Generated with [Mistral Vibe](https://mistral.ai)`.
