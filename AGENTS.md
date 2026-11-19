@@ -23,8 +23,7 @@ Godot is the shell; the game is C#. This is a hard rule, not a preference.
 ## Input: actions, never keys
 
 All player input goes through `GameAction` and `BindingMap` (`Hollowfall.Core.Input`) so every control can be remapped
-and works
- on keyboard, mouse and gamepad.
+and works on keyboard, mouse and gamepad.
 
 - A new player ability gets a `GameAction`, a label in `ActionInfo`, and default bindings for both slots in `BindingMap.Defaults`. Game scripts ask `InputMapper.Pressed(GameAction.X)`; they never name a key, button or axis. `NoHardCodedInputTests` fails if they do, and if an action is never read.
 - Escape is reserved for the pause menu. Required actions cannot be left unbound, and rebinding onto a used input swaps the two actions. These rules live in Core and are unit tested; keep new rules there too.
@@ -45,8 +44,7 @@ Agents manipulate the engine through the `godot` MCP server in `.mcp.json` (Codi
 
 All saved data lives in one folder, `~/.ewanc26/hollowfall` (`Hollowfall.Core.Storage.DataHome`; `HOLLOWFALL_HOME` moves it).
 
-- A new saved file gets its path from `DataHome` (add a name and a path property there, and an optional per-file environment variable for tests). Never write to Godot's `user://` folder or 
-any other place.
+- A new saved file gets its path from `DataHome` (add a name and a path property there, and an optional per-file environment variable for tests). Never write to Godot's `user://` folder or any other place.
 - Save atomically, load defensively (a damaged or hand-edited file must never stop the game), and keep sizes bounded.
 - Tests and the smoke test point every file at a temporary path with the per-file variables, so they never touch the real folder.
 
@@ -68,8 +66,7 @@ any other place.
 
 Only **Claude** (Anthropic) and **Mistral** (Mistral AI) may be used as coding agents in this repository. This rule supersedes any earlier agent-attribution guidance in this file.
 
-- Agent-assisted commits must credit only one of those a
-gents:
+- Agent-assisted commits must credit only one of those agents:
   - `Co-Authored-By: Claude <noreply@anthropic.com>`
   - `Co-Authored-By: Mistral Vibe <vibe@mistral.ai>`
 - Allowed agent footers are `🤖 Generated with [Claude Code](https://claude.com/claude-code)` and `🤖 Generated with [Mistral Vibe](https://mistral.ai)`.

@@ -21,8 +21,7 @@ Playable, and still growing. Seeded terrain and multi-floor dungeons generate, a
 
 ## Layout
 
-- `src/Hollowfall.Core`: world data, terrain and dungeon generation, chunk meshing, player physics, combat, portals, relationships, story, localisation, music and
- sound synthesis (no engine dependency).
+- `src/Hollowfall.Core`: world data, terrain and dungeon generation, chunk meshing, player physics, combat, portals, relationships, story, localisation, music and sound synthesis (no engine dependency).
 - `src/Hollowfall.Cli`: prints a top-down map and block statistics for a seed.
 - `game`: the Godot 4 (.NET) shell. Thin C# scripts that connect the engine to Core.
 - `tests/Hollowfall.Tests`: xunit tests, including determinism, rigging and rule checks.
@@ -60,8 +59,7 @@ You spawn on the plaza of the nearest dungeon, facing its stair shaft. The game 
 | Close portals (sever anything standing in them) | C | D-pad down |
 | Slam (drop straight down from the air; cracks, then breaks, brick floor) | X | D-pad up |
 | Block mortar (arcing shell that digs a sphere of brick, earth and stone, in 10 cm cubes) | T | D-pad left |
-| Use the re
-ady item (a cream, drop, shard, draught or tonic) | H | D-pad right |
+| Use the ready item (a cream, drop, shard, draught or tonic) | H | D-pad right |
 | Open chests (a key for locked ones), read notes, speak to what you find, trade with the pedlar | F | Left stick click |
 | Respawn | R | Y |
 | Free-fly (fly down) | G (Shift) | Right stick click (B) |
@@ -89,8 +87,7 @@ Everything the game saves lives in one folder, `~/.ewanc26/hollowfall`:
 
 ## How it plays
 
-Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit locks away part of your health for a while, and a style meter rewards kills, headshots, parr
-ies and movement. See [docs/game-loop.md](docs/game-loop.md) for the design of the loop.
+Entering a room with enemies locks its doors until they are dead. Hits at close range heal you, being hit locks away part of your health for a while, and a style meter rewards kills, headshots, parries and movement. See [docs/game-loop.md](docs/game-loop.md) for the design of the loop.
 
 The HUD is kept clean: health, style, hints, a floor panel (floor, kills, time against par, keys held) and a minimap that fills in as you explore. It fades wherever it would cover a portal opening, and damage flashes are edge vignettes that leave the middle of the screen clear. Blocks wear 16 by 16 pixel textures drawn in code, tinted by each block's colour, and dungeon floors look different as you go deeper (plain, damp and mossy, then ashen).
 
@@ -98,8 +95,7 @@ The HUD is kept clean: health, style, hints, a floor panel (floor, kills, time a
 
 **Meteor.** Leave a portal at 18 blocks per second or more and for 0.6 seconds you are the weapon: touching an enemy within 1.2 blocks hits it for speed x 2.5 damage (at most 120), awards the Meteor style bonus (180 points, doubled after a fall of more than 20 blocks), costs you 30% of your speed and never hurts you. Hitting a wall ends the window. The numbers live in `MeteorTuning`.
 
-**Chests, keys and traps.** Chests hold loot picked from the seed: a vial of blood, a cleansing drop, a style shard, a bloodlust draught, an open guard tonic or a spare key. Everything but a key goes into your bag; better chests hold more of it, and a full bag leaves the loot behind. Treasure and boss chests are locked, spend a key and give better loot. Spike traps warn before they strike, and a jump clears
- them.
+**Chests, keys and traps.** Chests hold loot picked from the seed: a vial of blood, a cleansing drop, a style shard, a bloodlust draught, an open guard tonic or a spare key. Everything but a key goes into your bag; better chests hold more of it, and a full bag leaves the loot behind. Treasure and boss chests are locked, spend a key and give better loot. Spike traps warn before they strike, and a jump clears them.
 
 **Items and kit.** The pause menu's **Bag** screen shows what you carry. Mark one consumable **Ready**: that is what the quick-use button spends in a run, and only that one comes with you. Creams heal 40, vials of blood heal 30, cleansing drops clear hard damage, style shards burst into style, draughts raise blood from hits and tonics widen the parry window. You have a charm slot and a relic slot; the thorn charm takes 10 percent off each blow, the Warden's seal adds 20 maximum health and the hare's foot adds 10 percent damage. Worn equipment and the ready item are read when a run starts, so changes take effect next run. The HUD shows the ready item and its uses beside your health.
 
@@ -120,8 +116,7 @@ Under the hill a Hollow is falling in on itself. Seven Wardens went down to hold
 
 - **Every seed names its dungeon** ("The Pale Vault"), shown on the title screen, and names the last Warden.
 - **A first-play opening** (once per seed), and a **title card** ("I. The Antechamber") that fades in the first time you enter each floor.
-- **Notes**: o
-ne to three scrolls lie against the walls of each floor, in rooms you can reach without a secret door. Walk up and press Open (F) to read one; Open or the menu button closes it. The notes on a floor are one voice and read in order, and none is used twice in a run. The **Journal** in the pause menu keeps what you have read on each seed.
+- **Notes**: one to three scrolls lie against the walls of each floor, in rooms you can reach without a secret door. Walk up and press Open (F) to read one; Open or the menu button closes it. The notes on a floor are one voice and read in order, and none is used twice in a run. The **Journal** in the pause menu keeps what you have read on each seed.
 - A line when a floor is finished (one per grade), when the boss wakes, when you die, and an ending card when the last Warden falls.
 
 The flavour is Scottish: the folk are drawn from Scottish folklore, dungeon names borrow Scots and Gàidhlig words, and floors and notes nod to the Fortingall Yew, the Cailleach and the water-horse. All the words and every choice are in `Hollowfall.Core.Story`, a pure function of the seed. See [docs/story.md](docs/story.md) for the premise, characters, floor-by-floor beats and what is deliberately left open, and [docs/mythology.md](docs/mythology.md) for the folklore and its sources.
@@ -159,8 +154,7 @@ For screenshots, tests and debugging:
 | `HOLLOWFALL_MENU=title\|pause\|controls\|settings\|journal\|standing` | Opens that menu screen straight away |
 | `HOLLOWFALL_DEMO=portals\|sever\|gap\|folk\|notes\|ending\|captions` | Runs a scripted setup for screenshots |
 | `HOLLOWFALL_SHOWCASE=enemies\|poses\|weapons\|props\|effects` | Picks the page of the model showcase scene (see [docs/art-style.md](docs/art-style.md)) |
-| `HOLLOWFALL_DUST=0` | Turns off the dungeon dust motes, for comparison sho
-ts |
+| `HOLLOWFALL_DUST=0` | Turns off the dungeon dust motes, for comparison shots |
 
 ## Documentation
 
@@ -193,8 +187,7 @@ projects you trust, and approve its tools individually rather than auto-approvin
 Godot 4.7 (.NET build) is needed to run the game itself:
 
 ```bash
-./run-smoke-test.sh   # builds the 
-Godot project and runs the headless smoke test
+./run-smoke-test.sh   # builds the Godot project and runs the headless smoke test
 ```
 
 The core library and its tests need only the .NET SDK:
